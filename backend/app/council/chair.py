@@ -10,10 +10,16 @@ an LLM's JSON echo. This keeps the one place where correctness actually
 matters (which zone, which scenario, whose evidence) deterministic, while
 still letting the LLM do the actual synthesis judgment.
 
-`time_to_critical` is a stub at this stage per CORRIX_BUILD_PLAN.md
-Step 4: a plausible LLM-estimated placeholder band, not the real Monte
-Carlo rollout — that reuses the simulator's own step() function and
-lands in Step 8.
+`time_to_critical` here is still the Step 4 LLM-estimated placeholder
+band. For gas-based zones, the live WebSocket layer (`app/api/websocket.
+_convene_council`) overwrites it after synthesis with the real Step 8
+Monte Carlo rollout (`app/detection/time_to_critical.py`), which reuses
+the simulator's own `step()` function — deliberately done as a
+post-synthesis replacement rather than feeding the forecast into the
+Chair's own prompt, since the forecast is a deterministic computation,
+not a judgment call the LLM should be asked to reproduce or second-guess.
+S1's compliance signal isn't an OU process, so it keeps this LLM
+estimate — a real, documented scope limit, not an oversight.
 """
 
 import json

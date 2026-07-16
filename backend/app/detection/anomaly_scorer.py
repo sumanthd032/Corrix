@@ -69,6 +69,25 @@ def classify_z_score(z: float) -> RiskLevel:
     return "SAFE"
 
 
+def calibrate_baseline(
+    values: list[float], baseline_ticks: int = DEFAULT_BASELINE_TICKS
+) -> tuple[float, float]:
+    """Mean/std from the first `baseline_ticks` readings — the same fixed
+    reference `baseline_calibrated_zscore` scores every reading against.
+    Exposed separately so the Step 8 Monte Carlo forecaster can score its
+    simulated future paths against the exact same reference the live
+    z-score trigger already used, rather than recomputing its own.
+    """
+    n = min(baseline_ticks, len(values))
+    baseline = values[:n]
+    mean = sum(baseline) / len(baseline)
+    variance = sum((v - mean) ** 2 for v in baseline) / len(baseline)
+    std = math.sqrt(variance)
+    if std < 1e-6:
+        std = 1e-6
+    return mean, std
+
+
 def baseline_calibrated_zscore(
     values: list[float], baseline_ticks: int = DEFAULT_BASELINE_TICKS
 ) -> list[float]:
@@ -79,13 +98,7 @@ def baseline_calibrated_zscore(
     real deviation still produces a large-but-finite score rather than a
     division blow-up.
     """
-    n = min(baseline_ticks, len(values))
-    baseline = values[:n]
-    mean = sum(baseline) / len(baseline)
-    variance = sum((v - mean) ** 2 for v in baseline) / len(baseline)
-    std = math.sqrt(variance)
-    if std < 1e-6:
-        std = 1e-6
+    mean, std = calibrate_baseline(values, baseline_ticks)
     z_cap = 1000.0
     return [max(-z_cap, min(z_cap, (v - mean) / std)) for v in values]
 

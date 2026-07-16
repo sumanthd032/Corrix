@@ -33,7 +33,9 @@ from app.api.live_evidence import (
 )
 from app.api.live_scenario import ScenarioPlayback, precompute_playback
 from app.council.graph import apply_safety_officer_override, build_council_graph
+from app.detection.anomaly_scorer import calibrate_baseline
 from app.detection.evacuation_routing import find_evacuation_route
+from app.detection.time_to_critical import forecast_time_to_critical
 from app.schemas import CouncilVerdict
 from app.simulation.plant_layout import load_plant_layout
 from app.simulation.scenario_engine import DEFAULT_START_TIME
@@ -129,6 +131,19 @@ async def _convene_council(
 
     final_state = await asyncio.to_thread(graph.invoke, None, graph_config)
     verdict: CouncilVerdict = final_state["verdict"]
+
+    if config.signals.gas is not None:
+        signal_values = [r.concentration for r in out.gas_readings]
+        baseline_mean, baseline_std = calibrate_baseline(signal_values)
+        verdict.time_to_critical = await asyncio.to_thread(
+            forecast_time_to_critical,
+            current_value=point.value,
+            elapsed_minutes=frame.minute,
+            gas_config=config.signals.gas,
+            baseline_mean=baseline_mean,
+            baseline_std=baseline_std,
+            seed=config.seed,
+        )
 
     if verdict.risk_level in ("HIGH", "CRITICAL"):
         layout = load_plant_layout()
