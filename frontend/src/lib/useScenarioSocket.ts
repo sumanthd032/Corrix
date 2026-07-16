@@ -5,12 +5,19 @@ import type { CouncilEvidence, CouncilVerdict, RiskLevel } from '../types'
 const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL ?? 'ws://localhost:8000'
 
 interface ServerMessage {
-  type: 'tick' | 'council_convening' | 'deliberating' | 'verdict' | 'playback_complete'
+  type:
+    | 'tick'
+    | 'open_challenge_drawn'
+    | 'council_convening'
+    | 'deliberating'
+    | 'verdict'
+    | 'playback_complete'
   minute?: number
   zoneRisk?: Record<string, RiskLevel>
   workers?: Record<string, string>
   council?: CouncilEvidence
   verdict?: CouncilVerdict
+  label?: string
 }
 
 /** Connects to the live scenario WebSocket and drives the Zustand store
@@ -44,6 +51,10 @@ export function useScenarioSocket() {
       store.setLiveOverrideSender((note: string) => {
         ws.send(JSON.stringify({ type: 'override', note }))
       })
+      store.setOpenChallengeSender(() => {
+        store.beginLivePlayback()
+        ws.send(JSON.stringify({ type: 'open_challenge' }))
+      })
       store.beginLivePlayback()
       ws.send(JSON.stringify({ type: 'start', scenario_id: scenarioIdRef.current }))
     }
@@ -54,6 +65,9 @@ export function useScenarioSocket() {
       switch (msg.type) {
         case 'tick':
           store.applyLiveTick(msg.zoneRisk ?? {}, msg.workers ?? {})
+          break
+        case 'open_challenge_drawn':
+          if (msg.label) store.setOpenChallengeLabel(msg.label)
           break
         case 'council_convening':
           store.startLiveConvening()
@@ -73,6 +87,7 @@ export function useScenarioSocket() {
       const store = useCorrixStore.getState()
       store.setConnectionMode('mock')
       store.setLiveOverrideSender(null)
+      store.setOpenChallengeSender(null)
     }
     ws.onclose = handleDrop
     ws.onerror = () => ws.close()

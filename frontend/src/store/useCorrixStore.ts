@@ -27,15 +27,20 @@ interface CorrixState {
   connectionMode: ConnectionMode
   liveEvidence: CouncilEvidence | null
   liveOverrideSender: ((note: string) => void) | null
+  openChallengeSender: (() => void) | null
+  openChallengeLabel: string | null
 
   setScenario: (scenarioId: string) => void
   setCouncilStage: (stage: CouncilStage) => void
   pauseForOverride: () => void
   submitOverrideNote: (note: string) => void
   sendChatMessage: (text: string) => void
+  triggerOpenChallenge: () => void
 
   setConnectionMode: (mode: ConnectionMode) => void
   setLiveOverrideSender: (fn: ((note: string) => void) | null) => void
+  setOpenChallengeSender: (fn: (() => void) | null) => void
+  setOpenChallengeLabel: (label: string | null) => void
   beginLivePlayback: () => void
   applyLiveTick: (zoneRisk: Record<string, RiskLevel>, workerZones: Record<string, string>) => void
   startLiveConvening: () => void
@@ -59,6 +64,8 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
   connectionMode: 'mock',
   liveEvidence: null,
   liveOverrideSender: null,
+  openChallengeSender: null,
+  openChallengeLabel: null,
 
   setScenario: (scenarioId) => {
     if (get().connectionMode === 'live') {
@@ -113,15 +120,24 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
         { id: `msg-${state.chatHistory.length + 1}`, role: 'user', text },
       ],
     })),
+  triggerOpenChallenge: () => {
+    const sender = get().openChallengeSender
+    if (get().connectionMode === 'live' && sender) {
+      sender()
+    }
+  },
 
   setConnectionMode: (mode) => set({ connectionMode: mode }),
   setLiveOverrideSender: (fn) => set({ liveOverrideSender: fn }),
+  setOpenChallengeSender: (fn) => set({ openChallengeSender: fn }),
+  setOpenChallengeLabel: (label) => set({ openChallengeLabel: label }),
   beginLivePlayback: () =>
     set({
       verdict: null,
       liveEvidence: null,
       overridePaused: false,
       councilStage: 'idle',
+      openChallengeLabel: null,
     }),
   applyLiveTick: (zoneRisk, workerZones) => {
     const workers: WorkerMarker[] = Object.entries(workerZones).map(([badgeId, zoneId]) => ({

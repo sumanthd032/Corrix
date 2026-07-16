@@ -7,12 +7,15 @@ Override so a demo user can genuinely intervene, not a simulated pause.
 Protocol (JSON messages over one WebSocket connection):
 
 Client -> server:
-  {"type": "start", "scenario_id": "S1"}   start/restart playback
+  {"type": "start", "scenario_id": "S1"}   start/restart authored playback
+  {"type": "open_challenge"}               draw and play a random curated
+                                            Open Challenge combination (§13.5)
   {"type": "override", "note": "..."}      submit an override note
                                             while stage == "deliberating"
 
 Server -> client:
   {"type": "tick", "minute": ..., "zoneRisk": {...}, "workers": {...}}
+  {"type": "open_challenge_drawn", "label": "..."}   which combination was drawn
   {"type": "council_convening"}
   {"type": "deliberating", "council": {...four evidence texts...}}
   {"type": "verdict", "verdict": {...camelCase CouncilVerdict...}}
@@ -25,18 +28,26 @@ from datetime import timedelta
 
 from fastapi import WebSocket, WebSocketDisconnect
 
+import random
+
 from app.api.live_evidence import (
     format_permit_text,
     format_process_safety_text,
     format_shift_text,
     format_site_safety_text,
 )
-from app.api.live_scenario import ScenarioPlayback, precompute_playback
+from app.api.live_scenario import (
+    ScenarioPlayback,
+    precompute_open_challenge_playback,
+    precompute_playback,
+)
 from app.council.graph import apply_safety_officer_override, build_council_graph
 from app.detection.anomaly_scorer import calibrate_baseline
 from app.detection.evacuation_routing import find_evacuation_route
+from app.detection.novelty_training import fit_novelty_model_from_library
 from app.detection.time_to_critical import forecast_time_to_critical
 from app.schemas import CouncilVerdict
+from app.simulation.open_challenge import CURATED_COMBINATIONS
 from app.simulation.plant_layout import load_plant_layout
 from app.simulation.scenario_engine import DEFAULT_START_TIME
 
@@ -73,7 +84,10 @@ def _verdict_to_camel(v: CouncilVerdict) -> dict:
 
 
 async def _convene_council(
-    websocket: WebSocket, incoming: "asyncio.Queue[dict]", playback: ScenarioPlayback
+    websocket: WebSocket,
+    incoming: "asyncio.Queue[dict]",
+    playback: ScenarioPlayback,
+    trigger_reason: str = "rule_threshold",
 ) -> None:
     await websocket.send_json({"type": "council_convening"})
 
@@ -97,7 +111,7 @@ async def _convene_council(
         graph.invoke,
         {
             "zone_id": config.zone,
-            "trigger_reason": "rule_threshold",
+            "trigger_reason": trigger_reason,
             "raw_evidence": raw_evidence,
             "scenario_id": config.scenario_id,
         },
@@ -154,17 +168,18 @@ async def _convene_council(
     await websocket.send_json({"type": "verdict", "verdict": _verdict_to_camel(verdict)})
 
 
-async def _run_playback(
-    websocket: WebSocket, incoming: "asyncio.Queue[dict]", scenario_id: str
+async def _stream_playback(
+    websocket: WebSocket,
+    incoming: "asyncio.Queue[dict]",
+    playback: ScenarioPlayback,
+    trigger_reason: str = "rule_threshold",
 ) -> dict | None:
     """Returns a requeued client message if playback was interrupted by
     one (e.g. a new "start"), else None when playback completed."""
-    playback = await asyncio.to_thread(precompute_playback, scenario_id)
-
     for i, frame in enumerate(playback.frames):
         try:
             msg = incoming.get_nowait()
-            if msg.get("type") in ("start", "__disconnect__"):
+            if msg.get("type") in ("start", "open_challenge", "__disconnect__"):
                 return msg
             await incoming.put(msg)
         except asyncio.QueueEmpty:
@@ -181,10 +196,32 @@ async def _run_playback(
         await asyncio.sleep(PLAYBACK_FRAME_SECONDS)
 
         if i == playback.trigger_frame_index:
-            await _convene_council(websocket, incoming, playback)
+            await _convene_council(websocket, incoming, playback, trigger_reason=trigger_reason)
 
     await websocket.send_json({"type": "playback_complete"})
     return None
+
+
+async def _run_playback(
+    websocket: WebSocket, incoming: "asyncio.Queue[dict]", scenario_id: str
+) -> dict | None:
+    playback = await asyncio.to_thread(precompute_playback, scenario_id)
+    return await _stream_playback(websocket, incoming, playback, trigger_reason="rule_threshold")
+
+
+async def _run_open_challenge(websocket: WebSocket, incoming: "asyncio.Queue[dict]") -> dict | None:
+    """Draws one of the curated Open Challenge combinations at random and
+    streams it exactly like an authored scenario — the only difference
+    is the trigger is the novelty path, since these are tuned to evade
+    rule/threshold by construction (§13.5)."""
+    params = random.choice(CURATED_COMBINATIONS)
+    seed = random.randint(80000, 89999)
+    novelty_model = await asyncio.to_thread(fit_novelty_model_from_library)
+    playback = await asyncio.to_thread(
+        precompute_open_challenge_playback, params, seed, novelty_model
+    )
+    await websocket.send_json({"type": "open_challenge_drawn", "label": params.label})
+    return await _stream_playback(websocket, incoming, playback, trigger_reason="novelty")
 
 
 async def scenario_websocket(websocket: WebSocket) -> None:
@@ -206,11 +243,12 @@ async def scenario_websocket(websocket: WebSocket) -> None:
         while True:
             msg = pending if pending is not None else await incoming.get()
             pending = None
-            if msg.get("type") == "__disconnect__":
+            msg_type = msg.get("type")
+            if msg_type == "__disconnect__":
                 break
-            if msg.get("type") != "start":
-                continue
-            scenario_id = msg.get("scenario_id", "S1")
-            pending = await _run_playback(websocket, incoming, scenario_id)
+            if msg_type == "start":
+                pending = await _run_playback(websocket, incoming, msg.get("scenario_id", "S1"))
+            elif msg_type == "open_challenge":
+                pending = await _run_open_challenge(websocket, incoming)
     finally:
         receiver_task.cancel()

@@ -16,6 +16,9 @@ export function TopControlBar() {
   const overridePaused = useCorrixStore((s) => s.overridePaused)
   const pauseForOverride = useCorrixStore((s) => s.pauseForOverride)
   const councilStage = useCorrixStore((s) => s.councilStage)
+  const connectionMode = useCorrixStore((s) => s.connectionMode)
+  const triggerOpenChallenge = useCorrixStore((s) => s.triggerOpenChallenge)
+  const openChallengeLabel = useCorrixStore((s) => s.openChallengeLabel)
   const [reportOpen, setReportOpen] = useState(false)
 
   return (
@@ -54,10 +57,22 @@ export function TopControlBar() {
 
       <button
         type="button"
-        className="flex items-center gap-1.5 rounded-[var(--radius-control)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+        onClick={triggerOpenChallenge}
+        disabled={connectionMode !== 'live'}
+        title={
+          connectionMode !== 'live'
+            ? 'Requires the live backend — draws and runs an unscripted evidence combination live'
+            : 'Draw one of the curated Open Challenge combinations and run it live'
+        }
+        className="flex items-center gap-1.5 rounded-[var(--radius-control)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors disabled:opacity-40"
       >
         <Sparkles size={15} aria-hidden="true" />
         Open Challenge
+        {openChallengeLabel && (
+          <span className="ml-1 max-w-[220px] truncate font-mono-data text-[10px] text-[var(--color-accent)]">
+            {openChallengeLabel}
+          </span>
+        )}
       </button>
 
       <div className="ml-auto flex items-center gap-2">
