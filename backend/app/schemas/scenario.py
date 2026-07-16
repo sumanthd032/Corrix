@@ -19,6 +19,7 @@ class GasSignalConfig(BaseModel):
 
     model: Literal["ou_gas_process"] = "ou_gas_process"
     gas_type: str
+    unit: str = "ppm"
     C_baseline: float
     k: float
     sigma: float
@@ -27,7 +28,13 @@ class GasSignalConfig(BaseModel):
     t0_minute: float
     t_rise_minutes: float | None = None
     tau_minutes: float | None = None
+    # ramp_with_plateau only (§3.3): the secondary, smaller ramp triggered by
+    # the compounding factor (e.g. ventilation reduction at changeover) that
+    # pushes an already-plateaued concentration the rest of the way critical.
     C_plateau: float | None = None
+    secondary_trigger_minute: float | None = None
+    secondary_rise_minutes: float | None = None
+    secondary_magnitude: float | None = None
 
 
 class PermitInjectionConfig(BaseModel):

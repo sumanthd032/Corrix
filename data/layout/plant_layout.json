@@ -1,0 +1,81 @@
+{
+  "zones": [
+    {
+      "zone_id": "Z1",
+      "name": "SMS-2 Ladle Bay / Casting Floor",
+      "hazard_class": "high",
+      "primary_role": "Anchor scenario S1 — molten metal, moisture/entrapped-gas risk",
+      "is_confined_space": false,
+      "is_assembly_point": false
+    },
+    {
+      "zone_id": "Z2",
+      "name": "Gas Collection Main",
+      "hazard_class": "high",
+      "primary_role": "S3, S4 — atmospheric gas accumulation",
+      "is_confined_space": false,
+      "is_assembly_point": false
+    },
+    {
+      "zone_id": "Z3",
+      "name": "Maintenance Bay",
+      "hazard_class": "medium",
+      "primary_role": "S3, S4 — hot work common",
+      "is_confined_space": false,
+      "is_assembly_point": false
+    },
+    {
+      "zone_id": "Z4",
+      "name": "Control Room",
+      "hazard_class": "low",
+      "primary_role": "Baseline/negative-control traffic; evacuation assembly point",
+      "is_confined_space": false,
+      "is_assembly_point": true
+    },
+    {
+      "zone_id": "Z5",
+      "name": "Raw Material / Scrap Yard",
+      "hazard_class": "medium",
+      "primary_role": "Cross-zone risk narrative — moisture source for Z1",
+      "is_confined_space": false,
+      "is_assembly_point": false
+    },
+    {
+      "zone_id": "Z6",
+      "name": "Quenching Tower / Slag Pit",
+      "hazard_class": "medium",
+      "primary_role": "Baseline/negative-control traffic — steam/thermal, moisture",
+      "is_confined_space": false,
+      "is_assembly_point": false
+    },
+    {
+      "zone_id": "Z7",
+      "name": "Gas Collection Vault",
+      "hazard_class": "high",
+      "primary_role": "S2 — confined space + gas",
+      "is_confined_space": true,
+      "is_assembly_point": false
+    },
+    {
+      "zone_id": "Z8",
+      "name": "Perimeter / Walkway",
+      "hazard_class": "low",
+      "primary_role": "Baseline/negative-control traffic; evacuation assembly point",
+      "is_confined_space": false,
+      "is_assembly_point": true
+    }
+  ],
+  "adjacency": [
+    { "zone_a": "Z1", "zone_b": "Z3" },
+    { "zone_a": "Z1", "zone_b": "Z6" },
+    { "zone_a": "Z1", "zone_b": "Z5" },
+    { "zone_a": "Z2", "zone_b": "Z3" },
+    { "zone_a": "Z2", "zone_b": "Z7" },
+    { "zone_a": "Z3", "zone_b": "Z5" },
+    { "zone_a": "Z3", "zone_b": "Z4" },
+    { "zone_a": "Z4", "zone_b": "Z8" },
+    { "zone_a": "Z5", "zone_b": "Z8" },
+    { "zone_a": "Z6", "zone_b": "Z8" },
+    { "zone_a": "Z7", "zone_b": "Z8" }
+  ]
+}
