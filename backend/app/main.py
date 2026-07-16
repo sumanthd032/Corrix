@@ -1,6 +1,8 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.websocket import scenario_websocket
+
 app = FastAPI(title="Corrix Backend")
 
 app.add_middleware(
@@ -25,3 +27,8 @@ async def websocket_echo(websocket: WebSocket) -> None:
             await websocket.send_text(f"echo: {message}")
     except WebSocketDisconnect:
         pass
+
+
+@app.websocket("/ws/scenario")
+async def scenario_ws(websocket: WebSocket) -> None:
+    await scenario_websocket(websocket)

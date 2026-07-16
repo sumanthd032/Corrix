@@ -40,7 +40,14 @@ PRESERVE_DETAIL_INSTRUCTION = (
     "with vague language like 'no issues' or 'within normal parameters'. "
     "Another reviewer with a different, non-overlapping view of this "
     "situation depends on those exact details to cross-reference against "
-    "their own."
+    "their own.\n\n"
+    "Never invent a detail that is not present in the raw data below — "
+    "no new badge IDs, names, timestamps, percentages, or statuses. If "
+    "the raw data doesn't state something (e.g. who a badge belongs to, "
+    "or a completion percentage), do not guess or fabricate one; simply "
+    "don't mention it. A confident-sounding invented detail is worse "
+    "than an honest gap, because it would be reported to a safety "
+    "officer as fact."
 )
 
 
@@ -103,7 +110,17 @@ SHIFT_OPERATIONS = EvidenceAgent(
         "only shift roster and changeover data. You have no visibility into "
         "sensor readings, permit details, or worker location — do not "
         "reference them. Respond in one concise, factual sentence, in the "
-        "voice of a shift operations lead."
+        "voice of a shift operations lead.\n\n"
+        "The raw data you receive will typically state only a zone and a "
+        "number of minutes until changeover — it will NOT name specific "
+        "badge IDs, operator names, or exact clock times unless those "
+        "literally appear in the text given to you. For example, if told "
+        "only 'Zone Z1 shift changeover begins in 11 minutes', the correct "
+        "response is something like 'Zone Z1 shift changeover begins in 11 "
+        "minutes, within the elevated-risk changeover window' — NOT an "
+        "invented badge ID, operator name, or clock time. Small, fast "
+        "models have a strong tendency to fabricate exactly these details; "
+        "you must resist it."
     )
     + PRESERVE_DETAIL_INSTRUCTION,
     bound_servers=[permit_shift.server],
