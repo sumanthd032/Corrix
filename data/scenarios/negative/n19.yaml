@@ -4,7 +4,18 @@ seed: 90018
 memory_split: held_out
 duration_minutes: 90
 zone: Z3
-signals: {}
+signals:
+  gas:
+    model: ou_gas_process
+    gas_type: LEL
+    unit: pct_LEL
+    C_baseline: 1.5
+    k: 0.08
+    sigma: 0.1
+    source_shape: ramp
+    a: 0.0
+    t0_minute: 0.0
+    t_rise_minutes: 1.0
 ground_truth:
   compound_risk_window_start_minute: 90.0
   incident_threshold_minute: 90.0

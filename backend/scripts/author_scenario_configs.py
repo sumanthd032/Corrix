@@ -202,11 +202,22 @@ def author_s4() -> None:
         write_config(config, SCENARIOS_DIR / "s4" / f"seed_{seed}.yaml")
 
 
+ZONE_HAZARD_CLASS = {
+    "Z1": "high", "Z2": "high", "Z3": "medium", "Z4": "low",
+    "Z5": "medium", "Z6": "medium", "Z7": "high", "Z8": "low",
+}
+NEGATIVE_CONTROL_BASELINE_BY_HAZARD = {"high": 2.0, "medium": 1.5, "low": 0.5}
+
+
 def author_negative_controls() -> None:
     """Matched volume to the 20 positive instances above (§12.4): identical
-    generators, S(t) = 0 for the entire run, p_lapse(t) left at its normal
-    low background rate — i.e. no `signals` block at all, so the scenario
-    engine emits background permit/shift/worker-location traffic only.
+    generators, S(t) = 0 for the entire run (i.e. the gas OU process still
+    runs — baseline + noise only, no source term — a=0.0 realizes "S(t)=0"
+    exactly per the §3.1 formula), p_lapse(t) left at its normal low
+    background rate. Every zone still gets a real gas reading series, not
+    an empty stream — needed for the anomaly scorer (Step 3) and the
+    Evaluation Harness (Step 8) to measure a false-positive rate against
+    an actual signal, not an absence of one.
 
     Ground truth is a sentinel here, not a real threshold: both fields are
     set to `duration_minutes` (the run never reaches a scripted incident),
@@ -219,6 +230,7 @@ def author_negative_controls() -> None:
         seed = base_seed + i
         zone = zones[i % len(zones)]
         split = "population" if i % 5 < 3 else "held_out"
+        baseline = NEGATIVE_CONTROL_BASELINE_BY_HAZARD[ZONE_HAZARD_CLASS[zone]]
         config = ScenarioConfig(
             scenario_id=f"N{i + 1}",
             name=f"Negative control {i + 1} — normal operating day, zone {zone}",
@@ -226,7 +238,19 @@ def author_negative_controls() -> None:
             memory_split=split,
             duration_minutes=duration_minutes,
             zone=zone,
-            signals=ScenarioSignals(),
+            signals=ScenarioSignals(
+                gas=GasSignalConfig(
+                    gas_type="LEL",
+                    unit="pct_LEL",
+                    C_baseline=baseline,
+                    k=0.08,
+                    sigma=0.1,
+                    source_shape="ramp",
+                    a=0.0,
+                    t0_minute=0,
+                    t_rise_minutes=1,
+                )
+            ),
             ground_truth=ScenarioGroundTruth(
                 compound_risk_window_start_minute=duration_minutes,
                 incident_threshold_minute=duration_minutes,

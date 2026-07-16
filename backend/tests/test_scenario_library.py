@@ -49,12 +49,17 @@ def test_every_positive_scenario_carries_a_valid_memory_split(path):
 
 
 @pytest.mark.parametrize("path", NEGATIVE_PATHS, ids=lambda p: p.stem)
-def test_negative_controls_have_no_injected_signal(path):
+def test_negative_controls_have_baseline_signal_but_no_source_term(path):
+    """Negative controls run the identical gas generator with S(t)=0 (a=0),
+    per §12.4 — baseline + noise only, not an empty stream. No compliance
+    signal, since that's tied to a lifting/casting permit context negative
+    controls don't have."""
     config = load_scenario_config(path)
-    assert config.signals.gas is None
+    assert config.signals.gas is not None
+    assert config.signals.gas.a == 0.0
     assert config.signals.compliance is None
     out = run_scenario(config)
-    assert out.gas_readings == []
+    assert len(out.gas_readings) > 0
     assert out.compliance_readings == []
     # background traffic still exists — a negative control isn't an empty plant
     assert len(out.permits) > 0
