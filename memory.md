@@ -275,3 +275,25 @@ External access: Real Groq/Gemini calls throughout live Council testing, same as
 Open questions or blockers: S2, S3, and S4 have real backend-level trigger and evidence tests but have not been verified with a full browser-level Council-convening pass the way S1 has — worth doing before treating the live dashboard as fully proven across every scenario, though nothing found so far suggests they would behave differently from S1 given they share the same graph and evidence-formatting code. The same Section 3 items remain open: ERO webhook choice before Step 9.
 
 Next action: Either extend browser-level verification to S2-S4 for full confidence, or begin Step 8 (Predictive Forecasting, Evaluation Harness, Evacuation Routing) — whichever the user prioritizes next.
+
+---
+
+## 2026-07-16 — Step 7 fully verified across all four scenarios; one real concurrency bug found and fixed
+
+What was done: Extended the browser-level live-wiring verification from S1 alone to all four scenarios (S2, S3, S4), per the user's explicit instruction that everything through Step 7 be perfect and error-free before moving to Step 8. This surfaced a real bug that the S1-only verification had not caught, since it depends on message timing that only shows up on a scenario switch.
+
+The bug: the frontend's WebSocket hook sends an initial `{"type":"start","scenario_id":"S1"}` on connection open, then a second `start` message the moment a user picks a different scenario. When these two messages arrive close together, `_run_playback`'s interrupt-check requeued the interrupting message onto the queue unconditionally before also returning it to the outer loop — duplicating it. The outer loop consumed the returned copy to begin the new scenario's playback, but the leftover duplicate stayed in the queue; the very next interrupt-check call immediately found that same leftover message, requeued it again, and returned again, forever. The connection then sends nothing at all, not even the first tick, for as long as the client stays connected. Reproduced directly against the raw backend WebSocket protocol (bypassing the frontend and browser entirely) with two `start` messages sent 50ms apart: confirmed the stall, then confirmed the fix resolves it, before touching the frontend at all — isolating the bug to the backend rather than guessing.
+
+Fix (`backend/app/api/websocket.py`): only requeue the peeked message when it is *not* being returned; a message that's about to be handed to the outer loop via the return value should not also remain in the queue for a second, phantom delivery.
+
+After the fix, re-ran the full backend suite (291 passed, 8 skipped on confirmed real-provider rate limits, same as before) and then a real browser pass (Playwright, temporary tooling) driving S2, S3, and S4 through connection, ticking, Council convening, live evidence, a submitted Safety Officer Override note, and a final verdict — zero console errors, zero page errors, across all three. Each verdict's explanation and recommended action were read directly from the screenshots, not just checked for a truthy string: S2 and S3's Chair synthesis explicitly referenced the submitted override note in its own words (not verbatim quoting, since only mock mode does that — the live Chair paraphrases the override the same way it paraphrases every other piece of evidence). S4's Playwright run appeared not to incorporate the override, which looked like a second bug at first; a follow-up raw-WebSocket test with precisely controlled timing (override sent exactly 2 seconds into the 8-second deliberation window) showed it in fact does incorporate correctly — the Playwright script itself had taken long enough between detecting "deliberating" and clicking Resume (screenshot capture, DOM queries) that the real 8-second window had already closed by the time the note reached the backend. This was a test-tooling timing issue, not a product defect, and is recorded here rather than silently dismissed, per the standard of not treating "looked fine on the retry" as sufficient without understanding why the first attempt looked wrong.
+
+Why: The user set an explicit bar that nothing through Step 7 should be left with unresolved errors before Step 8 begins. S1-only verification could not have caught this bug, since it only manifests on a scenario switch after an initial connection — exactly the gap the user's request to verify S2-S4 as well was meant to close.
+
+Files touched: `backend/app/api/websocket.py` (one-line fix, requeue-order correction).
+
+External access: Real Groq/Gemini calls throughout, same as previous Council testing.
+
+Open questions or blockers: None. All four scenarios (S1 from the prior entry, S2/S3/S4 from this one) are now verified end-to-end in an actual browser against the actual backend, with zero known errors.
+
+Next action: Begin Step 8 of the build plan — Predictive Forecasting (Monte Carlo time-to-critical replacing the current LLM-estimated stub), the Evaluation Harness (population vs. held-out scoring), and risk-aware Evacuation Routing over the Step 2 zone-adjacency graph.
