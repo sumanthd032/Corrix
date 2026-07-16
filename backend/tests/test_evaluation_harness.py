@@ -6,6 +6,8 @@ suite already does)."""
 
 from pathlib import Path
 
+import pytest
+
 from app.detection.novelty_training import fit_novelty_model_from_library
 from app.evaluation.harness import ScenarioEvalResult, compute_metrics, evaluate_scenario
 from app.simulation.plant_layout import load_plant_layout
@@ -128,6 +130,8 @@ def test_evaluate_scenario_against_a_real_positive_and_negative():
 
     positive_path = sorted((SCENARIOS_DIR / "s1").glob("*.yaml"))[0]
     positive_result = evaluate_scenario(positive_path, model, zones_by_id)
+    if positive_result.skipped_reason is not None:
+        pytest.skip(f"Council call unavailable: {positive_result.skipped_reason}")
     assert positive_result.is_positive is True
     assert positive_result.pipeline_triggered is True
     assert positive_result.pipeline_verdict_risk_level in ("HIGH", "CRITICAL")

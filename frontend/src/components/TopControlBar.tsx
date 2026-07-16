@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BarChart3, Download, PauseCircle, Radio, ShieldAlert, Sparkles } from 'lucide-react'
 import { useCorrixStore } from '../store/useCorrixStore'
+import { CounterfactualReplayModal } from './CounterfactualReplayModal'
 import { EvaluationReportModal } from './EvaluationReportModal'
 
 const SCENARIOS = [
@@ -20,6 +21,7 @@ export function TopControlBar() {
   const triggerOpenChallenge = useCorrixStore((s) => s.triggerOpenChallenge)
   const openChallengeLabel = useCorrixStore((s) => s.openChallengeLabel)
   const [reportOpen, setReportOpen] = useState(false)
+  const [replayOpen, setReplayOpen] = useState(false)
 
   return (
     <header className="glass-panel flex items-center gap-4 px-5 py-3">
@@ -49,6 +51,7 @@ export function TopControlBar() {
 
       <button
         type="button"
+        onClick={() => setReplayOpen(true)}
         className="flex items-center gap-1.5 rounded-[var(--radius-control)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
       >
         <Radio size={15} aria-hidden="true" />
@@ -114,6 +117,7 @@ export function TopControlBar() {
       </div>
 
       {reportOpen && <EvaluationReportModal onClose={() => setReportOpen(false)} />}
+      {replayOpen && <CounterfactualReplayModal onClose={() => setReplayOpen(false)} />}
     </header>
   )
 }
