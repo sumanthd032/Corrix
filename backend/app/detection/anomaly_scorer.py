@@ -86,7 +86,8 @@ def baseline_calibrated_zscore(
     std = math.sqrt(variance)
     if std < 1e-6:
         std = 1e-6
-    return [(v - mean) / std for v in values]
+    z_cap = 1000.0
+    return [max(-z_cap, min(z_cap, (v - mean) / std)) for v in values]
 
 
 def score_series(
