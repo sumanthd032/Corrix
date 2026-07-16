@@ -25,7 +25,30 @@ Fields:
   Evaluation Harness measures lead time and false-negative rate against.
 
 `s1_anchor.example.yaml` transcribes the doc's own S1 example verbatim, as a
-template. The real authored S1-S4 configs (with multiple seed variants each)
-are Step 2 work; S5 lands in Step 8 alongside the memory-loop feature it
-exists to demonstrate. Negative-control (`N1..Nk`) configs use the identical
-generators with `signals` left empty/zeroed.
+template — kept for reference, not one of the real authored runs.
+
+## Directory layout
+
+- `s1/`, `s2/`, `s3/`, `s4/` — 5 seed variants each (`seed_<seed>.yaml`),
+  3 `population` / 2 `held_out`, authored by
+  `backend/scripts/author_scenario_configs.py`. S5 lands in Step 8
+  alongside the memory-loop feature it exists to demonstrate.
+- `negative/` — 20 matched negative-control instances (`n01.yaml` ...
+  `n20.yaml`), identical generators, `signals: {}` (no injected gas or
+  compliance signal), cycling across all 8 zones, same 60/40
+  population/held_out split. Background permit/shift/worker-location
+  traffic still runs — a negative control is a normal, busy day, not an
+  empty plant.
+
+**Negative-control ground truth is a sentinel, not a real threshold.**
+Both `compound_risk_window_start_minute` and `incident_threshold_minute`
+are set to `duration_minutes` — the run never reaches a scripted incident,
+so there is no real lead-time reference point. The Evaluation Harness
+(Step 8) uses negative controls only to measure the false-positive rate,
+never lead time.
+
+The authoring script is a convenience for regenerating the library when
+parameters change; the committed YAML files under `s1/`-`s4/` and
+`negative/` are the actual source of truth (§16, Reproducibility) —
+diffable, reviewable, and independently re-runnable without depending on
+the script that produced them.
