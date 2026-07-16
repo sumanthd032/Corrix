@@ -1,0 +1,116 @@
+# Mocked near-miss / audit-log corpus, per CORRIX_DATA_METHODOLOGY.md §10.
+#
+# Every entry is illustrative/mocked — not a real incident record — but
+# every `required_checklist_ref` points at a real, checkable section in
+# one of the two source PDFs actually downloaded and chunked in
+# data/regulatory/sources/ (see backend/app/regulatory/chunking.py).
+# `permit_type` and `zone_hazard_class` are extra fields (not part of
+# the Step 1 AuditLogEntry schema) used only to build the Neo4j graph's
+# INVOLVED_PERMIT_TYPE edge for pattern-lookup traversal.
+
+entries:
+  - entry_id: AL-0001
+    zone_id: Z1
+    timestamp: "2025-11-03T09:15:00Z"
+    deviation_type: missing_required_signature
+    description: >
+      Pre-lift moisture/dryness checklist for a ladle lifting operation
+      was found with the competent-person examination signature absent;
+      the lift proceeded before the checklist was countersigned.
+    source_framework: Factories_Act_1948
+    required_checklist_ref: "Factories Act, 1948 §28 (Hoists and lifts)"
+    permit_type: lifting_operation
+    zone_hazard_class: high
+
+  - entry_id: AL-0002
+    zone_id: Z7
+    timestamp: "2025-09-18T14:40:00Z"
+    deviation_type: missing_gas_test_reading
+    description: >
+      Confined-space entry permit for the gas collection vault was
+      issued with the oxygen-level field left blank; entry occurred
+      before a fresh atmospheric test was logged.
+    source_framework: OISD
+    required_checklist_ref: "OISD Working Group Report on Safety in the Indian Petroleum Sector §6.6.10.2 (Work Permit System)"
+    permit_type: confined_space_entry
+    zone_hazard_class: high
+
+  - entry_id: AL-0003
+    zone_id: Z2
+    timestamp: "2025-06-22T11:05:00Z"
+    deviation_type: missing_lel_reading
+    description: >
+      Hot-work permit for a welding job near the gas collection main was
+      approved without the required LEL (flammable-gas) reading entered
+      on the permit form.
+    source_framework: OISD
+    required_checklist_ref: "OISD Working Group Report on Safety in the Indian Petroleum Sector §6.6.10.2 (Work Permit System)"
+    permit_type: hot_work
+    zone_hazard_class: high
+
+  - entry_id: AL-0004
+    zone_id: Z2
+    timestamp: "2025-04-11T08:30:00Z"
+    deviation_type: inadequate_gas_monitoring
+    description: >
+      Routine maintenance work proceeded in the gas collection main
+      while ambient combustible-gas monitoring equipment for the zone
+      was offline for recalibration, with no compensating manual
+      monitoring logged during the outage window.
+    source_framework: Factories_Act_1948
+    required_checklist_ref: "Factories Act, 1948 §37 (Explosive or inflammable dust, gas, etc.)"
+    permit_type: cold_work
+    zone_hazard_class: high
+
+  - entry_id: AL-0005
+    zone_id: Z3
+    timestamp: "2025-02-27T16:00:00Z"
+    deviation_type: job_started_without_valid_permit
+    description: >
+      An electrical isolation job in the maintenance bay was found in
+      progress before the isolation permit had been formally approved
+      and signed by the area supervisor.
+    source_framework: OISD
+    required_checklist_ref: "OISD Working Group Report on Safety in the Indian Petroleum Sector §6.6.10.2 (Work Permit System)"
+    permit_type: electrical_isolation
+    zone_hazard_class: medium
+
+  - entry_id: AL-0006
+    zone_id: Z1
+    timestamp: "2025-01-14T10:20:00Z"
+    deviation_type: missing_concurrent_job_precautions
+    description: >
+      A lifting operation permit in the ladle bay did not specify
+      precautions for a concurrent maintenance job in an adjacent zone,
+      despite both being active at overlapping times.
+    source_framework: OISD
+    required_checklist_ref: "OISD Working Group Report on Safety in the Indian Petroleum Sector §6.6.10.2 (Work Permit System)"
+    permit_type: lifting_operation
+    zone_hazard_class: high
+
+  - entry_id: AL-0007
+    zone_id: Z7
+    timestamp: "2024-12-05T13:10:00Z"
+    deviation_type: dangerous_operation_not_declared
+    description: >
+      A confined-space entry into the gas collection vault was carried
+      out under a generic work permit rather than the specific
+      dangerous-operation authorization the activity required.
+    source_framework: Factories_Act_1948
+    required_checklist_ref: "Factories Act, 1948 §87 (Dangerous operations)"
+    permit_type: confined_space_entry
+    zone_hazard_class: high
+
+  - entry_id: AL-0008
+    zone_id: Z2
+    timestamp: "2024-10-30T09:50:00Z"
+    deviation_type: missing_lel_reading
+    description: >
+      A second hot-work permit near the gas collection main, issued
+      three months after AL-0003, was again missing the required LEL
+      reading field — a recurrence of the same deviation type in the
+      same zone.
+    source_framework: OISD
+    required_checklist_ref: "OISD Working Group Report on Safety in the Indian Petroleum Sector §6.6.10.2 (Work Permit System)"
+    permit_type: hot_work
+    zone_hazard_class: high
