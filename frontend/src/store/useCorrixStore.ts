@@ -7,13 +7,7 @@ import type {
   RiskLevel,
   WorkerMarker,
 } from '../types'
-import {
-  MOCK_ALERTS,
-  MOCK_CHAT_HISTORY,
-  MOCK_VERDICT,
-  MOCK_WORKERS,
-  MOCK_ZONE_RISK,
-} from '../data/mockData'
+import { MOCK_CHAT_HISTORY, scenarioMock } from '../data/mockData'
 
 interface CorrixState {
   scenarioId: string
@@ -33,18 +27,31 @@ interface CorrixState {
   sendChatMessage: (text: string) => void
 }
 
+const initialMock = scenarioMock('S1')
+
 export const useCorrixStore = create<CorrixState>((set) => ({
   scenarioId: 'S1',
-  zoneRisk: MOCK_ZONE_RISK,
-  workers: MOCK_WORKERS,
-  verdict: MOCK_VERDICT,
+  zoneRisk: initialMock.zoneRisk,
+  workers: initialMock.workers,
+  verdict: initialMock.verdict,
   councilStage: 'verdict_reached',
-  alerts: MOCK_ALERTS,
+  alerts: initialMock.alerts,
   chatHistory: MOCK_CHAT_HISTORY,
   overridePaused: false,
   overrideNote: '',
 
-  setScenario: (scenarioId) => set({ scenarioId }),
+  setScenario: (scenarioId) => {
+    const mock = scenarioMock(scenarioId)
+    set({
+      scenarioId,
+      zoneRisk: mock.zoneRisk,
+      workers: mock.workers,
+      verdict: mock.verdict,
+      alerts: mock.alerts,
+      councilStage: 'verdict_reached',
+      overridePaused: false,
+    })
+  },
   setCouncilStage: (stage) => set({ councilStage: stage }),
   pauseForOverride: () => set({ overridePaused: true, councilStage: 'deliberating' }),
   submitOverrideNote: (note) =>

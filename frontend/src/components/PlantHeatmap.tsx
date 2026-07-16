@@ -56,6 +56,9 @@ export function PlantHeatmap() {
         filled: true,
         stroked: true,
         pickable: true,
+        updateTriggers: {
+          getFillColor: [zoneRisk],
+        },
         transitions: {
           getFillColor: { duration: 600, easing: (t: number) => t * (2 - t) },
         },
@@ -96,6 +99,9 @@ export function PlantHeatmap() {
         // they silently fail to render (confirmed via a "Missing
         // character" console warning during verification).
         characterSet: Object.values(RISK_GLYPH),
+        updateTriggers: {
+          getText: [zoneRisk],
+        },
       }),
     [zoneRisk],
   )
