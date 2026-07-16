@@ -1,0 +1,27 @@
+scenario_id: S5
+name: "Silent sensor drift (near-miss) \u2014 sub-threshold Z2 gas trend"
+seed: 90504
+memory_split: held_out
+duration_minutes: 100
+zone: Z2
+signals:
+  gas:
+    model: ou_gas_process
+    gas_type: LEL
+    unit: pct_LEL
+    C_baseline: 2.0
+    k: 0.08
+    sigma: 0.08
+    source_shape: ramp
+    a: 0.03
+    t0_minute: 10.0
+    t_rise_minutes: 80.0
+  worker_location:
+    badge_id: W-0512
+    zone_entry_at_minute: 45.0
+  cv_event:
+    inject_at_minute: 45.0
+    detection: person
+ground_truth:
+  compound_risk_window_start_minute: 50.0
+  incident_threshold_minute: 100.0

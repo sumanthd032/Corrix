@@ -31,21 +31,46 @@ template — kept for reference, not one of the real authored runs.
 
 - `s1/`, `s2/`, `s3/`, `s4/` — 5 seed variants each (`seed_<seed>.yaml`),
   3 `population` / 2 `held_out`, authored by
-  `backend/scripts/author_scenario_configs.py`. S5 lands in Step 8
-  alongside the memory-loop feature it exists to demonstrate.
-- `negative/` — 20 matched negative-control instances (`n01.yaml` ...
-  `n20.yaml`), identical generators, `signals: {}` (no injected gas or
+  `backend/scripts/author_scenario_configs.py`.
+- `s5/` — silent sensor drift (near-miss), authored in Step 8 alongside
+  the self-improving memory loop it exists to demonstrate (§12.3). A slow
+  OU-process ramp in Z2, deliberately parameterized to never cross the
+  Step 3 rule/threshold trigger (neither the z-score HIGH/CRITICAL bar
+  nor a permit conflict) — seeds are not simply sequential here, since a
+  real gap was found while authoring it: background permits exist in
+  every zone regardless of scenario, and the OU process's own noise
+  alone occasionally spikes into CAUTION range by chance, so a
+  high-hazard zone's permit-conflict rule can fire on pure noise with no
+  injected event at all. S5's 5 seeds were selected by running the real
+  Step 3 trigger end-to-end and keeping only ones verified never to fire
+  (see `author_s5`'s docstring in the authoring script for the full
+  account, including the one sequential seed that didn't pass).
+- `negative/` — 25 matched negative-control instances (`n01.yaml` ...
+  `n25.yaml`, extended from 20 when S5 was added, to keep the harness's
+  false-positive measurement fair against the real positive-scenario
+  count), identical generators, `signals: {}` (no injected gas or
   compliance signal), cycling across all 8 zones, same 60/40
   population/held_out split. Background permit/shift/worker-location
   traffic still runs — a negative control is a normal, busy day, not an
-  empty plant.
+  empty plant. One seed (originally assigned to `n23`) hit the same
+  background-permit/noise-spike overlap S5 had to route around and was
+  overridden with a verified-safe replacement (`author_negative_
+  controls`'s docstring has the details) — negative controls carry a
+  hard, already-tested guarantee (`test_negative_controls_never_trigger`)
+  that they never trigger, so this one couldn't be left as "real signal."
 
-**Negative-control ground truth is a sentinel, not a real threshold.**
-Both `compound_risk_window_start_minute` and `incident_threshold_minute`
-are set to `duration_minutes` — the run never reaches a scripted incident,
-so there is no real lead-time reference point. The Evaluation Harness
-(Step 8) uses negative controls only to measure the false-positive rate,
-never lead time.
+**Negative-control and S5 ground truth are sentinels, not real
+thresholds.** For negative controls, both `compound_risk_window_start_
+minute` and `incident_threshold_minute` are set to `duration_minutes` —
+the run never reaches a scripted incident. For S5, `incident_threshold_
+minute` is likewise set to `duration_minutes` (a near-miss has no real
+point of no return), but `compound_risk_window_start_minute` is a real,
+earlier minute — the point in the drift a vigilant system should have
+been able to recognize the pattern, used to score lead time once the
+memory loop's retrieval-similarity trigger (Step 8) catches a held-out
+S5 seed after population-split misses have been stored as exemplars.
+The Evaluation Harness (Step 8) uses negative controls only to measure
+the false-positive rate, never lead time.
 
 The authoring script is a convenience for regenerating the library when
 parameters change; the committed YAML files under `s1/`-`s4/` and

@@ -1,21 +1,30 @@
-"""The authored scenario library (S1-S4, 5 seeds each, plus matched
+"""The authored scenario library (S1-S5, 5 seeds each, plus matched
 negative controls): Step 2's Definition of Done, checked across every
-file, not just one example.
+file, not just one example. S5 (Step 8) extended both the positive count
+and, to keep the false-positive measurement fair per §12.4, the matched
+negative-control count from 20 to 25.
 """
 
 from pathlib import Path
 
 import pytest
 
-from app.simulation.scenario_engine import load_scenario_config, run_scenario
+from app.detection.trigger import find_first_trigger
+from app.simulation.plant_layout import load_plant_layout
+from app.simulation.scenario_engine import (
+    DEFAULT_START_TIME,
+    load_scenario_config,
+    run_scenario,
+)
 
 SCENARIOS_DIR = Path(__file__).resolve().parents[2] / "data" / "scenarios"
 
-POSITIVE_DIRS = ["s1", "s2", "s3", "s4"]
+POSITIVE_DIRS = ["s1", "s2", "s3", "s4", "s5"]
 POSITIVE_PATHS = sorted(
     p for d in POSITIVE_DIRS for p in (SCENARIOS_DIR / d).glob("*.yaml")
 )
 NEGATIVE_PATHS = sorted((SCENARIOS_DIR / "negative").glob("*.yaml"))
+_ZONES_BY_ID = {z.zone_id: z for z in load_plant_layout().zones}
 
 
 def test_five_seed_variants_per_positive_scenario_type():
@@ -25,7 +34,7 @@ def test_five_seed_variants_per_positive_scenario_type():
 
 
 def test_negative_controls_match_positive_volume():
-    assert len(NEGATIVE_PATHS) == len(POSITIVE_PATHS) == 20
+    assert len(NEGATIVE_PATHS) == len(POSITIVE_PATHS) == 25
 
 
 @pytest.mark.parametrize("path", POSITIVE_PATHS + NEGATIVE_PATHS, ids=lambda p: p.stem)
@@ -101,3 +110,30 @@ def test_s2_gas_signal_has_plateau_then_secondary_rise():
     mid_plateau = out.gas_readings[int(55 * dt_per_min)].concentration
     final = out.gas_readings[-1].concentration
     assert final > mid_plateau
+
+
+@pytest.mark.parametrize("path", (SCENARIOS_DIR / "s5").glob("*.yaml"), ids=lambda p: p.stem)
+def test_s5_never_trips_the_rule_threshold_trigger(path):
+    """S5's entire purpose (§12.3) is being unsolvable by the Step 3
+    rule/threshold path by construction — checked against the real
+    trigger function (rule/threshold OR permit conflict), not just the
+    z-score in isolation, since a high-hazard zone's background permits
+    can independently trip a conflict on ordinary noise alone (the real
+    gap found and fixed while authoring this scenario, see
+    author_scenario_configs.py's author_s5/author_negative_controls
+    docstrings)."""
+    config = load_scenario_config(path)
+    out = run_scenario(config)
+    concentrations = [r.concentration for r in out.gas_readings]
+    zone = _ZONES_BY_ID[config.zone]
+    trigger = find_first_trigger(zone, concentrations, out.permits, DEFAULT_START_TIME)
+    assert trigger is None, f"{path.stem} unexpectedly tripped the rule/threshold trigger"
+
+
+def test_s5_gas_signal_drifts_upward_but_stays_sub_threshold():
+    path = next((SCENARIOS_DIR / "s5").glob("*.yaml"))
+    out = run_scenario(load_scenario_config(path))
+    concentrations = [r.concentration for r in out.gas_readings]
+    early_avg = sum(concentrations[:20]) / 20
+    late_avg = sum(concentrations[-20:]) / 20
+    assert late_avg > early_avg

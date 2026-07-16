@@ -1,0 +1,21 @@
+scenario_id: N22
+name: "Negative control 22 \u2014 normal operating day, zone Z6"
+seed: 90021
+memory_split: population
+duration_minutes: 90
+zone: Z6
+signals:
+  gas:
+    model: ou_gas_process
+    gas_type: LEL
+    unit: pct_LEL
+    C_baseline: 1.5
+    k: 0.08
+    sigma: 0.1
+    source_shape: ramp
+    a: 0.0
+    t0_minute: 0.0
+    t_rise_minutes: 1.0
+ground_truth:
+  compound_risk_window_start_minute: 90.0
+  incident_threshold_minute: 90.0
