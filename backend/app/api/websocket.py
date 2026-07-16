@@ -139,9 +139,9 @@ async def _run_playback(
     for i, frame in enumerate(playback.frames):
         try:
             msg = incoming.get_nowait()
-            await incoming.put(msg)
             if msg.get("type") in ("start", "__disconnect__"):
                 return msg
+            await incoming.put(msg)
         except asyncio.QueueEmpty:
             pass
 
