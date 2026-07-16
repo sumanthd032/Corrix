@@ -75,6 +75,7 @@ const SCENARIO_MOCKS: Record<string, ScenarioMock> = {
         'No single factor alone crosses a critical threshold. The combination matches the compound-risk pattern verified in the June 2025 Visakhapatnam Steel Plant SMS-2 investigation.',
       recommendedAction:
         'Suspend permit P-2291 pending gas verification; notify Zone 1 supervisor before shift handoff.',
+      evacuationRoute: ['Z1', 'Z3', 'Z4'],
     },
     alerts: [
       {
@@ -127,6 +128,7 @@ const SCENARIO_MOCKS: Record<string, ScenarioMock> = {
         'Rising confined-space gas, an active entry permit, an imminent changeover, and confirmed worker presence all coincide in Zone 7 — a compound risk, not a single elevated reading.',
       recommendedAction:
         'Withdraw personnel from Zone 7 pending gas re-verification; do not begin changeover handoff until cleared.',
+      evacuationRoute: ['Z7', 'Z8'],
     },
     alerts: [
       {
@@ -171,6 +173,7 @@ const SCENARIO_MOCKS: Record<string, ScenarioMock> = {
         'A slow, monotonic gas rise alone looks routine; combined with an active maintenance permit and continuous worker presence in the same zone, it matches the brief-named maintenance/gas co-occurrence pattern.',
       recommendedAction:
         'Suspend the maintenance permit in Zone 2 pending a fresh gas reading; do not extend the work window into changeover.',
+      evacuationRoute: ['Z2', 'Z3', 'Z4'],
     },
     alerts: [
       {
@@ -214,6 +217,7 @@ const SCENARIO_MOCKS: Record<string, ScenarioMock> = {
         'An active hot-work permit combined with a discrete gas release in the same zone at the same time is exactly the compound pattern the brief names — the release is already decaying, but the permit context is what makes it urgent.',
       recommendedAction:
         'Halt hot work under permit P-9102 immediately; re-verify Zone 2 atmosphere before resuming.',
+      evacuationRoute: ['Z2', 'Z3', 'Z4'],
     },
     alerts: [
       {

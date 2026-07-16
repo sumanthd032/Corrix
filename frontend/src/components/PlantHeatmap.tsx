@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import DeckGL from '@deck.gl/react'
 import { OrthographicView } from '@deck.gl/core'
-import { PolygonLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers'
+import { PathLayer, PolygonLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers'
 import { Box, Users } from 'lucide-react'
 import { PLANT_ZONES, ZONE_BOUNDS } from '../data/plantLayout'
 import { useCorrixStore } from '../store/useCorrixStore'
@@ -41,6 +41,7 @@ const ISOMETRIC_TRANSFORM = 'rotateX(55deg) rotateZ(-45deg) scale(0.9)'
 export function PlantHeatmap() {
   const zoneRisk = useCorrixStore((s) => s.zoneRisk)
   const workers = useCorrixStore((s) => s.workers)
+  const evacuationRoute = useCorrixStore((s) => s.verdict?.evacuationRoute ?? null)
   const [isometric, setIsometric] = useState(false)
 
   const zoneLayer = useMemo(
@@ -137,6 +138,26 @@ export function PlantHeatmap() {
     })
   }, [workers])
 
+  const evacuationRouteLayer = useMemo(() => {
+    if (!evacuationRoute || evacuationRoute.length < 2) return null
+    const zoneById = new Map(PLANT_ZONES.map((z) => [z.id, z]))
+    const path = evacuationRoute
+      .map((zoneId) => zoneById.get(zoneId)?.centroid)
+      .filter((c): c is [number, number] => c !== undefined)
+    if (path.length < 2) return null
+
+    return new PathLayer({
+      id: 'evacuation-route',
+      data: [{ path }],
+      getPath: (d: { path: [number, number][] }) => d.path,
+      getColor: [255, 196, 0, 235],
+      getWidth: 4,
+      widthUnits: 'pixels',
+      capRounded: true,
+      jointRounded: true,
+    })
+  }, [evacuationRoute])
+
   return (
     <section className="glass-panel relative flex-1 overflow-hidden">
       <div className="absolute left-4 top-4 z-10 flex items-center gap-3">
@@ -147,6 +168,19 @@ export function PlantHeatmap() {
           <Users size={12} aria-hidden="true" />
           {workers.length} tracked
         </span>
+        {evacuationRouteLayer && (
+          <span
+            className="flex items-center gap-1.5 font-mono-data text-[11px]"
+            style={{ color: 'rgb(255, 196, 0)' }}
+          >
+            <span
+              className="h-1.5 w-4 rounded-full"
+              style={{ backgroundColor: 'rgb(255, 196, 0)' }}
+              aria-hidden="true"
+            />
+            Evacuation route: {evacuationRoute!.join(' → ')}
+          </span>
+        )}
       </div>
 
       <button
@@ -170,7 +204,9 @@ export function PlantHeatmap() {
           views={new OrthographicView({ id: 'plant' })}
           initialViewState={INITIAL_VIEW_STATE}
           controller={true}
-          layers={[zoneLayer, zoneLabelLayer, zoneRiskGlyphLayer, workerLayer]}
+          layers={[zoneLayer, zoneLabelLayer, zoneRiskGlyphLayer, evacuationRouteLayer, workerLayer].filter(
+            Boolean,
+          )}
           style={{ position: 'relative', width: '100%', height: '100%' }}
         />
       </div>

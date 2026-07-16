@@ -33,7 +33,9 @@ from app.api.live_evidence import (
 )
 from app.api.live_scenario import ScenarioPlayback, precompute_playback
 from app.council.graph import apply_safety_officer_override, build_council_graph
+from app.detection.evacuation_routing import find_evacuation_route
 from app.schemas import CouncilVerdict
+from app.simulation.plant_layout import load_plant_layout
 from app.simulation.scenario_engine import DEFAULT_START_TIME
 
 PLAYBACK_FRAME_SECONDS = 0.35
@@ -64,6 +66,7 @@ def _verdict_to_camel(v: CouncilVerdict) -> dict:
         },
         "explanation": v.explanation,
         "recommendedAction": v.recommended_action,
+        "evacuationRoute": v.evacuation_route,
     }
 
 
@@ -126,6 +129,13 @@ async def _convene_council(
 
     final_state = await asyncio.to_thread(graph.invoke, None, graph_config)
     verdict: CouncilVerdict = final_state["verdict"]
+
+    if verdict.risk_level in ("HIGH", "CRITICAL"):
+        layout = load_plant_layout()
+        route = find_evacuation_route(layout, frame.zone_risk, verdict.zone_id)
+        if route is not None:
+            verdict.evacuation_route = route.path
+
     await websocket.send_json({"type": "verdict", "verdict": _verdict_to_camel(verdict)})
 
 

@@ -49,3 +49,4 @@ class CouncilVerdict(BaseModel):
     time_to_critical: TimeToCriticalForecast
     explanation: str
     recommended_action: str
+    evacuation_route: list[str] | None = None

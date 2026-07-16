@@ -32,6 +32,10 @@ export interface CouncilVerdict {
   timeToCritical: TimeToCriticalForecast
   explanation: string
   recommendedAction: string
+  /** Ordered zone IDs from the affected zone to the nearest assembly
+   * point, risk-weighted so it avoids other elevated-risk zones (Step 8).
+   * Only present on HIGH/CRITICAL verdicts where a route exists. */
+  evacuationRoute: string[] | null
 }
 
 export interface WorkerMarker {
