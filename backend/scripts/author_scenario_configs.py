@@ -234,6 +234,21 @@ def author_s5() -> None:
     parameters" discipline Step 2's scenario tuning and Step 3's z-score
     calibration both already used.
 
+    A second, same-shaped gap surfaced once the joint-evidence novelty
+    detector (`novelty_detector.py`) existed to check S5 against: seed
+    90507 passed the rule/threshold check but its own z-score noise still
+    spiked high enough (~16) to clear the novelty detector's calibrated
+    threshold on its own — a real, honest false-positive rate that's fine
+    for a negative control (that's what the Evaluation Harness measures),
+    but not acceptable for S5, whose specific job is to be a genuine miss
+    on *both* independent trigger paths for every seed actually shipped.
+    90507 was swapped for 90509 — which turned out, on a closer check
+    against the exact config actually shipped (worker_location and
+    cv_event blocks included, not a stripped-down test config), to still
+    clear the novelty threshold; 90509 was swapped again for 90510, this
+    time verified against the real, complete config shape rather than a
+    simplified stand-in.
+
     `incident_threshold_minute` is a sentinel equal to `duration_minutes`
     (documented in data/scenarios/README.md alongside the negative
     controls' identical convention) — a near-miss has no real point of
@@ -242,7 +257,7 @@ def author_s5() -> None:
     should have been able to recognize the pattern, for lead-time scoring
     once the memory loop's retrieval trigger catches it on a held-out seed.
     """
-    verified_safe_seeds = [90500, 90501, 90502, 90504, 90507]
+    verified_safe_seeds = [90500, 90501, 90502, 90504, 90510]
     for seed, split in zip(verified_safe_seeds, SEED_SPLIT):
         config = ScenarioConfig(
             scenario_id="S5",
