@@ -1,9 +1,10 @@
 """The Evaluation Harness, per CORRIX_BUILD_PLAN.md Step 8: runs the
 Step 3 baseline and the full pipeline (rule/threshold trigger OR the
-novelty-detector trigger, then a real Council convening) across the
-complete scenario library, computing precision/recall/false-negative
-rate and lead time against the code-level ground truth
-(CORRIX_DATA_METHODOLOGY.md §14.1).
+novelty-detector trigger OR — when a memory driver is supplied — the
+self-improving memory loop's retrieval-similarity trigger, then a real
+Council convening) across the complete scenario library, computing
+precision/recall/false-negative rate and lead time against the
+code-level ground truth (CORRIX_DATA_METHODOLOGY.md §14.1).
 
 The Council is only actually invoked (a real LLM call) when some trigger
 path fires at all — for the ~25% of the library that never triggers by
@@ -18,6 +19,8 @@ from dataclasses import asdict, dataclass
 from datetime import timedelta
 from pathlib import Path
 
+from neo4j import Driver
+
 from app.api.live_evidence import (
     format_permit_text,
     format_process_safety_text,
@@ -28,6 +31,7 @@ from app.council.graph import run_council
 from app.detection.anomaly_scorer import AnomalyPoint, score_series
 from app.detection.novelty_detector import NoveltyModel, find_first_novelty_trigger
 from app.detection.permit_conflict import active_permits_at
+from app.detection.retrieval_trigger import find_first_retrieval_trigger
 from app.detection.trigger import find_first_trigger
 from app.schemas import CouncilVerdict, ScenarioConfig, Zone
 from app.simulation.plant_layout import load_plant_layout
@@ -98,7 +102,12 @@ def _signal_values(out: ScenarioOutput) -> list[float]:
 
 
 def _convene_at_tick(
-    config: ScenarioConfig, out: ScenarioOutput, point: AnomalyPoint, tick_index: int
+    config: ScenarioConfig,
+    out: ScenarioOutput,
+    point: AnomalyPoint,
+    tick_index: int,
+    trigger_reason: str = "rule_threshold",
+    memory_context: str | None = None,
 ) -> CouncilVerdict:
     at_time = DEFAULT_START_TIME + timedelta(seconds=TICK_SECONDS * tick_index)
     worker_positions = _worker_positions_at(out.worker_pings, at_time)
@@ -110,16 +119,25 @@ def _convene_at_tick(
     }
     return run_council(
         zone_id=config.zone,
-        trigger_reason="rule_threshold",
+        trigger_reason=trigger_reason,
         raw_evidence=raw_evidence,
         scenario_id=config.scenario_id,
         thread_id=f"harness-{config.scenario_id}-{config.seed}-{tick_index}",
+        memory_context=memory_context,
     )
 
 
 def evaluate_scenario(
-    path: Path, novelty_model: NoveltyModel, zones_by_id: dict[str, Zone]
+    path: Path,
+    novelty_model: NoveltyModel,
+    zones_by_id: dict[str, Zone],
+    memory_driver: Driver | None = None,
 ) -> ScenarioEvalResult:
+    """`memory_driver`: when supplied, also checks the self-improving
+    memory loop's retrieval-similarity trigger (§6.3) as a third
+    candidate path, using whichever exemplars are currently stored —
+    None (the default) reproduces the exact pre-memory-loop behavior,
+    which is what the held-out "before" harness run needs."""
     config = load_scenario_config(path)
     out = run_scenario(config)
     zone = zones_by_id[config.zone]
@@ -136,11 +154,20 @@ def evaluate_scenario(
 
     novelty_index = find_first_novelty_trigger(novelty_model, zone, out)
     rule_index = baseline_trigger.index if baseline_trigger else None
+    retrieval_index = None
+    retrieval_result = None
+    if memory_driver is not None:
+        retrieval_result = find_first_retrieval_trigger(memory_driver, novelty_model, config, out, zone)
+        retrieval_index = retrieval_result.tick_index if retrieval_result else None
 
-    if rule_index is not None and (novelty_index is None or rule_index <= novelty_index):
-        pipeline_index, pipeline_reason = rule_index, "rule_threshold"
-    elif novelty_index is not None:
-        pipeline_index, pipeline_reason = novelty_index, "novelty"
+    candidates = [
+        (rule_index, "rule_threshold"),
+        (novelty_index, "novelty"),
+        (retrieval_index, "memory_retrieval"),
+    ]
+    real_candidates = [(idx, reason) for idx, reason in candidates if idx is not None]
+    if real_candidates:
+        pipeline_index, pipeline_reason = min(real_candidates, key=lambda c: c[0])
     else:
         pipeline_index, pipeline_reason = None, None
 
@@ -151,13 +178,24 @@ def evaluate_scenario(
     verdict_confidence = None
     skipped_reason = None
 
+    memory_context = None
+    if pipeline_reason == "memory_retrieval" and retrieval_result is not None:
+        exemplar = retrieval_result.matched_exemplar
+        memory_context = (
+            f"Historical case: {exemplar.evidence_text} The correct verdict was "
+            f"{exemplar.correct_risk_level}. {exemplar.why}"
+        )
+
     if pipeline_index is not None:
         points = score_series(values)
         verdict = None
         last_error: Exception | None = None
         for attempt in range(1, COUNCIL_CALL_MAX_ATTEMPTS + 1):
             try:
-                verdict = _convene_at_tick(config, out, points[pipeline_index], pipeline_index)
+                verdict = _convene_at_tick(
+                    config, out, points[pipeline_index], pipeline_index,
+                    trigger_reason=pipeline_reason, memory_context=memory_context,
+                )
                 break
             except Exception as exc:  # both LLM providers can raise different real exception types
                 last_error = exc
@@ -206,13 +244,14 @@ def run_harness(
     novelty_model: NoveltyModel,
     scenarios_dir: Path = SCENARIOS_DIR,
     memory_split: str | None = None,
+    memory_driver: Driver | None = None,
 ) -> list[ScenarioEvalResult]:
     """Runs every config under `scenarios_dir` (optionally filtered to one
     `memory_split`, for the held-out before/after memory-loop comparison)
     through both the baseline and full pipeline."""
     zones_by_id = {z.zone_id: z for z in load_plant_layout().zones}
     return [
-        evaluate_scenario(path, novelty_model, zones_by_id)
+        evaluate_scenario(path, novelty_model, zones_by_id, memory_driver=memory_driver)
         for path in _all_scenario_paths(scenarios_dir, memory_split)
     ]
 

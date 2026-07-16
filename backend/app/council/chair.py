@@ -77,6 +77,7 @@ def _build_user_prompt(
     trigger_reason: TriggerReason,
     evidence: CouncilEvidence,
     override_note: str | None = None,
+    memory_context: str | None = None,
 ) -> str:
     override_block = ""
     if override_note:
@@ -86,6 +87,16 @@ must take it into account and reflect it in your explanation and
 recommended_action:
 "{override_note}"
 """
+    memory_block = ""
+    if memory_context:
+        memory_block = f"""
+This case was flagged by the self-improving memory loop, not the rule
+threshold or novelty score: the current evidence closely resembles a
+documented past miss, described below. Weigh this precedent seriously
+even if the current readings look individually unremarkable — that
+past case was missed for exactly that reason:
+"{memory_context}"
+"""
     return f"""Zone: {zone_id}
 Trigger reason: {trigger_reason}
 
@@ -94,7 +105,7 @@ Independent agent reports:
 - Permit Control Officer: {evidence.permit_control_officer}
 - Shift Operations: {evidence.shift_operations}
 - Site Safety Observer: {evidence.site_safety_observer}
-{override_block}
+{override_block}{memory_block}
 Respond with ONLY this JSON shape:
 {{
   "risk_level": "SAFE" | "CAUTION" | "HIGH" | "CRITICAL",
@@ -119,9 +130,12 @@ def synthesize(
     scenario_id: str | None = None,
     timestamp: datetime | None = None,
     override_note: str | None = None,
+    memory_context: str | None = None,
 ) -> CouncilVerdict:
     timestamp = timestamp or datetime.now(timezone.utc)
-    user_prompt = _build_user_prompt(zone_id, trigger_reason, evidence, override_note)
+    user_prompt = _build_user_prompt(
+        zone_id, trigger_reason, evidence, override_note, memory_context
+    )
     response = chat_completion(CHAIR_SYSTEM_PROMPT, user_prompt, max_tokens=500)
     data = _extract_json(response.text)
 

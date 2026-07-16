@@ -28,11 +28,19 @@ interface CalibrationBin {
   empiricalAccuracy: number | null
 }
 
+interface MemoryLoopReport {
+  before: PipelineMetrics
+  after: PipelineMetrics
+  nExemplarsStored: number
+  falseNegativeRateChange: number | null
+}
+
 interface EvaluationReport {
   generatedAt: string
   baseline: PipelineMetrics
   pipeline: PipelineMetrics
   calibrationBins: CalibrationBin[]
+  memoryLoop: MemoryLoopReport | null
 }
 
 type LoadState =
@@ -70,6 +78,41 @@ function MetricsCard({ title, metrics }: { title: string; metrics: PipelineMetri
       <p className="font-mono-data text-[10px] text-[var(--color-text-secondary)]">
         {metrics.truePositives} TP · {metrics.falseNegatives} FN · {metrics.falsePositives} FP ·{' '}
         {metrics.trueNegatives} TN (n={metrics.nPositive + metrics.nNegative})
+      </p>
+    </div>
+  )
+}
+
+function MemoryLoopSection({ memoryLoop }: { memoryLoop: MemoryLoopReport }) {
+  const { before, after, nExemplarsStored, falseNegativeRateChange } = memoryLoop
+  const improved = falseNegativeRateChange !== null && falseNegativeRateChange < 0
+  return (
+    <div className="flex flex-col gap-3 rounded-[var(--radius-control)] bg-white/[0.03] p-4">
+      <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">
+        Self-improving memory loop — held-out only
+      </h3>
+      <p className="text-xs text-[var(--color-text-secondary)]">
+        {nExemplarsStored} exemplar(s) stored from population-split misses. False-negative rate
+        on scenarios the memory loop never saw:{' '}
+        <span className="font-mono-data text-[var(--color-text-primary)]">
+          {pct(before.falseNegativeRate)} → {pct(after.falseNegativeRate)}
+        </span>{' '}
+        <span
+          style={{
+            color: improved ? '#2e7d32' : 'var(--color-risk-caution)',
+          }}
+        >
+          ({improved ? 'improved' : 'no improvement'})
+        </span>
+      </p>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <MetricsCard title="Before (no exemplars)" metrics={before} />
+        <MetricsCard title="After (retrieval trigger active)" metrics={after} />
+      </div>
+      <p className="text-[10px] text-[var(--color-text-secondary)]">
+        The retrieval trigger carries a real, disclosed false-positive risk on some negative
+        controls whose own noise happens to resemble a stored exemplar — visible above as a
+        higher false-positive rate after population, not hidden.
       </p>
     </div>
   )
@@ -213,6 +256,7 @@ export function EvaluationReportModal({ onClose }: { onClose: () => void }) {
               <MetricsCard title="Full pipeline (+ novelty, real Council)" metrics={state.report.pipeline} />
             </div>
             <ReliabilityDiagram bins={state.report.calibrationBins} />
+            {state.report.memoryLoop && <MemoryLoopSection memoryLoop={state.report.memoryLoop} />}
           </>
         )}
       </div>

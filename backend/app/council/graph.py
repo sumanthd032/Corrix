@@ -39,6 +39,7 @@ class CouncilState(TypedDict, total=False):
     shift_operations: str
     site_safety_observer: str
     override_note: Optional[str]
+    memory_context: Optional[str]
     verdict: CouncilVerdict
 
 
@@ -65,6 +66,7 @@ def _chair_node(state: CouncilState) -> dict:
         evidence=evidence,
         scenario_id=state.get("scenario_id"),
         override_note=state.get("override_note"),
+        memory_context=state.get("memory_context"),
     )
     return {"verdict": verdict}
 
@@ -100,6 +102,7 @@ def run_council(
     raw_evidence: dict[str, str],
     scenario_id: str | None = None,
     thread_id: str = "default",
+    memory_context: str | None = None,
 ) -> CouncilVerdict:
     """Run the Council to completion (no override) — convenience wrapper
     for the common case."""
@@ -111,6 +114,7 @@ def run_council(
             "trigger_reason": trigger_reason,
             "raw_evidence": raw_evidence,
             "scenario_id": scenario_id,
+            "memory_context": memory_context,
         },
         config,
     )

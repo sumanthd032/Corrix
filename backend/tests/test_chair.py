@@ -5,7 +5,7 @@ S2-S4 produce sensible, differently-reasoned verdicts too, not just S1."""
 
 import pytest
 
-from app.council.chair import synthesize
+from app.council.chair import _build_user_prompt, synthesize
 from app.council.sample_payloads import ALL_SAMPLE_PAYLOADS
 from app.schemas import CouncilEvidence
 from tests.conftest import skip_on_rate_limit
@@ -60,3 +60,29 @@ def test_verdicts_are_differently_reasoned_not_templated():
             )
         explanations.add(verdict.explanation)
     assert len(explanations) == 4
+
+
+def test_prompt_includes_memory_context_when_present():
+    """The self-improving memory loop's whole mechanism depends on the
+    Chair actually seeing the retrieved past miss, not just the trigger
+    deciding to convene — a fast, no-LLM-call check that the prompt
+    construction wires it in."""
+    payload = ALL_SAMPLE_PAYLOADS["S1"]
+    evidence = _evidence_from_payload(payload)
+    prompt = _build_user_prompt(
+        zone_id=payload["zone_id"],
+        trigger_reason="memory_retrieval",
+        evidence=evidence,
+        memory_context="Historical case: some evidence. The correct verdict was HIGH.",
+    )
+    assert "Historical case: some evidence" in prompt
+    assert "self-improving memory loop" in prompt
+
+
+def test_prompt_omits_memory_block_when_absent():
+    payload = ALL_SAMPLE_PAYLOADS["S1"]
+    evidence = _evidence_from_payload(payload)
+    prompt = _build_user_prompt(
+        zone_id=payload["zone_id"], trigger_reason="rule_threshold", evidence=evidence
+    )
+    assert "self-improving memory loop" not in prompt

@@ -4,7 +4,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 RiskLevel = Literal["SAFE", "CAUTION", "HIGH", "CRITICAL"]
-TriggerReason = Literal["rule_threshold", "novelty"]
+TriggerReason = Literal["rule_threshold", "novelty", "memory_retrieval"]
 
 
 class TimeToCriticalForecast(BaseModel):

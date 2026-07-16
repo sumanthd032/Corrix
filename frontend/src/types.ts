@@ -3,7 +3,7 @@
  * backend's own Pydantic schemas. */
 
 export type RiskLevel = 'SAFE' | 'CAUTION' | 'HIGH' | 'CRITICAL'
-export type TriggerReason = 'rule_threshold' | 'novelty'
+export type TriggerReason = 'rule_threshold' | 'novelty' | 'memory_retrieval'
 
 export interface TimeToCriticalForecast {
   medianMinutes: number

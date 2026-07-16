@@ -19,6 +19,7 @@ from app.evaluation.harness import ScenarioEvalResult
 REPO_ROOT = Path(__file__).resolve().parents[3]
 RESULTS_PATH = REPO_ROOT / "data" / "evaluation" / "full_library_results.json"
 METRICS_PATH = REPO_ROOT / "data" / "evaluation" / "full_library_metrics.json"
+MEMORY_LOOP_METRICS_PATH = REPO_ROOT / "data" / "evaluation" / "memory_loop_metrics.json"
 
 router = APIRouter()
 
@@ -69,10 +70,21 @@ def get_evaluation_report() -> dict:
         RESULTS_PATH.stat().st_mtime, tz=timezone.utc
     ).isoformat()
 
+    memory_loop = None
+    if MEMORY_LOOP_METRICS_PATH.exists():
+        raw_memory_loop = json.loads(MEMORY_LOOP_METRICS_PATH.read_text(encoding="utf-8"))
+        memory_loop = {
+            "before": _metrics_to_camel(raw_memory_loop["before"]),
+            "after": _metrics_to_camel(raw_memory_loop["after"]),
+            "nExemplarsStored": raw_memory_loop["n_exemplars_stored"],
+            "falseNegativeRateChange": raw_memory_loop["false_negative_rate_change"],
+        }
+
     return {
         "generatedAt": generated_at,
         "baseline": _metrics_to_camel(metrics["baseline"]),
         "pipeline": _metrics_to_camel(metrics["pipeline"]),
         "calibrationBins": [_bin_to_camel(b) for b in calibration_bins],
         "scenarioResults": [asdict(r) for r in results],
+        "memoryLoop": memory_loop,
     }
