@@ -1,0 +1,10 @@
+scenario_id: N8
+name: "Negative control 8 \u2014 normal operating day, zone Z8"
+seed: 90007
+memory_split: population
+duration_minutes: 90
+zone: Z8
+signals: {}
+ground_truth:
+  compound_risk_window_start_minute: 90.0
+  incident_threshold_minute: 90.0

@@ -26,7 +26,7 @@ def lapse_probability(
     t_minute: float,
     changeover_at_minute: float,
     p_base: float = 0.0002,
-    p_boost: float = 0.02,
+    p_boost: float = 0.15,
     window_minutes: float = 20.0,
 ) -> float:
     """Per-tick lapse probability, elevated near shift-changeover proximity

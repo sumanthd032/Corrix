@@ -1,0 +1,36 @@
+scenario_id: S2
+name: Confined space entry during abnormal process conditions
+seed: 20260722
+memory_split: population
+duration_minutes: 110
+zone: Z7
+signals:
+  gas:
+    model: ou_gas_process
+    gas_type: LEL
+    unit: pct_LEL
+    C_baseline: 1.0
+    k: 0.1
+    sigma: 0.05
+    source_shape: ramp_with_plateau
+    a: 0.6000000000000001
+    t0_minute: 10.0
+    t_rise_minutes: 25.0
+    C_plateau: 7.0
+    secondary_trigger_minute: 70.0
+    secondary_rise_minutes: 15.0
+    secondary_magnitude: 0.7000000000000001
+  permit:
+    type: confined_space_entry
+    inject_at_minute: 15.0
+  shift:
+    changeover_at_minute: 75.0
+  worker_location:
+    badge_id: W-0210
+    zone_entry_at_minute: 68.0
+  cv_event:
+    inject_at_minute: 68.0
+    detection: person
+ground_truth:
+  compound_risk_window_start_minute: 65.0
+  incident_threshold_minute: 92.0

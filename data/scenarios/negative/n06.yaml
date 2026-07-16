@@ -1,0 +1,10 @@
+scenario_id: N6
+name: "Negative control 6 \u2014 normal operating day, zone Z6"
+seed: 90005
+memory_split: population
+duration_minutes: 90
+zone: Z6
+signals: {}
+ground_truth:
+  compound_risk_window_start_minute: 90.0
+  incident_threshold_minute: 90.0

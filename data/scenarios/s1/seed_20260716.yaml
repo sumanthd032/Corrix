@@ -1,0 +1,27 @@
+scenario_id: S1
+name: "Anchor case \u2014 ladle moisture/entrapped-gas compound risk"
+seed: 20260716
+memory_split: population
+duration_minutes: 90
+zone: Z1
+signals:
+  compliance:
+    model: procedural_compliance
+    Q_baseline: 0.92
+    degradation_step: 0.35
+    lapse_coupling: shift_changeover_proximity
+  permit:
+    type: lifting_operation
+    inject_at_minute: 20.0
+    linked_checklist_id: CHK-0410
+  shift:
+    changeover_at_minute: 68.0
+  worker_location:
+    badge_id: W-0142
+    zone_entry_at_minute: 55.0
+  cv_event:
+    inject_at_minute: 55.0
+    detection: person
+ground_truth:
+  compound_risk_window_start_minute: 60.0
+  incident_threshold_minute: 82.0

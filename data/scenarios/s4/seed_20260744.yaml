@@ -1,0 +1,32 @@
+scenario_id: S4
+name: Hot-work permit near elevated, rising gas readings
+seed: 20260744
+memory_split: held_out
+duration_minutes: 70
+zone: Z2
+signals:
+  gas:
+    model: ou_gas_process
+    gas_type: LEL
+    unit: pct_LEL
+    C_baseline: 2.0
+    k: 0.1
+    sigma: 0.08
+    source_shape: step_decay
+    a: 2.8
+    t0_minute: 30.0
+    tau_minutes: 8.0
+  permit:
+    type: hot_work
+    inject_at_minute: 20.0
+  shift:
+    changeover_at_minute: 50.0
+  worker_location:
+    badge_id: W-0417
+    zone_entry_at_minute: 25.0
+  cv_event:
+    inject_at_minute: 25.0
+    detection: person
+ground_truth:
+  compound_risk_window_start_minute: 30.0
+  incident_threshold_minute: 38.0

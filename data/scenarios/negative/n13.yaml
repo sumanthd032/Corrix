@@ -1,0 +1,10 @@
+scenario_id: N13
+name: "Negative control 13 \u2014 normal operating day, zone Z5"
+seed: 90012
+memory_split: population
+duration_minutes: 90
+zone: Z5
+signals: {}
+ground_truth:
+  compound_risk_window_start_minute: 90.0
+  incident_threshold_minute: 90.0

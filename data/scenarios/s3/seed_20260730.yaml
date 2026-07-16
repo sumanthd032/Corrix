@@ -1,0 +1,32 @@
+scenario_id: S3
+name: Maintenance activity co-occurring with gas accumulation
+seed: 20260730
+memory_split: population
+duration_minutes: 100
+zone: Z2
+signals:
+  gas:
+    model: ou_gas_process
+    gas_type: LEL
+    unit: pct_LEL
+    C_baseline: 2.0
+    k: 0.08
+    sigma: 0.1
+    source_shape: ramp
+    a: 0.88
+    t0_minute: 15.0
+    t_rise_minutes: 70.0
+  permit:
+    type: cold_work
+    inject_at_minute: 10.0
+  shift:
+    changeover_at_minute: 80.0
+  worker_location:
+    badge_id: W-0305
+    zone_entry_at_minute: 12.0
+  cv_event:
+    inject_at_minute: 12.0
+    detection: person
+ground_truth:
+  compound_risk_window_start_minute: 40.0
+  incident_threshold_minute: 82.0
