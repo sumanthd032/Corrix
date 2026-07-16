@@ -67,8 +67,19 @@ def _extract_json(text: str) -> dict:
 
 
 def _build_user_prompt(
-    zone_id: str, trigger_reason: TriggerReason, evidence: CouncilEvidence
+    zone_id: str,
+    trigger_reason: TriggerReason,
+    evidence: CouncilEvidence,
+    override_note: str | None = None,
 ) -> str:
+    override_block = ""
+    if override_note:
+        override_block = f"""
+A human Safety Officer has paused the Council and added this note — you
+must take it into account and reflect it in your explanation and
+recommended_action:
+"{override_note}"
+"""
     return f"""Zone: {zone_id}
 Trigger reason: {trigger_reason}
 
@@ -77,7 +88,7 @@ Independent agent reports:
 - Permit Control Officer: {evidence.permit_control_officer}
 - Shift Operations: {evidence.shift_operations}
 - Site Safety Observer: {evidence.site_safety_observer}
-
+{override_block}
 Respond with ONLY this JSON shape:
 {{
   "risk_level": "SAFE" | "CAUTION" | "HIGH" | "CRITICAL",
@@ -101,9 +112,10 @@ def synthesize(
     evidence: CouncilEvidence,
     scenario_id: str | None = None,
     timestamp: datetime | None = None,
+    override_note: str | None = None,
 ) -> CouncilVerdict:
     timestamp = timestamp or datetime.now(timezone.utc)
-    user_prompt = _build_user_prompt(zone_id, trigger_reason, evidence)
+    user_prompt = _build_user_prompt(zone_id, trigger_reason, evidence, override_note)
     response = chat_completion(CHAIR_SYSTEM_PROMPT, user_prompt, max_tokens=500)
     data = _extract_json(response.text)
 

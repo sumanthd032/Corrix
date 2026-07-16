@@ -26,6 +26,24 @@ def _tool_names(server: FastMCP) -> list[str]:
     return sorted(t.name for t in server._tool_manager.list_tools())
 
 
+# Appended to every persona's system prompt. Without this, agents tend to
+# paraphrase their report into vague reassurance ("no issues reported"),
+# dropping the exact IDs and figures another agent's report also
+# references — and it's exactly those shared identifiers (a permit's
+# linked_checklist_id matching the checklist a sensor reading is tied to,
+# a badge ID matching a permit's zone) that let the Chair, seeing all
+# four reports, connect a compound pattern no single agent could.
+PRESERVE_DETAIL_INSTRUCTION = (
+    " Always include every exact identifier (permit IDs, checklist IDs, "
+    "badge IDs), exact numeric value, and exact timing mentioned in the "
+    "raw data you're given — never paraphrase them away or replace them "
+    "with vague language like 'no issues' or 'within normal parameters'. "
+    "Another reviewer with a different, non-overlapping view of this "
+    "situation depends on those exact details to cross-reference against "
+    "their own."
+)
+
+
 @dataclass
 class EvidenceAgent:
     display_name: str
@@ -56,7 +74,8 @@ PROCESS_SAFETY_ENGINEER = EvidenceAgent(
         "flammable gas (LEL%), then toxic gas (CO/H2S), in that order, "
         "matching OSHA confined-space testing order. Respond in one concise, "
         "factual sentence, in the voice of a process safety engineer."
-    ),
+    )
+    + PRESERVE_DETAIL_INSTRUCTION,
     bound_servers=[sensor_stream.server],
 )
 
@@ -70,7 +89,8 @@ PERMIT_CONTROL_OFFICER = EvidenceAgent(
         "into sensor readings, shift changeover timing, or worker location — "
         "do not reference them. Respond in one concise, factual sentence, in "
         "the voice of a permit control officer."
-    ),
+    )
+    + PRESERVE_DETAIL_INSTRUCTION,
     bound_servers=[permit_shift.server],
 )
 
@@ -84,7 +104,8 @@ SHIFT_OPERATIONS = EvidenceAgent(
         "sensor readings, permit details, or worker location — do not "
         "reference them. Respond in one concise, factual sentence, in the "
         "voice of a shift operations lead."
-    ),
+    )
+    + PRESERVE_DETAIL_INSTRUCTION,
     bound_servers=[permit_shift.server],
 )
 
@@ -98,7 +119,8 @@ SITE_SAFETY_OBSERVER = EvidenceAgent(
         "no visibility into sensor readings, permit details, or shift "
         "schedules — do not reference them. Respond in one concise, factual "
         "sentence, in the voice of a site safety observer."
-    ),
+    )
+    + PRESERVE_DETAIL_INSTRUCTION,
     bound_servers=[cv_observation.server, worker_location.server],
 )
 

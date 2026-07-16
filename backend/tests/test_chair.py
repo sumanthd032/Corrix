@@ -8,6 +8,7 @@ import pytest
 from app.council.chair import synthesize
 from app.council.sample_payloads import ALL_SAMPLE_PAYLOADS
 from app.schemas import CouncilEvidence
+from tests.conftest import skip_on_rate_limit
 
 
 def _evidence_from_payload(payload: dict) -> CouncilEvidence:
@@ -23,12 +24,13 @@ def _evidence_from_payload(payload: dict) -> CouncilEvidence:
 def test_synthesize_produces_well_formed_compound_verdict(scenario_id):
     payload = ALL_SAMPLE_PAYLOADS[scenario_id]
     evidence = _evidence_from_payload(payload)
-    verdict = synthesize(
-        zone_id=payload["zone_id"],
-        trigger_reason="rule_threshold",
-        evidence=evidence,
-        scenario_id=scenario_id,
-    )
+    with skip_on_rate_limit():
+        verdict = synthesize(
+            zone_id=payload["zone_id"],
+            trigger_reason="rule_threshold",
+            evidence=evidence,
+            scenario_id=scenario_id,
+        )
     assert verdict.zone_id == payload["zone_id"]
     assert verdict.scenario_id == scenario_id
     assert verdict.risk_level in ("HIGH", "CRITICAL")
@@ -49,11 +51,12 @@ def test_verdicts_are_differently_reasoned_not_templated():
     explanations = set()
     for scenario_id, payload in ALL_SAMPLE_PAYLOADS.items():
         evidence = _evidence_from_payload(payload)
-        verdict = synthesize(
-            zone_id=payload["zone_id"],
-            trigger_reason="rule_threshold",
-            evidence=evidence,
-            scenario_id=scenario_id,
-        )
+        with skip_on_rate_limit():
+            verdict = synthesize(
+                zone_id=payload["zone_id"],
+                trigger_reason="rule_threshold",
+                evidence=evidence,
+                scenario_id=scenario_id,
+            )
         explanations.add(verdict.explanation)
     assert len(explanations) == 4
