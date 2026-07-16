@@ -10,3 +10,4 @@ frontend/dist/
 backend/datasets/
 backend/runs/
 backend/*.pt
+data/evaluation/
