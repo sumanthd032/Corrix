@@ -1,5 +1,7 @@
-import { Download, PauseCircle, Radio, ShieldAlert, Sparkles } from 'lucide-react'
+import { useState } from 'react'
+import { BarChart3, Download, PauseCircle, Radio, ShieldAlert, Sparkles } from 'lucide-react'
 import { useCorrixStore } from '../store/useCorrixStore'
+import { EvaluationReportModal } from './EvaluationReportModal'
 
 const SCENARIOS = [
   { id: 'S1', label: 'S1 — Anchor (Ladle Bay)' },
@@ -14,6 +16,7 @@ export function TopControlBar() {
   const overridePaused = useCorrixStore((s) => s.overridePaused)
   const pauseForOverride = useCorrixStore((s) => s.pauseForOverride)
   const councilStage = useCorrixStore((s) => s.councilStage)
+  const [reportOpen, setReportOpen] = useState(false)
 
   return (
     <header className="glass-panel flex items-center gap-4 px-5 py-3">
@@ -60,6 +63,15 @@ export function TopControlBar() {
       <div className="ml-auto flex items-center gap-2">
         <button
           type="button"
+          onClick={() => setReportOpen(true)}
+          className="flex items-center gap-1.5 rounded-[var(--radius-control)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+        >
+          <BarChart3 size={15} aria-hidden="true" />
+          Evaluation Report
+        </button>
+
+        <button
+          type="button"
           className="flex items-center gap-1.5 rounded-[var(--radius-control)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
         >
           <Download size={15} aria-hidden="true" />
@@ -85,6 +97,8 @@ export function TopControlBar() {
           Safety Officer Override
         </button>
       </div>
+
+      {reportOpen && <EvaluationReportModal onClose={() => setReportOpen(false)} />}
     </header>
   )
 }

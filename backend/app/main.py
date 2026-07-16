@@ -1,6 +1,7 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.evaluation import router as evaluation_router
 from app.api.websocket import scenario_websocket
 
 app = FastAPI(title="Corrix Backend")
@@ -11,6 +12,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(evaluation_router)
 
 
 @app.get("/health")

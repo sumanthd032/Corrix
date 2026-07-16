@@ -13,6 +13,7 @@ live system as much as here.
 """
 
 import json
+import time
 from dataclasses import asdict, dataclass
 from datetime import timedelta
 from pathlib import Path
@@ -40,6 +41,15 @@ from app.simulation.scenario_engine import (
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SCENARIOS_DIR = REPO_ROOT / "data" / "scenarios"
 TICK_SECONDS = 5.0
+
+# Twenty scenario instances mean up to ~100 sequential LLM calls (4 agents
+# + Chair each) — enough to burst past Groq's per-minute token budget even
+# on a fresh key, since the limit is account-wide, not per-key. A 429 here
+# is usually transient (the account's own error response reports the
+# budget refilling within single-digit seconds), so a short wait-and-retry
+# recovers cleanly far more often than it needs the skip path below.
+COUNCIL_CALL_MAX_ATTEMPTS = 3
+COUNCIL_CALL_RETRY_DELAY_SECONDS = 15.0
 
 
 @dataclass
@@ -143,10 +153,18 @@ def evaluate_scenario(
 
     if pipeline_index is not None:
         points = score_series(values)
-        try:
-            verdict = _convene_at_tick(config, out, points[pipeline_index], pipeline_index)
-        except Exception as exc:  # both LLM providers can raise different real exception types
-            skipped_reason = f"Council call failed: {exc}"
+        verdict = None
+        last_error: Exception | None = None
+        for attempt in range(1, COUNCIL_CALL_MAX_ATTEMPTS + 1):
+            try:
+                verdict = _convene_at_tick(config, out, points[pipeline_index], pipeline_index)
+                break
+            except Exception as exc:  # both LLM providers can raise different real exception types
+                last_error = exc
+                if attempt < COUNCIL_CALL_MAX_ATTEMPTS:
+                    time.sleep(COUNCIL_CALL_RETRY_DELAY_SECONDS)
+        if verdict is None:
+            skipped_reason = f"Council call failed after {COUNCIL_CALL_MAX_ATTEMPTS} attempts: {last_error}"
         else:
             verdict_risk_level = verdict.risk_level
             verdict_confidence = verdict.confidence
