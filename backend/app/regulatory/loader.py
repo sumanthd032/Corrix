@@ -9,6 +9,7 @@ from neo4j import Driver
 
 from app.regulatory.chunking import Chunk, chunk_factories_act, chunk_oisd_report
 from app.regulatory.corpus import IncidentRecord, load_near_miss_corpus
+from app.regulatory.dgms import get_dgms_chunks
 from app.regulatory.embeddings import embed_texts
 from app.regulatory.equipment import EQUIPMENT
 from app.regulatory.neo4j_schema import ensure_schema
@@ -147,7 +148,8 @@ def ingest_all(driver: Driver, sources_dir) -> dict:
 
     fa_chunks = chunk_factories_act(sources_dir / "factories_act_1948.pdf")
     oisd_chunks = chunk_oisd_report(sources_dir / "oisd_guideline.pdf")
-    _load_clauses(driver, fa_chunks + oisd_chunks)
+    dgms_chunks = get_dgms_chunks()
+    _load_clauses(driver, fa_chunks + oisd_chunks + dgms_chunks)
 
     records = load_near_miss_corpus()
     _load_incidents(driver, records)
@@ -157,6 +159,7 @@ def ingest_all(driver: Driver, sources_dir) -> dict:
         "zones": None,
         "equipment": len(EQUIPMENT),
         "permit_types": len(PERMIT_TYPES),
-        "clauses": len(fa_chunks) + len(oisd_chunks),
+        "dgms_clauses": len(dgms_chunks),
+        "clauses": len(fa_chunks) + len(oisd_chunks) + len(dgms_chunks),
         "incidents": len(records),
     }
