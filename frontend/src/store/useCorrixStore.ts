@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type {
   AlertFeedEntry,
+  CouncilEvidence,
   CouncilStage,
   CouncilVerdict,
   RegulatoryChatMessage,
@@ -8,6 +9,9 @@ import type {
   WorkerMarker,
 } from '../types'
 import { MOCK_CHAT_HISTORY, scenarioMock } from '../data/mockData'
+import { jitterForBadge } from '../lib/jitter'
+
+type ConnectionMode = 'mock' | 'live'
 
 interface CorrixState {
   scenarioId: string
@@ -20,16 +24,28 @@ interface CorrixState {
   overridePaused: boolean
   overrideNote: string
 
+  connectionMode: ConnectionMode
+  liveEvidence: CouncilEvidence | null
+  liveOverrideSender: ((note: string) => void) | null
+
   setScenario: (scenarioId: string) => void
   setCouncilStage: (stage: CouncilStage) => void
   pauseForOverride: () => void
   submitOverrideNote: (note: string) => void
   sendChatMessage: (text: string) => void
+
+  setConnectionMode: (mode: ConnectionMode) => void
+  setLiveOverrideSender: (fn: ((note: string) => void) | null) => void
+  beginLivePlayback: () => void
+  applyLiveTick: (zoneRisk: Record<string, RiskLevel>, workerZones: Record<string, string>) => void
+  startLiveConvening: () => void
+  applyLiveDeliberating: (evidence: CouncilEvidence) => void
+  applyLiveVerdict: (verdict: CouncilVerdict) => void
 }
 
 const initialMock = scenarioMock('S1')
 
-export const useCorrixStore = create<CorrixState>((set) => ({
+export const useCorrixStore = create<CorrixState>((set, get) => ({
   scenarioId: 'S1',
   zoneRisk: initialMock.zoneRisk,
   workers: initialMock.workers,
@@ -40,7 +56,17 @@ export const useCorrixStore = create<CorrixState>((set) => ({
   overridePaused: false,
   overrideNote: '',
 
+  connectionMode: 'mock',
+  liveEvidence: null,
+  liveOverrideSender: null,
+
   setScenario: (scenarioId) => {
+    if (get().connectionMode === 'live') {
+      // live mode: the WebSocket hook owns state transitions once it
+      // sees this change (it watches scenarioId and sends "start").
+      set({ scenarioId, councilStage: 'idle', verdict: null, liveEvidence: null, overridePaused: false })
+      return
+    }
     const mock = scenarioMock(scenarioId)
     set({
       scenarioId,
@@ -53,8 +79,21 @@ export const useCorrixStore = create<CorrixState>((set) => ({
     })
   },
   setCouncilStage: (stage) => set({ councilStage: stage }),
-  pauseForOverride: () => set({ overridePaused: true, councilStage: 'deliberating' }),
-  submitOverrideNote: (note) =>
+  pauseForOverride: () => {
+    // In live mode the graph only actually pauses at its own real
+    // interrupt point (applyLiveDeliberating, driven by the backend) —
+    // manually forcing this state here would show an override control
+    // with nothing real behind it to resume.
+    if (get().connectionMode === 'live') return
+    set({ overridePaused: true, councilStage: 'deliberating' })
+  },
+  submitOverrideNote: (note) => {
+    const sender = get().liveOverrideSender
+    if (get().connectionMode === 'live' && sender) {
+      sender(note)
+      set({ overridePaused: false, overrideNote: note })
+      return
+    }
     set((state) => ({
       overridePaused: false,
       overrideNote: note,
@@ -65,7 +104,8 @@ export const useCorrixStore = create<CorrixState>((set) => ({
             recommendedAction: `${state.verdict.recommendedAction} (Officer note incorporated: "${note}")`,
           }
         : state.verdict,
-    })),
+    }))
+  },
   sendChatMessage: (text) =>
     set((state) => ({
       chatHistory: [
@@ -73,4 +113,27 @@ export const useCorrixStore = create<CorrixState>((set) => ({
         { id: `msg-${state.chatHistory.length + 1}`, role: 'user', text },
       ],
     })),
+
+  setConnectionMode: (mode) => set({ connectionMode: mode }),
+  setLiveOverrideSender: (fn) => set({ liveOverrideSender: fn }),
+  beginLivePlayback: () =>
+    set({
+      verdict: null,
+      liveEvidence: null,
+      overridePaused: false,
+      councilStage: 'idle',
+    }),
+  applyLiveTick: (zoneRisk, workerZones) => {
+    const workers: WorkerMarker[] = Object.entries(workerZones).map(([badgeId, zoneId]) => ({
+      badgeId,
+      zoneId,
+      jitter: jitterForBadge(badgeId),
+    }))
+    set({ zoneRisk, workers })
+  },
+  startLiveConvening: () => set({ councilStage: 'convening', liveEvidence: null, verdict: null }),
+  applyLiveDeliberating: (evidence) =>
+    set({ councilStage: 'deliberating', liveEvidence: evidence, overridePaused: true }),
+  applyLiveVerdict: (verdict) =>
+    set({ councilStage: 'verdict_reached', verdict, liveEvidence: null, overridePaused: false }),
 }))

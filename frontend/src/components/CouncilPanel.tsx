@@ -23,6 +23,8 @@ export function CouncilPanel() {
   const councilStage = useCorrixStore((s) => s.councilStage)
   const overridePaused = useCorrixStore((s) => s.overridePaused)
   const submitOverrideNote = useCorrixStore((s) => s.submitOverrideNote)
+  const liveEvidence = useCorrixStore((s) => s.liveEvidence)
+  const connectionMode = useCorrixStore((s) => s.connectionMode)
   const [noteText, setNoteText] = useState('')
 
   return (
@@ -69,6 +71,19 @@ export function CouncilPanel() {
         </div>
       </div>
 
+      {!verdict && liveEvidence && (
+        <div className="flex flex-col gap-2 rounded-[var(--radius-control)] bg-white/[0.03] p-4">
+          <ul className="flex flex-col gap-1.5 text-xs text-[var(--color-text-secondary)]">
+            {AGENTS.map((agent) => (
+              <li key={agent.key} className="flex gap-2">
+                <agent.Icon size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
+                <span>{liveEvidence[agent.key]}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {verdict && (
         <div className="flex flex-col gap-3 rounded-[var(--radius-control)] bg-white/[0.03] p-4">
           <div className="flex items-center justify-between">
@@ -107,7 +122,9 @@ export function CouncilPanel() {
       {overridePaused && (
         <div className="flex flex-col gap-2 rounded-[var(--radius-control)] border border-[var(--color-accent)]/40 bg-white/[0.03] p-3">
           <p className="text-xs text-[var(--color-text-secondary)]">
-            Council paused. Add a note for the Chair before resuming.
+            {connectionMode === 'live'
+              ? 'Council deliberating. Add a note within the window to override, or it resolves automatically.'
+              : 'Council paused. Add a note for the Chair before resuming.'}
           </p>
           <textarea
             value={noteText}

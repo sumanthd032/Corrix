@@ -1,26 +1,14 @@
-import { useEffect, useState } from 'react'
 import { TopControlBar } from './components/TopControlBar'
 import { PlantHeatmap } from './components/PlantHeatmap'
 import { CouncilPanel } from './components/CouncilPanel'
 import { AlertFeed } from './components/AlertFeed'
 import { RegulatoryChatDrawer } from './components/RegulatoryChatDrawer'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
-
-function useBackendStatus() {
-  const [connected, setConnected] = useState<boolean | null>(null)
-
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/health`)
-      .then((res) => setConnected(res.ok))
-      .catch(() => setConnected(false))
-  }, [])
-
-  return connected
-}
+import { useScenarioSocket } from './lib/useScenarioSocket'
+import { useCorrixStore } from './store/useCorrixStore'
 
 function App() {
-  const backendConnected = useBackendStatus()
+  useScenarioSocket()
+  const connectionMode = useCorrixStore((s) => s.connectionMode)
 
   return (
     <div className="flex h-screen flex-col gap-3 p-3">
@@ -39,13 +27,17 @@ function App() {
 
       <span
         className="fixed bottom-2 left-2 flex items-center gap-1 font-mono-data text-[10px] text-[var(--color-text-secondary)]"
-        title={backendConnected ? 'Backend reachable' : 'Backend unreachable — showing mock data'}
+        title={
+          connectionMode === 'live'
+            ? 'Connected to the live backend — real scenario stream and Safety Council'
+            : 'Backend unreachable — showing mock data'
+        }
       >
         <span
           className="h-1.5 w-1.5 rounded-full"
-          style={{ backgroundColor: backendConnected ? '#2e7d32' : '#8fa3b8' }}
+          style={{ backgroundColor: connectionMode === 'live' ? '#2e7d32' : '#8fa3b8' }}
         />
-        {backendConnected === null ? 'checking backend…' : backendConnected ? 'backend live' : 'mock data'}
+        {connectionMode === 'live' ? 'backend live' : 'mock data'}
       </span>
     </div>
   )
