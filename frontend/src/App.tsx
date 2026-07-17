@@ -14,7 +14,8 @@ function App() {
   const [booting, setBooting] = useState(shouldShowBootSequence)
 
   return (
-    <div className="flex h-screen flex-col gap-3 p-3">
+    <div className="relative flex h-screen flex-col gap-3 p-3">
+      <div className="ambient-backdrop pointer-events-none fixed inset-0 -z-10" aria-hidden="true" />
       {booting && <BootSequence onComplete={() => setBooting(false)} />}
       <TopControlBar />
 

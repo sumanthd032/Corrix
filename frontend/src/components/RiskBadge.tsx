@@ -1,4 +1,5 @@
 import { AlertTriangle, CircleCheck, OctagonAlert, Square } from 'lucide-react'
+import { motion } from 'framer-motion'
 import type { RiskLevel } from '../types'
 
 /**
@@ -44,13 +45,30 @@ export function RiskBadge({ level, size = 'md', showLabel = true }: RiskBadgePro
       className="inline-flex items-center gap-1.5 font-mono-data text-xs font-medium tracking-wide uppercase"
       style={{ color: config.colorVar }}
     >
-      <config.Icon
-        size={px}
-        strokeWidth={2.25}
-        className={config.iconClassName}
-        aria-hidden="true"
-      />
-      {showLabel && <span>{config.label}</span>}
+      <motion.span
+        key={level}
+        className="inline-flex"
+        initial={{ scale: 0.4, opacity: 0, rotate: -20 }}
+        animate={{ scale: 1, opacity: 1, rotate: 0 }}
+        transition={{ type: 'spring', stiffness: 480, damping: 14 }}
+      >
+        <config.Icon
+          size={px}
+          strokeWidth={2.25}
+          className={config.iconClassName}
+          aria-hidden="true"
+        />
+      </motion.span>
+      {showLabel && (
+        <motion.span
+          key={`${level}-label`}
+          initial={{ opacity: 0, x: -4 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          {config.label}
+        </motion.span>
+      )}
     </span>
   )
 }

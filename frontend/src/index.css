@@ -134,4 +134,26 @@
       transparent 3px
     );
   }
+
+  /* A near-static ambient backdrop so the app reads as alive even when
+     nothing is actively converging: a very slow grid drift plus a soft
+     radial glow, both cheap CSS (no extra WebGL context) since this
+     layer sits behind every panel at all times. */
+  @keyframes ambient-drift {
+    0%, 100% { background-position: 0px 0px, 0px 0px, 0% 0%; }
+    50% { background-position: 30px 20px, 30px 20px, 3% 2%; }
+  }
+  .ambient-backdrop {
+    background-image:
+      linear-gradient(color-mix(in srgb, var(--color-accent) 5%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--color-accent) 5%, transparent) 1px, transparent 1px),
+      radial-gradient(ellipse at 30% 20%, color-mix(in srgb, var(--color-accent-secondary) 8%, transparent), transparent 55%);
+    background-size: 64px 64px, 64px 64px, 140% 140%;
+    animation: ambient-drift 40s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ambient-backdrop {
+      animation: none;
+    }
+  }
 }

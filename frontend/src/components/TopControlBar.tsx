@@ -1,8 +1,14 @@
 import { useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { BarChart3, CircleAlert, Download, Loader2, PauseCircle, Radio, ShieldAlert, Sparkles } from 'lucide-react'
 import { useCorrixStore } from '../store/useCorrixStore'
 import { CounterfactualReplayModal } from './CounterfactualReplayModal'
 import { EvaluationReportModal } from './EvaluationReportModal'
+
+const BUTTON_MOTION = {
+  whileHover: { y: -1, transition: { duration: 0.15 } },
+  whileTap: { scale: 0.96 },
+}
 
 const SCENARIOS = [
   { id: 'S1', label: 'S1: Anchor (Ladle Bay)' },
@@ -59,7 +65,12 @@ export function TopControlBar() {
   }
 
   return (
-    <header className="glass-panel flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3">
+    <motion.header
+      className="glass-panel flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3"
+      initial={{ opacity: 0, y: -16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
+    >
       <div className="flex items-center gap-2 pr-4 border-r border-white/10">
         <span
           className="h-2 w-2 rounded-full animate-pulse"
@@ -84,16 +95,18 @@ export function TopControlBar() {
         </select>
       </label>
 
-      <button
+      <motion.button
+        {...BUTTON_MOTION}
         type="button"
         onClick={() => setReplayOpen(true)}
         className="flex items-center gap-1.5 rounded-[var(--radius-control)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
       >
         <Radio size={15} aria-hidden="true" />
         Counterfactual Replay
-      </button>
+      </motion.button>
 
-      <button
+      <motion.button
+        {...BUTTON_MOTION}
         type="button"
         onClick={triggerOpenChallenge}
         disabled={connectionMode !== 'live'}
@@ -111,19 +124,21 @@ export function TopControlBar() {
             {openChallengeLabel}
           </span>
         )}
-      </button>
+      </motion.button>
 
       <div className="ml-auto flex flex-wrap items-center gap-2">
-        <button
+        <motion.button
+          {...BUTTON_MOTION}
           type="button"
           onClick={() => setReportOpen(true)}
           className="flex items-center gap-1.5 rounded-[var(--radius-control)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
         >
           <BarChart3 size={15} aria-hidden="true" />
           Evaluation Report
-        </button>
+        </motion.button>
 
-        <button
+        <motion.button
+          {...BUTTON_MOTION}
           type="button"
           onClick={downloadIncidentReport}
           disabled={!verdict || incidentReportState === 'loading'}
@@ -138,9 +153,13 @@ export function TopControlBar() {
             <Download size={15} aria-hidden="true" />
           )}
           {incidentReportState === 'error' ? 'Report failed' : 'Incident Report'}
-        </button>
+        </motion.button>
 
-        <span
+        <motion.span
+          key={eroFired ? `${eroFired.zoneId}-${eroFired.deliveredOk}` : 'idle'}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 20 }}
           className="flex items-center gap-1.5 text-xs"
           style={{
             color: eroFired
@@ -161,9 +180,10 @@ export function TopControlBar() {
               ? `ERO fired: Zone ${eroFired.zoneId}`
               : `ERO fired: Zone ${eroFired.zoneId} (delivery failed)`
             : 'ERO idle'}
-        </span>
+        </motion.span>
 
-        <button
+        <motion.button
+          {...BUTTON_MOTION}
           type="button"
           onClick={pauseForOverride}
           disabled={overridePaused || councilStage !== 'verdict_reached'}
@@ -175,11 +195,13 @@ export function TopControlBar() {
         >
           <PauseCircle size={15} aria-hidden="true" />
           Safety Officer Override
-        </button>
+        </motion.button>
       </div>
 
-      {reportOpen && <EvaluationReportModal onClose={() => setReportOpen(false)} />}
-      {replayOpen && <CounterfactualReplayModal onClose={() => setReplayOpen(false)} />}
-    </header>
+      <AnimatePresence>
+        {reportOpen && <EvaluationReportModal onClose={() => setReportOpen(false)} />}
+        {replayOpen && <CounterfactualReplayModal onClose={() => setReplayOpen(false)} />}
+      </AnimatePresence>
+    </motion.header>
   )
 }

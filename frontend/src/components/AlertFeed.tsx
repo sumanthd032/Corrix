@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from 'framer-motion'
 import { useCorrixStore } from '../store/useCorrixStore'
 import { RiskBadge } from './RiskBadge'
 
@@ -22,20 +23,28 @@ export function AlertFeed() {
         <p className="text-sm text-[var(--color-text-secondary)]">No alerts yet.</p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {alerts.map((alert) => (
-            <li
-              key={alert.id}
-              className="flex flex-col gap-1 rounded-[var(--radius-control)] bg-white/[0.03] p-3"
-            >
-              <div className="flex items-center justify-between">
-                <RiskBadge level={alert.riskLevel} size="sm" />
-                <span className="font-mono-data text-[10px] text-[var(--color-text-secondary)]">
-                  {alert.zoneId} · {relativeTime(alert.timestamp)}
-                </span>
-              </div>
-              <p className="text-sm text-[var(--color-text-primary)]">{alert.summary}</p>
-            </li>
-          ))}
+          <AnimatePresence initial={false}>
+            {alerts.map((alert, i) => (
+              <motion.li
+                key={alert.id}
+                layout
+                initial={{ opacity: 0, y: -12, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.96 }}
+                transition={{ duration: 0.3, delay: i === 0 ? 0 : 0.03 * i, ease: 'easeOut' }}
+                className="flex flex-col gap-1 rounded-[var(--radius-control)] bg-white/[0.03] p-3"
+                whileHover={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
+              >
+                <div className="flex items-center justify-between">
+                  <RiskBadge level={alert.riskLevel} size="sm" />
+                  <span className="font-mono-data text-[10px] text-[var(--color-text-secondary)]">
+                    {alert.zoneId} · {relativeTime(alert.timestamp)}
+                  </span>
+                </div>
+                <p className="text-sm text-[var(--color-text-primary)]">{alert.summary}</p>
+              </motion.li>
+            ))}
+          </AnimatePresence>
         </ul>
       )}
     </section>

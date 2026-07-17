@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { motion } from 'framer-motion'
 import { AlertTriangle, Loader2, X } from 'lucide-react'
 import { RiskBadge } from './RiskBadge'
 import type { RiskLevel } from '../types'
@@ -68,13 +69,21 @@ export function CounterfactualReplayModal({ onClose }: { onClose: () => void }) 
   }, [state, frameIndex])
 
   return createPortal(
-    <div
+    <motion.div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
       onClick={onClose}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
     >
-      <div
+      <motion.div
         className="glass-panel flex max-h-[85vh] w-full max-w-2xl flex-col gap-4 overflow-y-auto p-6"
         onClick={(e) => e.stopPropagation()}
+        initial={{ opacity: 0, scale: 0.94, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 8 }}
+        transition={{ duration: 0.25, ease: 'easeOut' }}
       >
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold tracking-wide text-[var(--color-text-primary)]">
@@ -166,8 +175,8 @@ export function CounterfactualReplayModal({ onClose }: { onClose: () => void }) 
             </div>
           </>
         )}
-      </div>
-    </div>,
+      </motion.div>
+    </motion.div>,
     document.body,
   )
 }
