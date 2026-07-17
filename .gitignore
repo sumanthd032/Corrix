@@ -11,3 +11,4 @@ backend/datasets/
 backend/runs/
 backend/*.pt
 data/evaluation/
+data/swat/

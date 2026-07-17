@@ -35,12 +35,30 @@ interface MemoryLoopReport {
   falseNegativeRateChange: number | null
 }
 
+interface SwatTagFit {
+  tag: string
+  nSamples?: number
+  meanReversionRate: number
+  noiseToSignalRatio: number
+  residualSkew: number
+  residualKurtosis: number
+}
+
+interface SwatValidation {
+  swatTags: SwatTagFit[]
+  ourSimulatorConfigs: SwatTagFit[]
+  swatNoiseToSignalRange: [number, number]
+  ourNoiseToSignalRange: [number, number]
+  ourNoiseToSignalFallsWithinSwatRange: boolean
+}
+
 interface EvaluationReport {
   generatedAt: string
   baseline: PipelineMetrics
   pipeline: PipelineMetrics
   calibrationBins: CalibrationBin[]
   memoryLoop: MemoryLoopReport | null
+  swatValidation: SwatValidation | null
 }
 
 type LoadState =
@@ -113,6 +131,68 @@ function MemoryLoopSection({ memoryLoop }: { memoryLoop: MemoryLoopReport }) {
         The retrieval trigger carries a real, disclosed false-positive risk on some negative
         controls whose own noise happens to resemble a stored exemplar — visible above as a
         higher false-positive rate after population, not hidden.
+      </p>
+    </div>
+  )
+}
+
+function SwatValidationSection({ swat }: { swat: SwatValidation }) {
+  return (
+    <div className="flex flex-col gap-3 rounded-[var(--radius-control)] bg-white/[0.03] p-4">
+      <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">
+        External validation against SWaT (real industrial dataset)
+      </h3>
+      <p className="text-xs text-[var(--color-text-secondary)]">
+        Noise-to-signal ratio range — SWaT (real):{' '}
+        <span className="font-mono-data text-[var(--color-text-primary)]">
+          {swat.swatNoiseToSignalRange[0].toFixed(3)}–{swat.swatNoiseToSignalRange[1].toFixed(3)}
+        </span>{' '}
+        · ours:{' '}
+        <span className="font-mono-data text-[var(--color-text-primary)]">
+          {swat.ourNoiseToSignalRange[0].toFixed(3)}–{swat.ourNoiseToSignalRange[1].toFixed(3)}
+        </span>{' '}
+        <span style={{ color: swat.ourNoiseToSignalFallsWithinSwatRange ? '#2e7d32' : 'var(--color-risk-caution)' }}>
+          ({swat.ourNoiseToSignalFallsWithinSwatRange ? 'within range' : 'outside range'})
+        </span>
+      </p>
+      <div className="overflow-x-auto">
+        <table className="w-full font-mono-data text-[11px]">
+          <thead>
+            <tr className="text-left text-[var(--color-text-secondary)]">
+              <th className="pr-3 pb-1">Source</th>
+              <th className="pr-3 pb-1">k' /min</th>
+              <th className="pr-3 pb-1">noise/signal</th>
+              <th className="pr-3 pb-1">skew</th>
+              <th className="pb-1">kurtosis</th>
+            </tr>
+          </thead>
+          <tbody className="text-[var(--color-text-primary)]">
+            {swat.swatTags.map((t) => (
+              <tr key={`swat-${t.tag}`}>
+                <td className="pr-3">SWaT {t.tag}</td>
+                <td className="pr-3">{t.meanReversionRate.toFixed(4)}</td>
+                <td className="pr-3">{t.noiseToSignalRatio.toFixed(4)}</td>
+                <td className="pr-3">{t.residualSkew.toFixed(2)}</td>
+                <td>{t.residualKurtosis.toFixed(1)}</td>
+              </tr>
+            ))}
+            {swat.ourSimulatorConfigs.map((t) => (
+              <tr key={`ours-${t.tag}`} className="text-[var(--color-accent)]">
+                <td className="pr-3">Ours: {t.tag}</td>
+                <td className="pr-3">{t.meanReversionRate.toFixed(4)}</td>
+                <td className="pr-3">{t.noiseToSignalRatio.toFixed(4)}</td>
+                <td className="pr-3">{t.residualSkew.toFixed(2)}</td>
+                <td>{t.residualKurtosis.toFixed(1)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-[10px] text-[var(--color-text-secondary)]">
+        Real, disclosed limitation: SWaT's residual kurtosis is far higher than ours — real
+        industrial sensors show heavy-tailed spikes (likely actuator switching), while our OU
+        process produces genuinely Gaussian noise. This validates the noise-to-signal scale, not
+        the tail shape.
       </p>
     </div>
   )
@@ -257,6 +337,7 @@ export function EvaluationReportModal({ onClose }: { onClose: () => void }) {
             </div>
             <ReliabilityDiagram bins={state.report.calibrationBins} />
             {state.report.memoryLoop && <MemoryLoopSection memoryLoop={state.report.memoryLoop} />}
+            {state.report.swatValidation && <SwatValidationSection swat={state.report.swatValidation} />}
           </>
         )}
       </div>

@@ -20,6 +20,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 RESULTS_PATH = REPO_ROOT / "data" / "evaluation" / "full_library_results.json"
 METRICS_PATH = REPO_ROOT / "data" / "evaluation" / "full_library_metrics.json"
 MEMORY_LOOP_METRICS_PATH = REPO_ROOT / "data" / "evaluation" / "memory_loop_metrics.json"
+SWAT_VALIDATION_PATH = REPO_ROOT / "data" / "evaluation" / "swat_validation.json"
 
 router = APIRouter()
 
@@ -80,6 +81,36 @@ def get_evaluation_report() -> dict:
             "falseNegativeRateChange": raw_memory_loop["false_negative_rate_change"],
         }
 
+    swat_validation = None
+    if SWAT_VALIDATION_PATH.exists():
+        raw_swat = json.loads(SWAT_VALIDATION_PATH.read_text(encoding="utf-8"))
+        swat_validation = {
+            "swatTags": [
+                {
+                    "tag": t["tag"],
+                    "nSamples": t["n_samples"],
+                    "meanReversionRate": t["mean_reversion_rate"],
+                    "noiseToSignalRatio": t["noise_to_signal_ratio"],
+                    "residualSkew": t["residual_skew"],
+                    "residualKurtosis": t["residual_kurtosis"],
+                }
+                for t in raw_swat["swat_tags"]
+            ],
+            "ourSimulatorConfigs": [
+                {
+                    "tag": t["tag"],
+                    "meanReversionRate": t["mean_reversion_rate"],
+                    "noiseToSignalRatio": t["noise_to_signal_ratio"],
+                    "residualSkew": t["residual_skew"],
+                    "residualKurtosis": t["residual_kurtosis"],
+                }
+                for t in raw_swat["our_simulator_configs"]
+            ],
+            "swatNoiseToSignalRange": raw_swat["swat_noise_to_signal_range"],
+            "ourNoiseToSignalRange": raw_swat["our_noise_to_signal_range"],
+            "ourNoiseToSignalFallsWithinSwatRange": raw_swat["our_noise_to_signal_falls_within_swat_range"],
+        }
+
     return {
         "generatedAt": generated_at,
         "baseline": _metrics_to_camel(metrics["baseline"]),
@@ -87,4 +118,5 @@ def get_evaluation_report() -> dict:
         "calibrationBins": [_bin_to_camel(b) for b in calibration_bins],
         "scenarioResults": [asdict(r) for r in results],
         "memoryLoop": memory_loop,
+        "swatValidation": swat_validation,
     }
