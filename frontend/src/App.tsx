@@ -5,6 +5,7 @@ import { CouncilPanel } from './components/CouncilPanel'
 import { AlertFeed } from './components/AlertFeed'
 import { RegulatoryChatDrawer } from './components/RegulatoryChatDrawer'
 import { BootSequence, shouldShowBootSequence } from './components/BootSequence'
+import { CriticalTakeover } from './components/CriticalTakeover'
 import { useScenarioSocket } from './lib/useScenarioSocket'
 import { useCorrixStore } from './store/useCorrixStore'
 
@@ -17,6 +18,7 @@ function App() {
     <div className="relative flex h-screen flex-col gap-3 p-3">
       <div className="ambient-backdrop pointer-events-none fixed inset-0 -z-10" aria-hidden="true" />
       {booting && <BootSequence onComplete={() => setBooting(false)} />}
+      <CriticalTakeover />
       <TopControlBar />
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 lg:flex-row">
