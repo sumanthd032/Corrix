@@ -38,7 +38,40 @@ export function CouncilPanel() {
         </span>
       </div>
 
-      <div className="grid grid-cols-5 gap-2">
+      <div className="relative grid grid-cols-5 gap-2">
+        {councilStage === 'convening' && (
+          <svg
+            className="pointer-events-none absolute inset-0 h-full w-full"
+            viewBox="0 0 500 100"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            {AGENTS.map((agent, i) => {
+              const x = i * 100 + 50
+              return (
+                <g key={agent.key}>
+                  <line
+                    x1={x}
+                    y1={50}
+                    x2={450}
+                    y2={50}
+                    stroke="var(--color-accent)"
+                    strokeOpacity={0.22}
+                    strokeWidth={1.5}
+                  />
+                  <circle r={3} fill="var(--color-accent)">
+                    <animateMotion
+                      dur="1.3s"
+                      begin={`${i * 0.28}s`}
+                      repeatCount="indefinite"
+                      path={`M ${x} 50 L 450 50`}
+                    />
+                  </circle>
+                </g>
+              )
+            })}
+          </svg>
+        )}
         {AGENTS.map((agent) => (
           <div
             key={agent.key}
@@ -60,8 +93,11 @@ export function CouncilPanel() {
           </div>
         ))}
         <div
-          className="flex flex-col items-center gap-1 rounded-[var(--radius-control)] py-3"
-          style={{ backgroundColor: 'color-mix(in srgb, var(--color-accent) 12%, transparent)' }}
+          className="flex flex-col items-center gap-1 rounded-[var(--radius-control)] py-3 transition-shadow duration-500"
+          style={{
+            backgroundColor: 'color-mix(in srgb, var(--color-accent) 12%, transparent)',
+            boxShadow: councilStage === 'convening' ? 'var(--shadow-glow-accent)' : 'none',
+          }}
           title="Chair"
         >
           <Gavel size={20} className="text-[var(--color-accent)]" aria-hidden="true" />
