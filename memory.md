@@ -431,3 +431,23 @@ External access: None; this check needed no LLM calls, which is why it was done 
 Open questions or blockers: Groq's and Gemini's free-tier daily quotas remain exhausted, still blocking the regression pass and LLM call-volume measurement, the two remaining Step 9 tasks, both of which need real, successful live Council convenings to mean anything.
 
 Next action: Run the regression pass and measure real LLM call volume once quota headroom returns; Step 9 is otherwise complete (ERO, Incident Report generator, S5 live wiring, the outward-facing MCP server, the cached-fallback path, and the cross-device check are all done).
+
+---
+
+## 2026-07-17 — Step 9 (continued): real LLM call-volume measurement, honestly caveated by today's own quota state
+
+What was done: built and ran `backend/scripts/measure_demo_call_volume.py`, turning CORRIX_PROJECT.md §7.1's calculation ("one Council convening is 5 calls; a demo cycling through 3 scenarios plus Q&A follow-ups is comfortably under 30-40 calls, well inside Groq's 30 RPM") into a real, timestamped measurement.
+
+Groq had partially recovered by the time this ran (a quick real test call succeeded), so this was attempted rather than deferred further. The first version of the script undercounted by construction: it wrapped this project's own `_call_groq`/`_call_gemini` functions, which only record a call on success, so a request that hit a real 429 and got retried or failed over was invisible to the measurement, exactly the attempts most likely to explain a demo actually hitting a rate limit. Fixed by instrumenting the Groq and Gemini SDKs' own request methods directly (`groq.resources.chat.completions.Completions.create`, `google.genai.models.Models.generate_content`), counting every real HTTP attempt, successful or not, since a 429 still consumes real RPM budget. Also paced the three scenario convenings 8 seconds apart rather than firing them back to back: a presenter narrating between selections is what "a realistic demo run-through" actually looks like, and a zero-pause burst self-inflicts a TPM spike no real demo produces. Separately confirmed the regulatory Q&A path costs zero LLM calls (it is pure Neo4j vector retrieval, `app/regulatory/retrieval.py` has no `chat_completion` reference), checked rather than assumed.
+
+**The real run was honestly confounded by this session's own cumulative testing.** Both providers were still substantially degraded from many hours of heavy real-call verification work earlier in this same session (the memory-loop reruns, the ERO/Incident Report/cached-fallback verifications). Of 26 real Groq requests attempted, only 4 succeeded; of 11 real Gemini requests, 0 succeeded. Only one of the three scenario convenings (S1) produced a genuine Chair-synthesized verdict; the other two resolved via the cached-fallback path built earlier this session, itself a real, live demonstration that the fallback holds up under actual adversity, not simulated. Despite this, the number that matters for the DoD's actual question, whether the system's own request pattern risks exceeding published rate limits, held regardless of account health: peak measured volume was 19 Groq requests and 9 Gemini requests in any rolling 60-second window, both comfortably under the 30 RPM / 15 RPM free-tier caps. A fresh-quota run would show a healthier success rate (closer to the ~15 calls fifteen real Chair-plus-agent calls implies for 3 convenings), but the request-volume-versus-rate-limit question this task exists to answer already has a real, measured, passing answer.
+
+Why: this is Step 9's own DoD item, and the honest path was to measure it now with the caveats stated plainly, rather than wait an unknown number of hours for both providers to fully recover and risk not closing this out at all this session.
+
+Files touched: `backend/scripts/measure_demo_call_volume.py` (new).
+
+External access: Real Groq and Gemini calls throughout (mostly failing, both providers still substantially exhausted from this session's cumulative testing volume).
+
+Open questions or blockers: The regression pass (every scenario and negative control run 5-10 times) is the one remaining Step 9 task, and is the most quota-expensive of all of them; running it properly needs healthier quota than is available right now, so it's an open decision with the user on whether to attempt a scaled-down version now or wait.
+
+Next action: Confirm with the user whether to attempt a reduced-scope regression pass now under the current constrained quota, or wait for fuller quota recovery before running it properly.
