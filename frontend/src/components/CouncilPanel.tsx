@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Camera, Clock, FileCheck, Gauge, Gavel } from 'lucide-react'
 import { useCorrixStore } from '../store/useCorrixStore'
 import { RiskBadge } from './RiskBadge'
+import { CouncilScene3D } from './CouncilScene3D'
 import type { CouncilAgentKey } from '../types'
 
 const AGENTS: { key: CouncilAgentKey; label: string; Icon: typeof Gauge }[] = [
@@ -38,40 +39,7 @@ export function CouncilPanel() {
         </span>
       </div>
 
-      <div className="relative grid grid-cols-5 gap-2">
-        {councilStage === 'convening' && (
-          <svg
-            className="pointer-events-none absolute inset-0 h-full w-full"
-            viewBox="0 0 500 100"
-            preserveAspectRatio="none"
-            aria-hidden="true"
-          >
-            {AGENTS.map((agent, i) => {
-              const x = i * 100 + 50
-              return (
-                <g key={agent.key}>
-                  <line
-                    x1={x}
-                    y1={50}
-                    x2={450}
-                    y2={50}
-                    stroke="var(--color-accent)"
-                    strokeOpacity={0.22}
-                    strokeWidth={1.5}
-                  />
-                  <circle r={3} fill="var(--color-accent)">
-                    <animateMotion
-                      dur="1.3s"
-                      begin={`${i * 0.28}s`}
-                      repeatCount="indefinite"
-                      path={`M ${x} 50 L 450 50`}
-                    />
-                  </circle>
-                </g>
-              )
-            })}
-          </svg>
-        )}
+      <div className="grid grid-cols-5 gap-2">
         {AGENTS.map((agent) => (
           <div
             key={agent.key}
@@ -105,6 +73,10 @@ export function CouncilPanel() {
             Chair
           </span>
         </div>
+      </div>
+
+      <div className="glass-panel overflow-hidden rounded-[var(--radius-control)]" style={{ background: 'color-mix(in srgb, var(--color-base) 55%, transparent)' }}>
+        <CouncilScene3D stage={councilStage} riskLevel={verdict?.riskLevel} />
       </div>
 
       {!verdict && liveEvidence && (
