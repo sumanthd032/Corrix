@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BarChart3, Download, PauseCircle, Radio, ShieldAlert, Sparkles } from 'lucide-react'
+import { BarChart3, CircleAlert, Download, Loader2, PauseCircle, Radio, ShieldAlert, Sparkles } from 'lucide-react'
 import { useCorrixStore } from '../store/useCorrixStore'
 import { CounterfactualReplayModal } from './CounterfactualReplayModal'
 import { EvaluationReportModal } from './EvaluationReportModal'
@@ -12,6 +12,10 @@ const SCENARIOS = [
   { id: 'S5', label: 'S5: Silent Drift (Near-Miss)' },
 ]
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
+
+type ReportRequestState = 'idle' | 'loading' | 'error'
+
 export function TopControlBar() {
   const scenarioId = useCorrixStore((s) => s.scenarioId)
   const setScenario = useCorrixStore((s) => s.setScenario)
@@ -22,8 +26,37 @@ export function TopControlBar() {
   const triggerOpenChallenge = useCorrixStore((s) => s.triggerOpenChallenge)
   const openChallengeLabel = useCorrixStore((s) => s.openChallengeLabel)
   const eroFired = useCorrixStore((s) => s.eroFired)
+  const verdict = useCorrixStore((s) => s.verdict)
   const [reportOpen, setReportOpen] = useState(false)
   const [replayOpen, setReplayOpen] = useState(false)
+  const [incidentReportState, setIncidentReportState] = useState<ReportRequestState>('idle')
+
+  const downloadIncidentReport = async () => {
+    if (!verdict || incidentReportState === 'loading') return
+    setIncidentReportState('loading')
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/incident-report`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          verdict,
+          eroAlert: eroFired && eroFired.zoneId === verdict.zoneId ? eroFired : null,
+        }),
+      })
+      if (!response.ok) throw new Error(`Report request failed (${response.status})`)
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `corrix-incident-report-${verdict.zoneId}.pdf`
+      link.click()
+      URL.revokeObjectURL(url)
+      setIncidentReportState('idle')
+    } catch {
+      setIncidentReportState('error')
+      setTimeout(() => setIncidentReportState('idle'), 4000)
+    }
+  }
 
   return (
     <header className="glass-panel flex items-center gap-4 px-5 py-3">
@@ -92,10 +125,19 @@ export function TopControlBar() {
 
         <button
           type="button"
-          className="flex items-center gap-1.5 rounded-[var(--radius-control)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+          onClick={downloadIncidentReport}
+          disabled={!verdict || incidentReportState === 'loading'}
+          title={!verdict ? 'No verdict available yet to report on' : 'Download a PDF incident report for the current verdict'}
+          className="flex items-center gap-1.5 rounded-[var(--radius-control)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors disabled:opacity-40"
         >
-          <Download size={15} aria-hidden="true" />
-          Incident Report
+          {incidentReportState === 'loading' ? (
+            <Loader2 size={15} className="animate-spin" aria-hidden="true" />
+          ) : incidentReportState === 'error' ? (
+            <CircleAlert size={15} style={{ color: 'var(--color-risk-critical)' }} aria-hidden="true" />
+          ) : (
+            <Download size={15} aria-hidden="true" />
+          )}
+          {incidentReportState === 'error' ? 'Report failed' : 'Incident Report'}
         </button>
 
         <span
