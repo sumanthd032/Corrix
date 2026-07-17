@@ -1,17 +1,21 @@
+import { useState } from 'react'
 import { TopControlBar } from './components/TopControlBar'
 import { PlantHeatmap } from './components/PlantHeatmap'
 import { CouncilPanel } from './components/CouncilPanel'
 import { AlertFeed } from './components/AlertFeed'
 import { RegulatoryChatDrawer } from './components/RegulatoryChatDrawer'
+import { BootSequence, shouldShowBootSequence } from './components/BootSequence'
 import { useScenarioSocket } from './lib/useScenarioSocket'
 import { useCorrixStore } from './store/useCorrixStore'
 
 function App() {
   useScenarioSocket()
   const connectionMode = useCorrixStore((s) => s.connectionMode)
+  const [booting, setBooting] = useState(shouldShowBootSequence)
 
   return (
     <div className="flex h-screen flex-col gap-3 p-3">
+      {booting && <BootSequence onComplete={() => setBooting(false)} />}
       <TopControlBar />
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 lg:flex-row">
