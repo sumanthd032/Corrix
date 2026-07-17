@@ -159,39 +159,41 @@ export function PlantHeatmap() {
   }, [evacuationRoute])
 
   return (
-    <section className="glass-panel relative flex-1 overflow-hidden">
-      <div className="absolute left-4 top-4 z-10 flex items-center gap-3">
-        <h2 className="text-sm font-semibold tracking-wide text-[var(--color-text-primary)]">
-          Geospatial Safety Heatmap
-        </h2>
-        <span className="flex items-center gap-1 font-mono-data text-[11px] text-[var(--color-text-secondary)]">
-          <Users size={12} aria-hidden="true" />
-          {workers.length} tracked
-        </span>
-        {evacuationRouteLayer && (
-          <span
-            className="flex items-center gap-1.5 font-mono-data text-[11px]"
-            style={{ color: 'rgb(255, 196, 0)' }}
-          >
-            <span
-              className="h-1.5 w-4 rounded-full"
-              style={{ backgroundColor: 'rgb(255, 196, 0)' }}
-              aria-hidden="true"
-            />
-            Evacuation route: {evacuationRoute!.join(' → ')}
+    <section className="glass-panel relative min-h-[320px] flex-1 overflow-hidden">
+      <div className="absolute left-4 right-4 top-4 z-10 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-sm font-semibold tracking-wide text-[var(--color-text-primary)]">
+            Geospatial Safety Heatmap
+          </h2>
+          <span className="flex items-center gap-1 font-mono-data text-[11px] text-[var(--color-text-secondary)]">
+            <Users size={12} aria-hidden="true" />
+            {workers.length} tracked
           </span>
-        )}
-      </div>
+          {evacuationRouteLayer && (
+            <span
+              className="flex items-center gap-1.5 font-mono-data text-[11px]"
+              style={{ color: 'rgb(255, 196, 0)' }}
+            >
+              <span
+                className="h-1.5 w-4 rounded-full"
+                style={{ backgroundColor: 'rgb(255, 196, 0)' }}
+                aria-hidden="true"
+              />
+              Evacuation route: {evacuationRoute!.join(' → ')}
+            </span>
+          )}
+        </div>
 
-      <button
-        type="button"
-        onClick={() => setIsometric((v) => !v)}
-        className="absolute right-4 top-4 z-10 flex items-center gap-1.5 rounded-[var(--radius-control)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-        style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}
-      >
-        <Box size={13} aria-hidden="true" />
-        {isometric ? 'Flat view' : 'Isometric view'}
-      </button>
+        <button
+          type="button"
+          onClick={() => setIsometric((v) => !v)}
+          className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-control)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+          style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}
+        >
+          <Box size={13} aria-hidden="true" />
+          {isometric ? 'Flat view' : 'Isometric view'}
+        </button>
+      </div>
 
       <div
         className="h-full w-full transition-transform duration-500"

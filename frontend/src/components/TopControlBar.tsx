@@ -59,7 +59,7 @@ export function TopControlBar() {
   }
 
   return (
-    <header className="glass-panel flex items-center gap-4 px-5 py-3">
+    <header className="glass-panel flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3">
       <div className="flex items-center gap-2 pr-4 border-r border-white/10">
         <span
           className="h-2 w-2 rounded-full animate-pulse"
@@ -113,7 +113,7 @@ export function TopControlBar() {
         )}
       </button>
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex flex-wrap items-center gap-2">
         <button
           type="button"
           onClick={() => setReportOpen(true)}
