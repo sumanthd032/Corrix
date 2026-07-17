@@ -11,6 +11,8 @@ of external, transient provider unavailability, not a code defect,
 found during Step 8's own heavy real-call testing.
 """
 
+import logging
+import time
 from contextlib import contextmanager
 
 import pytest
@@ -22,6 +24,8 @@ from app.memory.exemplar_store import (
     store_exemplar,
     wipe_all_exemplars,
 )
+
+logger = logging.getLogger(__name__)
 
 RATE_LIMIT_MARKERS = (
     "429",
@@ -57,21 +61,46 @@ def _preserve_real_memory_exemplars():
     test run. This snapshots whatever is genuinely stored once, before
     any test can touch it, and restores exactly that snapshot once, after
     the whole session ends, so running the suite never permanently
-    destroys real state."""
+    destroys real state.
+
+    The restore itself is wrapped in a real retry: this project's own
+    shared Neo4j AuraDB instance has hit genuine transient connectivity
+    resets several times during this project's testing (a real,
+    external fact, not a code defect), and the first version of this
+    fixture had no protection against one landing during the restore
+    itself, which is exactly what silently emptied the store once,
+    caught only by a manual post-suite check rather than by the fixture
+    being resilient to begin with."""
     driver = get_shared_driver()
     ensure_memory_schema(driver)
     snapshot = get_all_exemplars(driver)
     yield
-    wipe_all_exemplars(driver)
-    for exemplar in snapshot:
-        store_exemplar(
-            driver,
-            exemplar_id=exemplar.exemplar_id,
-            scenario_id=exemplar.scenario_id,
-            seed=exemplar.seed,
-            zone_id=exemplar.zone_id,
-            joint_evidence_vector=exemplar.joint_evidence_vector,
-            evidence_text=exemplar.evidence_text,
-            correct_risk_level=exemplar.correct_risk_level,
-            why=exemplar.why,
+
+    last_error: Exception | None = None
+    for attempt in range(1, 4):
+        try:
+            wipe_all_exemplars(driver)
+            for exemplar in snapshot:
+                store_exemplar(
+                    driver,
+                    exemplar_id=exemplar.exemplar_id,
+                    scenario_id=exemplar.scenario_id,
+                    seed=exemplar.seed,
+                    zone_id=exemplar.zone_id,
+                    joint_evidence_vector=exemplar.joint_evidence_vector,
+                    evidence_text=exemplar.evidence_text,
+                    correct_risk_level=exemplar.correct_risk_level,
+                    why=exemplar.why,
+                )
+            last_error = None
+            break
+        except Exception as exc:
+            last_error = exc
+            logger.warning(
+                "Exemplar restore attempt %d/3 hit a transient error, retrying: %s", attempt, exc
+            )
+            time.sleep(3.0)
+    if last_error is not None:
+        logger.error(
+            "Exemplar restore failed after 3 attempts; real exemplars may be lost: %s", last_error
         )
