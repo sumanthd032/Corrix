@@ -1,5 +1,5 @@
 """The live scenario WebSocket: streams a precomputed playback at a
-watchable rate, and — when the trigger point is reached — actually
+watchable rate, and, when the trigger point is reached, actually
 convenes the real Safety Council (Step 4's LangGraph), pausing at the
 same interrupt_before=["chair"] checkpoint used for the Safety Officer
 Override so a demo user can genuinely intervene, not a simulated pause.
@@ -44,12 +44,14 @@ from app.api.live_scenario import (
 from app.council.graph import apply_safety_officer_override, build_council_graph
 from app.detection.anomaly_scorer import calibrate_baseline
 from app.detection.evacuation_routing import find_evacuation_route
-from app.detection.novelty_training import fit_novelty_model_from_library
+from app.detection.novelty_training import get_cached_novelty_model
 from app.detection.time_to_critical import forecast_time_to_critical
+from app.memory.exemplar_store import get_shared_driver
 from app.schemas import CouncilVerdict
 from app.simulation.open_challenge import CURATED_COMBINATIONS
 from app.simulation.plant_layout import load_plant_layout
 from app.simulation.scenario_engine import DEFAULT_START_TIME
+from app.state.live_risk_state import update_zone_risk_state
 
 PLAYBACK_FRAME_SECONDS = 0.35
 OVERRIDE_WINDOW_SECONDS = 8.0
@@ -87,7 +89,6 @@ async def _convene_council(
     websocket: WebSocket,
     incoming: "asyncio.Queue[dict]",
     playback: ScenarioPlayback,
-    trigger_reason: str = "rule_threshold",
 ) -> None:
     await websocket.send_json({"type": "council_convening"})
 
@@ -96,6 +97,7 @@ async def _convene_council(
     point = playback.points[playback.trigger_tick_index]
     frame = playback.frames[playback.trigger_frame_index]
     at_time = DEFAULT_START_TIME + timedelta(minutes=frame.minute)
+    trigger_reason = playback.trigger_reason or "rule_threshold"
 
     raw_evidence = {
         "process_safety_engineer": format_process_safety_text(config, point),
@@ -103,6 +105,14 @@ async def _convene_council(
         "shift_operations": format_shift_text(out.shifts, config.zone, at_time),
         "site_safety_observer": format_site_safety_text(frame.worker_positions, config.zone),
     }
+
+    memory_context = None
+    if trigger_reason == "memory_retrieval" and playback.matched_exemplar is not None:
+        exemplar = playback.matched_exemplar
+        memory_context = (
+            f"Historical case: {exemplar.evidence_text} The correct verdict was "
+            f"{exemplar.correct_risk_level}. {exemplar.why}"
+        )
 
     graph = build_council_graph()
     graph_config = {"configurable": {"thread_id": f"live-{id(websocket)}-{time.time()}"}}
@@ -114,6 +124,7 @@ async def _convene_council(
             "trigger_reason": trigger_reason,
             "raw_evidence": raw_evidence,
             "scenario_id": config.scenario_id,
+            "memory_context": memory_context,
         },
         graph_config,
     )
@@ -136,7 +147,7 @@ async def _convene_council(
         if msg.get("type") == "override":
             note = msg.get("note")
         else:
-            await incoming.put(msg)  # not for us — let the outer loop see it
+            await incoming.put(msg)  # not for us, let the outer loop see it
     except asyncio.TimeoutError:
         pass
 
@@ -165,6 +176,19 @@ async def _convene_council(
         if route is not None:
             verdict.evacuation_route = route.path
 
+    await asyncio.to_thread(
+        update_zone_risk_state,
+        get_shared_driver(),
+        zone_id=verdict.zone_id,
+        risk_level=verdict.risk_level,
+        confidence=verdict.confidence,
+        compound_flag=verdict.compound_flag,
+        trigger_reason=trigger_reason,
+        explanation=verdict.explanation,
+        recommended_action=verdict.recommended_action,
+        scenario_id=verdict.scenario_id,
+    )
+
     await websocket.send_json({"type": "verdict", "verdict": _verdict_to_camel(verdict)})
 
 
@@ -172,7 +196,6 @@ async def _stream_playback(
     websocket: WebSocket,
     incoming: "asyncio.Queue[dict]",
     playback: ScenarioPlayback,
-    trigger_reason: str = "rule_threshold",
 ) -> dict | None:
     """Returns a requeued client message if playback was interrupted by
     one (e.g. a new "start"), else None when playback completed."""
@@ -196,7 +219,7 @@ async def _stream_playback(
         await asyncio.sleep(PLAYBACK_FRAME_SECONDS)
 
         if i == playback.trigger_frame_index:
-            await _convene_council(websocket, incoming, playback, trigger_reason=trigger_reason)
+            await _convene_council(websocket, incoming, playback)
 
     await websocket.send_json({"type": "playback_complete"})
     return None
@@ -205,23 +228,27 @@ async def _stream_playback(
 async def _run_playback(
     websocket: WebSocket, incoming: "asyncio.Queue[dict]", scenario_id: str
 ) -> dict | None:
-    playback = await asyncio.to_thread(precompute_playback, scenario_id)
-    return await _stream_playback(websocket, incoming, playback, trigger_reason="rule_threshold")
+    novelty_model = await asyncio.to_thread(get_cached_novelty_model)
+    memory_driver = get_shared_driver()
+    playback = await asyncio.to_thread(
+        precompute_playback, scenario_id, None, novelty_model, memory_driver
+    )
+    return await _stream_playback(websocket, incoming, playback)
 
 
 async def _run_open_challenge(websocket: WebSocket, incoming: "asyncio.Queue[dict]") -> dict | None:
     """Draws one of the curated Open Challenge combinations at random and
-    streams it exactly like an authored scenario — the only difference
+    streams it exactly like an authored scenario. The only difference
     is the trigger is the novelty path, since these are tuned to evade
     rule/threshold by construction (§13.5)."""
     params = random.choice(CURATED_COMBINATIONS)
     seed = random.randint(80000, 89999)
-    novelty_model = await asyncio.to_thread(fit_novelty_model_from_library)
+    novelty_model = await asyncio.to_thread(get_cached_novelty_model)
     playback = await asyncio.to_thread(
         precompute_open_challenge_playback, params, seed, novelty_model
     )
     await websocket.send_json({"type": "open_challenge_drawn", "label": params.label})
-    return await _stream_playback(websocket, incoming, playback, trigger_reason="novelty")
+    return await _stream_playback(websocket, incoming, playback)
 
 
 async def scenario_websocket(websocket: WebSocket) -> None:

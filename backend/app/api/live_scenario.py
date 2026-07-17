@@ -1,18 +1,31 @@
 """Precomputes a scenario's playback: per-minute zone risk and worker
 occupancy, reusing the real Step 2 simulator and Step 3 detection code
 directly (not the MCP protocol layer, which exists for external/agent
-access, not internal orchestration) — one implementation of "what
+access, not internal orchestration). One implementation of "what
 happened when" serves both the offline detection tests and this live
 playback stream.
+
+The live trigger check mirrors the Evaluation Harness's own three-path
+logic (`app/evaluation/harness.py`): rule/threshold, novelty, and, when
+a memory driver is available, retrieval-similarity, picking whichever
+fires earliest. This matters beyond symmetry with the harness: S5 is
+deliberately built to never trip rule/threshold, so without the
+novelty and retrieval paths wired in here too, selecting S5 live would
+stream to the end with no trigger at all, no matter how long the
+memory loop has been running.
 """
 
 from dataclasses import dataclass, field
 from datetime import timedelta
 from pathlib import Path
 
+from neo4j import Driver
+
 from app.detection.anomaly_scorer import AnomalyPoint, score_series
 from app.detection.novelty_detector import NoveltyModel, find_first_novelty_trigger
-from app.detection.permit_conflict import active_permits_at, check_permit_conflict
+from app.detection.retrieval_trigger import RetrievalTriggerResult, find_first_retrieval_trigger
+from app.detection.trigger import find_first_trigger
+from app.memory.exemplar_store import MemoryExemplar
 from app.schemas import RiskLevel, ScenarioConfig
 from app.simulation.open_challenge import OpenChallengeParams, assemble_open_challenge_config
 from app.simulation.plant_layout import load_plant_layout
@@ -49,10 +62,12 @@ class ScenarioPlayback:
     trigger_frame_index: int | None
     points: list[AnomalyPoint]
     trigger_tick_index: int | None
+    trigger_reason: str | None = None
+    matched_exemplar: MemoryExemplar | None = None
 
 
 def find_default_seed(scenario_id: str) -> int:
-    """First `population`-split seed authored for this scenario type —
+    """First `population`-split seed authored for this scenario type,
     the default demo instance, not one hand-picked for a specific run."""
     subdir = SCENARIOS_ROOT / scenario_id.lower()
     for path in sorted(subdir.glob("*.yaml")):
@@ -82,15 +97,16 @@ def _signal_values(out: ScenarioOutput) -> list[float]:
 def _build_playback(
     config: ScenarioConfig,
     out: ScenarioOutput,
-    trigger_tick_predicate,
+    pipeline_tick_index: int | None,
+    trigger_reason: str | None,
+    matched_exemplar: MemoryExemplar | None = None,
 ) -> ScenarioPlayback:
-    """Shared frame-building loop for both authored scenarios (rule/
-    threshold + permit-conflict trigger) and Open Challenge scenarios
-    (novelty trigger only, since they're specifically tuned to evade
-    rule/threshold) — `trigger_tick_predicate(tick_index) -> bool`
-    decides which tick counts as the trigger point either way."""
+    """Shared frame-building loop. `pipeline_tick_index` is the single,
+    already-decided trigger point (whichever of rule/threshold, novelty,
+    or retrieval-similarity fired earliest). Every frame at or past it
+    is marked `should_trigger`, matching the same "first tick past the
+    trigger" semantics the Open Challenge path already used."""
     layout = load_plant_layout()
-    zone_obj = next(z for z in layout.zones if z.zone_id == config.zone)
     all_zone_ids = [z.zone_id for z in layout.zones]
 
     points: list[AnomalyPoint] = score_series(_signal_values(out))
@@ -103,7 +119,7 @@ def _build_playback(
         minute = tick_index * TICK_SECONDS / 60.0
         at_time = DEFAULT_START_TIME + timedelta(minutes=minute)
 
-        should_trigger = trigger_tick_predicate(tick_index, point)
+        should_trigger = pipeline_tick_index is not None and tick_index >= pipeline_tick_index
 
         zone_risk: dict[str, RiskLevel] = {zid: "SAFE" for zid in all_zone_ids}
         zone_risk[config.zone] = point.risk_level
@@ -127,10 +143,23 @@ def _build_playback(
         trigger_frame_index=trigger_frame_index,
         points=points,
         trigger_tick_index=trigger_tick_index,
+        trigger_reason=trigger_reason if trigger_frame_index is not None else None,
+        matched_exemplar=matched_exemplar if trigger_frame_index is not None else None,
     )
 
 
-def precompute_playback(scenario_id: str, seed: int | None = None) -> ScenarioPlayback:
+def precompute_playback(
+    scenario_id: str,
+    seed: int | None = None,
+    novelty_model: NoveltyModel | None = None,
+    memory_driver: Driver | None = None,
+) -> ScenarioPlayback:
+    """`novelty_model`/`memory_driver`: when supplied, the novelty and
+    retrieval-similarity paths are also checked, and the earliest of all
+    three candidates wins, the same three-path logic
+    `app/evaluation/harness.py` already uses, needed live so a scenario
+    like S5 (which never trips rule/threshold by construction) can still
+    convene the Council when it should."""
     seed = seed if seed is not None else find_default_seed(scenario_id)
     path = find_scenario_config(SCENARIOS_ROOT, scenario_id, seed)
     config = load_scenario_config(path)
@@ -138,14 +167,33 @@ def precompute_playback(scenario_id: str, seed: int | None = None) -> ScenarioPl
 
     layout = load_plant_layout()
     zone_obj = next(z for z in layout.zones if z.zone_id == config.zone)
+    values = _signal_values(out)
 
-    def predicate(tick_index: int, point: AnomalyPoint) -> bool:
-        at_time = DEFAULT_START_TIME + timedelta(seconds=TICK_SECONDS * tick_index)
-        active_permits = active_permits_at(out.permits, config.zone, at_time)
-        conflict = check_permit_conflict(zone_obj, active_permits, point.risk_level)
-        return point.risk_level in ("HIGH", "CRITICAL") or conflict.conflict
+    rule_trigger = find_first_trigger(zone_obj, values, out.permits, DEFAULT_START_TIME)
+    rule_index = rule_trigger.index if rule_trigger else None
 
-    return _build_playback(config, out, predicate)
+    novelty_index = None
+    if novelty_model is not None:
+        novelty_index = find_first_novelty_trigger(novelty_model, zone_obj, out)
+
+    retrieval_result: RetrievalTriggerResult | None = None
+    if novelty_model is not None and memory_driver is not None:
+        retrieval_result = find_first_retrieval_trigger(memory_driver, novelty_model, config, out, zone_obj)
+    retrieval_index = retrieval_result.tick_index if retrieval_result else None
+
+    candidates = [
+        (rule_index, "rule_threshold", None),
+        (novelty_index, "novelty", None),
+        (retrieval_index, "memory_retrieval", retrieval_result.matched_exemplar if retrieval_result else None),
+    ]
+    real_candidates = [(idx, reason, exemplar) for idx, reason, exemplar in candidates if idx is not None]
+
+    if real_candidates:
+        pipeline_index, pipeline_reason, matched_exemplar = min(real_candidates, key=lambda c: c[0])
+    else:
+        pipeline_index, pipeline_reason, matched_exemplar = None, None, None
+
+    return _build_playback(config, out, pipeline_index, pipeline_reason, matched_exemplar)
 
 
 def precompute_open_challenge_playback(
@@ -154,7 +202,7 @@ def precompute_open_challenge_playback(
     """The Open Challenge's live counterpart to `precompute_playback`:
     the scenario is assembled from parameters instead of loaded from the
     authored library, and the trigger is the novelty path specifically
-    (§13.5) — these combinations are tuned to never trip rule/threshold,
+    (§13.5). These combinations are tuned to never trip rule/threshold
     by design, so checking for that here would just never fire."""
     config = assemble_open_challenge_config(params, seed)
     out = run_scenario(config)
@@ -163,7 +211,4 @@ def precompute_open_challenge_playback(
 
     novelty_tick_index = find_first_novelty_trigger(novelty_model, zone_obj, out)
 
-    def predicate(tick_index: int, _point: AnomalyPoint) -> bool:
-        return novelty_tick_index is not None and tick_index >= novelty_tick_index
-
-    return _build_playback(config, out, predicate)
+    return _build_playback(config, out, novelty_tick_index, "novelty")

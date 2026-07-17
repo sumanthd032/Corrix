@@ -5,10 +5,11 @@ import { CounterfactualReplayModal } from './CounterfactualReplayModal'
 import { EvaluationReportModal } from './EvaluationReportModal'
 
 const SCENARIOS = [
-  { id: 'S1', label: 'S1 — Anchor (Ladle Bay)' },
-  { id: 'S2', label: 'S2 — Confined Space' },
-  { id: 'S3', label: 'S3 — Maintenance / Gas' },
-  { id: 'S4', label: 'S4 — Hot Work / Gas' },
+  { id: 'S1', label: 'S1: Anchor (Ladle Bay)' },
+  { id: 'S2', label: 'S2: Confined Space' },
+  { id: 'S3', label: 'S3: Maintenance / Gas' },
+  { id: 'S4', label: 'S4: Hot Work / Gas' },
+  { id: 'S5', label: 'S5: Silent Drift (Near-Miss)' },
 ]
 
 export function TopControlBar() {
@@ -64,7 +65,7 @@ export function TopControlBar() {
         disabled={connectionMode !== 'live'}
         title={
           connectionMode !== 'live'
-            ? 'Requires the live backend — draws and runs an unscripted evidence combination live'
+            ? 'Requires the live backend, which draws and runs an unscripted evidence combination live'
             : 'Draw one of the curated Open Challenge combinations and run it live'
         }
         className="flex items-center gap-1.5 rounded-[var(--radius-control)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors disabled:opacity-40"

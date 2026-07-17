@@ -1,9 +1,10 @@
 """Assembles the novelty detector's training set from the real scenario
 library, per §13.2: every tick of every `memory_split: population`
 negative-control run is, for free, a reference sample of what a normal
-joint plant state looks like — no new data generation needed.
+joint plant state looks like. No new data generation needed.
 """
 
+from functools import lru_cache
 from pathlib import Path
 
 from app.detection.joint_evidence import build_joint_evidence_series
@@ -32,3 +33,14 @@ def collect_population_negative_control_vectors(
 def fit_novelty_model_from_library(scenarios_dir: Path = SCENARIOS_DIR) -> NoveltyModel:
     training_vectors = collect_population_negative_control_vectors(scenarios_dir)
     return fit_novelty_model(training_vectors)
+
+
+@lru_cache
+def get_cached_novelty_model() -> NoveltyModel:
+    """The live system (scenario triggering, Open Challenge) fits this
+    once per process and reuses it: refitting on every scenario switch
+    or Open Challenge draw would mean re-running every population
+    negative control from scratch on every request, for a model whose
+    training set (the authored scenario library) never changes at
+    runtime."""
+    return fit_novelty_model_from_library()

@@ -26,7 +26,7 @@ const BASELINE_ZONE_RISK: Record<string, RiskLevel> = {
   Z8: 'SAFE',
 }
 
-/** One mock bundle per scenario — matches the hand-crafted evidence
+/** One mock bundle per scenario, matches the hand-crafted evidence
  * payloads and verified Chair outputs from Step 4
  * (backend/app/council/sample_payloads.py), so the shell's mock
  * behavior is consistent with what the real Council actually produces
@@ -125,7 +125,7 @@ const SCENARIO_MOCKS: Record<string, ScenarioMock> = {
         horizonMinutes: 60,
       },
       explanation:
-        'Rising confined-space gas, an active entry permit, an imminent changeover, and confirmed worker presence all coincide in Zone 7 — a compound risk, not a single elevated reading.',
+        'Rising confined-space gas, an active entry permit, an imminent changeover, and confirmed worker presence all coincide in Zone 7. This is a compound risk, not a single elevated reading.',
       recommendedAction:
         'Withdraw personnel from Zone 7 pending gas re-verification; do not begin changeover handoff until cleared.',
       evacuationRoute: ['Z7', 'Z8'],
@@ -214,7 +214,7 @@ const SCENARIO_MOCKS: Record<string, ScenarioMock> = {
         horizonMinutes: 60,
       },
       explanation:
-        'An active hot-work permit combined with a discrete gas release in the same zone at the same time is exactly the compound pattern the brief names — the release is already decaying, but the permit context is what makes it urgent.',
+        'An active hot-work permit combined with a discrete gas release in the same zone at the same time is exactly the compound pattern the brief names. The release is already decaying, but the permit context is what makes it urgent.',
       recommendedAction:
         'Halt hot work under permit P-9102 immediately; re-verify Zone 2 atmosphere before resuming.',
       evacuationRoute: ['Z2', 'Z3', 'Z4'],
@@ -226,6 +226,47 @@ const SCENARIO_MOCKS: Record<string, ScenarioMock> = {
         zoneId: 'Z2',
         riskLevel: 'HIGH',
         summary: 'Hot-work permit active during a discrete gas release in the same zone',
+      },
+    ],
+  },
+  S5: {
+    zoneRisk: { ...BASELINE_ZONE_RISK, Z2: 'CAUTION' },
+    workers: [{ badgeId: 'W-0512', zoneId: 'Z2', jitter: jitterFor(512) }],
+    verdict: {
+      zoneId: 'Z2',
+      scenarioId: 'S5',
+      triggerReason: 'memory_retrieval',
+      timestamp: new Date().toISOString(),
+      council: {
+        processSafetyEngineer:
+          'Zone 2 LEL reading is only mildly elevated, statistically unremarkable on its own',
+        permitControlOfficer: 'No active permits currently on file for Zone 2',
+        shiftOperations: 'Zone 2 shift changeover is not imminent',
+        siteSafetyObserver: 'Badge W-0512 present in Zone 2',
+      },
+      riskLevel: 'HIGH',
+      confidence: 0.74,
+      compoundFlag: false,
+      timeToCritical: {
+        medianMinutes: 60,
+        iqrLowMinutes: 60,
+        iqrHighMinutes: 60,
+        escalationProbability: 0.0,
+        horizonMinutes: 60,
+      },
+      explanation:
+        'No single reading crosses a threshold here, and nothing about it looks urgent in isolation. This is flagged because it closely resembles a documented past miss the memory loop stored: a slow, sub-threshold drift in this same zone that later proved to matter.',
+      recommendedAction:
+        'Log for review; no immediate action required, but do not dismiss the pattern match.',
+      evacuationRoute: null,
+    },
+    alerts: [
+      {
+        id: 'AL-F-S5-1',
+        timestamp: new Date(Date.now() - 6 * 60_000).toISOString(),
+        zoneId: 'Z2',
+        riskLevel: 'CAUTION',
+        summary: 'Sub-threshold gas drift matched against a stored historical near-miss',
       },
     ],
   },
@@ -244,7 +285,7 @@ export const MOCK_CHAT_HISTORY: RegulatoryChatMessage[] = [
   {
     id: 'msg-2',
     role: 'assistant',
-    text: 'Where a manufacturing process produces dust, gas, fume, or vapour likely to explode on ignition, all practicable measures must be taken to prevent explosion — effective enclosure of plant, removal of accumulated gas, and exclusion of ignition sources.',
+    text: 'Where a manufacturing process produces dust, gas, fume, or vapour likely to explode on ignition, all practicable measures must be taken to prevent explosion: effective enclosure of plant, removal of accumulated gas, and exclusion of ignition sources.',
     citations: [
       {
         framework: 'Factories_Act_1948',
