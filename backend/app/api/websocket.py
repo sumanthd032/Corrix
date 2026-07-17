@@ -19,6 +19,7 @@ Server -> client:
   {"type": "council_convening"}
   {"type": "deliberating", "council": {...four evidence texts...}}
   {"type": "verdict", "verdict": {...camelCase CouncilVerdict...}}
+  {"type": "ero_fired", "zoneId": ..., "deliveredOk": bool, "evidenceHash": "..."}
   {"type": "playback_complete"}
 """
 
@@ -46,6 +47,7 @@ from app.detection.anomaly_scorer import calibrate_baseline
 from app.detection.evacuation_routing import find_evacuation_route
 from app.detection.novelty_training import get_cached_novelty_model
 from app.detection.time_to_critical import forecast_time_to_critical
+from app.emergency.orchestrator import fire_emergency_response
 from app.memory.exemplar_store import get_shared_driver
 from app.schemas import CouncilVerdict
 from app.simulation.open_challenge import CURATED_COMBINATIONS
@@ -190,6 +192,24 @@ async def _convene_council(
     )
 
     await websocket.send_json({"type": "verdict", "verdict": _verdict_to_camel(verdict)})
+
+    if verdict.risk_level == "CRITICAL":
+        worker_badge_ids = [
+            badge_id for badge_id, zone_id in frame.worker_positions.items()
+            if zone_id == verdict.zone_id
+        ]
+        alert = await asyncio.to_thread(
+            fire_emergency_response, verdict, worker_badge_ids, get_shared_driver()
+        )
+        await websocket.send_json(
+            {
+                "type": "ero_fired",
+                "zoneId": alert.zone_id,
+                "deliveredOk": alert.delivery_error is None,
+                "evidenceHash": alert.evidence_hash,
+                "firedAt": alert.fired_at,
+            }
+        )
 
 
 async def _stream_playback(

@@ -21,6 +21,7 @@ export function TopControlBar() {
   const connectionMode = useCorrixStore((s) => s.connectionMode)
   const triggerOpenChallenge = useCorrixStore((s) => s.triggerOpenChallenge)
   const openChallengeLabel = useCorrixStore((s) => s.openChallengeLabel)
+  const eroFired = useCorrixStore((s) => s.eroFired)
   const [reportOpen, setReportOpen] = useState(false)
   const [replayOpen, setReplayOpen] = useState(false)
 
@@ -97,9 +98,27 @@ export function TopControlBar() {
           Incident Report
         </button>
 
-        <span className="flex items-center gap-1.5 text-xs text-[var(--color-text-secondary)]">
+        <span
+          className="flex items-center gap-1.5 text-xs"
+          style={{
+            color: eroFired
+              ? eroFired.deliveredOk
+                ? 'var(--color-accent)'
+                : 'var(--color-risk-critical)'
+              : 'var(--color-text-secondary)',
+          }}
+          title={
+            eroFired
+              ? `Evidence hash: ${eroFired.evidenceHash}\nFired at: ${eroFired.firedAt}`
+              : 'No CRITICAL verdict has fired the Emergency Response Orchestrator yet'
+          }
+        >
           <ShieldAlert size={14} aria-hidden="true" />
-          ERO idle
+          {eroFired
+            ? eroFired.deliveredOk
+              ? `ERO fired: Zone ${eroFired.zoneId}`
+              : `ERO fired: Zone ${eroFired.zoneId} (delivery failed)`
+            : 'ERO idle'}
         </span>
 
         <button

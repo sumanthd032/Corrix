@@ -11,6 +11,7 @@ interface ServerMessage {
     | 'council_convening'
     | 'deliberating'
     | 'verdict'
+    | 'ero_fired'
     | 'playback_complete'
   minute?: number
   zoneRisk?: Record<string, RiskLevel>
@@ -18,6 +19,10 @@ interface ServerMessage {
   council?: CouncilEvidence
   verdict?: CouncilVerdict
   label?: string
+  zoneId?: string
+  deliveredOk?: boolean
+  evidenceHash?: string
+  firedAt?: string
 }
 
 /** Connects to the live scenario WebSocket and drives the Zustand store
@@ -77,6 +82,16 @@ export function useScenarioSocket() {
           break
         case 'verdict':
           if (msg.verdict) store.applyLiveVerdict(msg.verdict)
+          break
+        case 'ero_fired':
+          if (msg.zoneId && msg.evidenceHash && msg.firedAt) {
+            store.applyEroFired({
+              zoneId: msg.zoneId,
+              deliveredOk: msg.deliveredOk ?? false,
+              evidenceHash: msg.evidenceHash,
+              firedAt: msg.firedAt,
+            })
+          }
           break
         case 'playback_complete':
           break

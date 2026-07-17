@@ -32,6 +32,15 @@ class Settings(BaseSettings):
     groq_max_consecutive_429s: int = 2
     groq_retry_backoff_cap_seconds: float = 10.0
 
+    # Emergency Response Orchestrator (Step 9). SMTP is the channel the
+    # user chose; Slack/Discord are left as empty, unused placeholders.
+    ero_smtp_host: str = ""
+    ero_smtp_port: int = 587
+    ero_smtp_username: str = ""
+    ero_smtp_password: str = ""
+    ero_alert_from_email: str = ""
+    ero_alert_to_email: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -4,6 +4,7 @@ import type {
   CouncilEvidence,
   CouncilStage,
   CouncilVerdict,
+  EroFiredEvent,
   RegulatoryChatMessage,
   RiskLevel,
   WorkerMarker,
@@ -29,6 +30,7 @@ interface CorrixState {
   liveOverrideSender: ((note: string) => void) | null
   openChallengeSender: (() => void) | null
   openChallengeLabel: string | null
+  eroFired: EroFiredEvent | null
 
   setScenario: (scenarioId: string) => void
   setCouncilStage: (stage: CouncilStage) => void
@@ -46,6 +48,7 @@ interface CorrixState {
   startLiveConvening: () => void
   applyLiveDeliberating: (evidence: CouncilEvidence) => void
   applyLiveVerdict: (verdict: CouncilVerdict) => void
+  applyEroFired: (event: EroFiredEvent) => void
 }
 
 const initialMock = scenarioMock('S1')
@@ -66,6 +69,7 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
   liveOverrideSender: null,
   openChallengeSender: null,
   openChallengeLabel: null,
+  eroFired: null,
 
   setScenario: (scenarioId) => {
     if (get().connectionMode === 'live') {
@@ -138,6 +142,7 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
       overridePaused: false,
       councilStage: 'idle',
       openChallengeLabel: null,
+      eroFired: null,
     }),
   applyLiveTick: (zoneRisk, workerZones) => {
     const workers: WorkerMarker[] = Object.entries(workerZones).map(([badgeId, zoneId]) => ({
@@ -152,4 +157,5 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
     set({ councilStage: 'deliberating', liveEvidence: evidence, overridePaused: true }),
   applyLiveVerdict: (verdict) =>
     set({ councilStage: 'verdict_reached', verdict, liveEvidence: null, overridePaused: false }),
+  applyEroFired: (event) => set({ eroFired: event }),
 }))

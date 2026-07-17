@@ -58,6 +58,13 @@ export interface AlertFeedEntry {
 
 export type CouncilStage = 'idle' | 'convening' | 'deliberating' | 'verdict_reached'
 
+export interface EroFiredEvent {
+  zoneId: string
+  deliveredOk: boolean
+  evidenceHash: string
+  firedAt: string
+}
+
 export interface RegulatoryChatMessage {
   id: string
   role: 'user' | 'assistant'
