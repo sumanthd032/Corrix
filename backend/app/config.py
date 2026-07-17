@@ -23,6 +23,15 @@ class Settings(BaseSettings):
     backend_host: str = "0.0.0.0"
     backend_port: int = 8000
 
+    # LLM call tuning. Defaults match the live Council's existing behavior
+    # (up to 4 concurrent evidence-agent calls per convening, fail over to
+    # Gemini quickly on a real rate limit); batch scripts that run many
+    # Council convenings back to back (e.g. run_memory_loop_experiment.py)
+    # can override these via .env to stay under a free-tier TPM budget.
+    llm_max_concurrent_requests: int = 8
+    groq_max_consecutive_429s: int = 2
+    groq_retry_backoff_cap_seconds: float = 10.0
+
 
 @lru_cache
 def get_settings() -> Settings:
