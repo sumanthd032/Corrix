@@ -1,4 +1,4 @@
-"""Confidence calibration, per CORRIX_DATA_METHODOLOGY.md §14.2 — tested
+"""Confidence calibration, per CORRIX_DATA_METHODOLOGY.md §14.2. Tested
 against synthetic results, same pattern as the harness's own metrics
 tests."""
 

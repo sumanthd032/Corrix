@@ -1,7 +1,7 @@
 """Shift roster generator, per CORRIX_DATA_METHODOLOGY.md §6.
 
 Standard three-shift industrial pattern (06:00-14:00, 14:00-22:00,
-22:00-06:00), deterministic — not seeded/stochastic, since shift
+22:00-06:00), deterministic, not seeded/stochastic, since shift
 boundaries don't vary run to run. Plus one scenario-specific ShiftRecord
 whose changeover lands exactly at the scenario's configured
 `changeover_at_minute`, so the Shift Operations agent can answer "is a

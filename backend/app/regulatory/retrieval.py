@@ -1,19 +1,19 @@
 """One retrieval layer serving three query shapes over the single Neo4j
 substrate, per CORRIX_BUILD_PLAN.md Step 5 and CORRIX_PROJECT.md §8
-Pillar 3 — resist the urge to build three separate agents/servers for
+Pillar 3: resist the urge to build three separate agents/servers for
 one database.
 
-1. `answer_regulatory_question` — vector similarity Q&A.
-2. `lookup_incident_pattern` — graph traversal ("has this pattern
+1. `answer_regulatory_question`: vector similarity Q&A.
+2. `lookup_incident_pattern`: graph traversal ("has this pattern
    happened before").
-3. `check_compliance` — matches a deviation type against the mocked
+3. `check_compliance`: matches a deviation type against the mocked
    audit-log corpus and returns the real clause it violates.
 
-DGMS handling: no DGMS content is ingested yet (§7.3 — pending user
+DGMS handling: no DGMS content is ingested yet (§7.3, pending user
 selection/verification against dgms.gov.in). `answer_regulatory_question`
 still accepts `framework="DGMS"` and honestly reports zero results
 rather than silently falling back to OISD/Factories Act content and
-mislabeling it — once DGMS clauses exist, they carry `is_supplementary:
+mislabeling it; once DGMS clauses exist, they carry `is_supplementary:
 true` in every result, never presented as a primary citation.
 """
 

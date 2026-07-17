@@ -24,7 +24,7 @@ def test_route_avoids_a_critical_intermediate_zone():
     """The Step 8 Definition of Done: a CRITICAL verdict produces a route
     that visibly avoids any other currently-unsafe zone. Z2's two
     shortest paths to an assembly point are equal-cost (Z2-Z3-Z4 and
-    Z2-Z7-Z8) — with Z3 healthy, the route goes through it; with Z3
+    Z2-Z7-Z8): with Z3 healthy, the route goes through it; with Z3
     marked CRITICAL, the route must reroute through Z7 instead."""
     healthy_route = find_evacuation_route(LAYOUT, {}, "Z2")
     assert "Z3" in healthy_route.path
@@ -44,7 +44,7 @@ def test_route_avoids_high_risk_zone_too_not_only_critical():
 def test_route_still_uses_an_elevated_zone_if_it_is_the_only_path():
     """If every alternative is also elevated (or there is no alternative),
     the search still returns the best available path rather than failing
-    outright — a real evacuation instruction beats none."""
+    outright. A real evacuation instruction beats none."""
     zone_risk = {"Z3": "CRITICAL", "Z7": "CRITICAL"}
     route = find_evacuation_route(LAYOUT, zone_risk, "Z2")
     assert route is not None

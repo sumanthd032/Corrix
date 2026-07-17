@@ -60,7 +60,7 @@ def test_every_positive_scenario_carries_a_valid_memory_split(path):
 @pytest.mark.parametrize("path", NEGATIVE_PATHS, ids=lambda p: p.stem)
 def test_negative_controls_have_baseline_signal_but_no_source_term(path):
     """Negative controls run the identical gas generator with S(t)=0 (a=0),
-    per §12.4 — baseline + noise only, not an empty stream. No compliance
+    per §12.4: baseline + noise only, not an empty stream. No compliance
     signal, since that's tied to a lifting/casting permit context negative
     controls don't have."""
     config = load_scenario_config(path)
@@ -70,7 +70,7 @@ def test_negative_controls_have_baseline_signal_but_no_source_term(path):
     out = run_scenario(config)
     assert len(out.gas_readings) > 0
     assert out.compliance_readings == []
-    # background traffic still exists — a negative control isn't an empty plant
+    # background traffic still exists; a negative control isn't an empty plant
     assert len(out.permits) > 0
     assert len(out.worker_pings) > 0
 
@@ -115,7 +115,7 @@ def test_s2_gas_signal_has_plateau_then_secondary_rise():
 @pytest.mark.parametrize("path", (SCENARIOS_DIR / "s5").glob("*.yaml"), ids=lambda p: p.stem)
 def test_s5_never_trips_the_rule_threshold_trigger(path):
     """S5's entire purpose (§12.3) is being unsolvable by the Step 3
-    rule/threshold path by construction — checked against the real
+    rule/threshold path by construction. This is checked against the real
     trigger function (rule/threshold OR permit conflict), not just the
     z-score in isolation, since a high-hazard zone's background permits
     can independently trip a conflict on ordinary noise alone (the real

@@ -1,5 +1,5 @@
 """Scenario engine end-to-end: determinism, schema validity, and
-worker-location/permit consistency — the Step 2 Definition of Done."""
+worker-location/permit consistency, the Step 2 Definition of Done."""
 
 from pathlib import Path
 
@@ -24,7 +24,7 @@ def test_run_scenario_is_bit_for_bit_deterministic():
 
 def test_output_is_schema_valid_with_zero_manual_patching():
     # run_scenario_from_file returns a fully-typed ScenarioOutput built
-    # entirely from Step 1 schema instances — if this call succeeds, every
+    # entirely from Step 1 schema instances. If this call succeeds, every
     # nested model already validated during construction.
     out = run_scenario_from_file(S1_EXAMPLE)
     assert out.scenario_id == "S1"
@@ -40,7 +40,7 @@ def test_worker_with_active_permit_shows_up_in_that_zone():
 
 
 def test_compliance_signal_present_and_gas_signal_absent_for_s1():
-    """S1 uses the procedural-compliance model, not the gas model — the two
+    """S1 uses the procedural-compliance model, not the gas model; the two
     are structurally separate per §2/§4."""
     out = run_scenario_from_file(S1_EXAMPLE)
     assert len(out.compliance_readings) > 0

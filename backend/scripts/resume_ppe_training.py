@@ -1,6 +1,6 @@
 """Resumes the interrupted Construction-PPE fine-tune from its last
 checkpoint, continuing to the original 30-epoch target. Run repeatedly
-if interrupted again — each call picks up from whatever `last.pt`
+if interrupted again. Each call picks up from whatever `last.pt`
 currently holds.
 """
 

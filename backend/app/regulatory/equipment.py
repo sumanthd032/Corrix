@@ -1,4 +1,4 @@
-"""A small, illustrative equipment list, one plausible asset per zone —
+"""A small, illustrative equipment list, one plausible asset per zone,
 just enough for the Equipment node type in the graph schema to be
 genuinely populated and linkable from Incident records, not merely
 declared. Not exhaustive; a real deployment would import an actual

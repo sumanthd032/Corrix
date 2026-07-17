@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 /*
- * Corrix design tokens — single source of truth, per CLAUDE.md §6.
+ * Corrix design tokens: single source of truth, per CLAUDE.md §6.
  * "Industrial Command Center": dark, glassmorphic, per CORRIX_PROJECT.md §11.
  *
  * Risk-state color interpretation note: the design doc's palette table
@@ -9,7 +9,7 @@
  * has four levels (SAFE/CAUTION/HIGH/CRITICAL), and §11's own signature-
  * moments list describes a four-stop transition ("green → yellow → orange
  * → red"). Read literally, the doc's "amber" (#FF8C00) is that sequence's
- * "orange" stop, not its "yellow" one — so a distinct yellow was added for
+ * "orange" stop, not its "yellow" one, so a distinct yellow was added for
  * CAUTION, and the doc's amber hex was kept, unchanged, for HIGH. Every
  * other hex below is copied directly from §11's table.
  */
@@ -27,7 +27,7 @@
   /* Color: accent */
   --color-accent: #00b4d8;
 
-  /* Color: risk states — always paired with a distinct icon/shape, never color alone */
+  /* Color: risk states, always paired with a distinct icon/shape, never color alone */
   --color-risk-safe: #2e7d32;
   --color-risk-caution: #f2c94c;
   --color-risk-high: #ff8c00;

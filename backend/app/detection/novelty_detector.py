@@ -3,12 +3,12 @@ A second, independent trigger path alongside the Step 3 rule/threshold
 trigger: catches a compound-risk combination nobody scripted, including
 the five authored scenario types, by scoring how statistically unusual
 the *joint* evidence state is against a reference distribution of normal
-plant days — rather than checking any one signal against its own
+plant days, rather than checking any one signal against its own
 threshold.
 
 Per §13.3: the simplest model that actually separates known-positive
 scenarios from negative controls in a quick offline check is the right
-choice, not the most elaborate one — a Mahalanobis distance against a
+choice, not the most elaborate one: a Mahalanobis distance against a
 fitted multivariate Gaussian, not an autoencoder.
 """
 
@@ -42,7 +42,7 @@ def fit_novelty_model(
     """Fit a multivariate Gaussian over `training_vectors` (every tick of
     every `memory_split: population` negative-control run, per §13.2) and
     calibrate a threshold as the given percentile of the *training set's
-    own* scores (§13.3's "calibrated via the same negative-control set") —
+    own* scores (§13.3's "calibrated via the same negative-control set"),
     an empirical calibration rather than a fixed chi-square critical value,
     since the features are a mix of a heavy-tailed z-score and near-binary
     indicators, not a clean multivariate normal.
@@ -51,17 +51,17 @@ def fit_novelty_model(
     mean = data.mean(axis=0)
     cov = np.cov(data, rowvar=False)
     # A near-constant feature makes the covariance matrix singular and
-    # needs regularizing before inverting — but a single tiny ridge
+    # needs regularizing before inverting, but a single tiny ridge
     # constant across every dimension is the wrong fix here, checked
     # empirically rather than assumed correct: negative controls' short
     # windows never actually reach a shift changeover, so the
     # changeover-proximity feature has essentially zero variance in this
     # training set specifically (not because it's an unimportant
-    # feature — S1-S4 all deliberately script events near changeover).
+    # feature; S1-S4 all deliberately script events near changeover).
     # A universal 1e-6 ridge treats that near-zero variance as the *real*
     # expected variance, so any genuine changeover proximity elsewhere
     # produces a Mahalanobis contribution large enough to swamp every
-    # other feature — turning a joint-evidence detector into a
+    # other feature, turning a joint-evidence detector into a
     # single-feature one. Flooring each feature's own variance at a
     # sensible minimum (rather than adding one constant to all of them)
     # keeps a near-constant feature from dominating the distance while

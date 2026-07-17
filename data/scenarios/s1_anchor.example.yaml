@@ -1,7 +1,7 @@
 scenario_id: S1
-name: "Anchor case — ladle moisture/entrapped-gas compound risk"
+name: "Anchor case: ladle moisture/entrapped-gas compound risk"
 seed: 20260714
-memory_split: population   # population | held_out — see README.md
+memory_split: population   # population | held_out, see README.md
 duration_minutes: 90
 zone: Z1
 signals:

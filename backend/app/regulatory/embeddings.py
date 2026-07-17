@@ -1,7 +1,7 @@
 """Local embedding model for the regulatory RAG corpus, per the user's
 decision to avoid tying every regulatory query to Gemini's free-tier
 rate limit (already observed tight during Step 4 testing). Runs
-entirely offline after the one-time model download — no API calls, no
+entirely offline after the one-time model download: no API calls, no
 rate limit, safe for repeated live-demo Q&A.
 """
 

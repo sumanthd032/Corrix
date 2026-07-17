@@ -1,6 +1,6 @@
 """The Safety Council LangGraph state machine: end-to-end runs against
 hand-crafted S1-S4 payloads, and the Safety Officer Override as a real
-graph interrupt — Step 4's Definition of Done."""
+graph interrupt, per Step 4's Definition of Done."""
 
 import time
 from unittest.mock import patch
@@ -32,13 +32,13 @@ def test_council_runs_end_to_end_in_a_few_seconds(scenario_id):
             thread_id=f"test-timing-{scenario_id}",
         )
     elapsed = time.time() - start
-    assert elapsed < 30, f"{scenario_id} took {elapsed:.1f}s — too slow for a live demo"
+    assert elapsed < 30, f"{scenario_id} took {elapsed:.1f}s, too slow for a live demo"
     assert verdict.risk_level in ("HIGH", "CRITICAL")
     assert verdict.compound_flag is True
 
 
 def test_s2_s3_s4_produce_differently_reasoned_verdicts():
-    """Not just S1 — the same graph must generalize, not fit one scripted
+    """Not just S1: the same graph must generalize, not fit one scripted
     case (Step 4 DoD)."""
     explanations = set()
     for scenario_id in ["S2", "S3", "S4"]:
@@ -60,7 +60,7 @@ def test_override_pauses_before_chair_and_incorporates_the_note():
     """A real LangGraph interrupt: the graph stops before the chair node,
     a human note is written into the checkpointed state, and resuming
     produces a verdict whose explanation/recommended_action visibly
-    reflects it — not a UI-only pause."""
+    reflects it, not a UI-only pause."""
     graph = build_council_graph()
     config = {"configurable": {"thread_id": "test-override"}}
     payload = ALL_SAMPLE_PAYLOADS["S1"]
@@ -97,7 +97,7 @@ def test_override_pauses_before_chair_and_incorporates_the_note():
 
 def test_silo_enforced_inside_the_graph_not_just_on_the_agent_object():
     """The evidence node for the Process Safety Engineer must only ever
-    be able to call tools from its bound server — checked here at the
+    be able to call tools from its bound server, checked here at the
     node-construction level used by the actual compiled graph."""
     node = _make_evidence_node(PROCESS_SAFETY_ENGINEER)
     assert node.__name__ == "evidence_process_safety_engineer"
@@ -109,7 +109,7 @@ def test_silo_enforced_inside_the_graph_not_just_on_the_agent_object():
 
 def test_graph_resolves_via_gemini_when_groq_is_deliberately_blocked():
     """Step 4's Definition of Done: deliberately exhaust/block the Groq
-    path once and confirm the graph still resolves — checked here at the
+    path once and confirm the graph still resolves, checked here at the
     full graph level (all four agents + Chair), not just the client."""
 
     def _broken_groq(*args, **kwargs):

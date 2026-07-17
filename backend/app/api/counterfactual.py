@@ -5,7 +5,7 @@ traditional single-signal monitoring system would have shown instead.
 
 The legacy path is real, not a strawman: it's the same z-score anomaly
 scorer Step 3 already validated (`classify_z_score`), applied with no
-awareness of permit state, worker presence, or shift timing at all —
+awareness of permit state, worker presence, or shift timing at all,
 precisely what a siloed sensor-only system looks like. The Corrix path
 is the same trigger condition the live system actually uses (anomaly OR
 permit conflict). Both are computed from the identical simulated data;
@@ -67,7 +67,7 @@ def _first_escalation_minute(frames: list[ReplayFrame], attr: str) -> float | No
 def build_replay_timeline(scenario_id: str, seed: int | None = None) -> ReplayTimeline:
     zones_by_id = {z.zone_id: z for z in load_plant_layout().zones}
     if seed is None:
-        # first available seed for this scenario type, any split — the
+        # first available seed for this scenario type, any split, the
         # replay is illustrative, not an evaluation-harness measurement
         subdir = SCENARIOS_ROOT / scenario_id.lower()
         path = sorted(subdir.glob("*.yaml"))[0]
@@ -91,7 +91,7 @@ def build_replay_timeline(scenario_id: str, seed: int | None = None) -> ReplayTi
         active_permits = active_permits_at(out.permits, config.zone, at_time)
         conflict = check_permit_conflict(zone, active_permits, point.risk_level)
         # A permit conflict is a real compound escalation even when the
-        # raw anomaly alone is only SAFE/CAUTION — the same OR-condition
+        # raw anomaly alone is only SAFE/CAUTION, the same OR-condition
         # `trigger.py` already uses, translated into a displayable risk
         # level rather than a bare trigger boolean. Shown as HIGH (a
         # conflict is a real, actionable escalation), not CRITICAL,

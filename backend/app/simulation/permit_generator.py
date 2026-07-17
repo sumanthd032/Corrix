@@ -3,7 +3,7 @@
 Two parts: the scenario's own scripted/injected permit (the one the
 compound-risk narrative depends on), and a continuous background rate of
 routine, non-conflicting permits across all zones so the plant looks
-operationally busy rather than artificially quiet outside "the" scenario —
+operationally busy rather than artificially quiet outside "the" scenario;
 this also matters for negative-control runs (§12.4), which get the
 background generator only.
 """
@@ -22,7 +22,7 @@ BACKGROUND_ISSUERS = [
     "Area Engineer S. Krishnan",
 ]
 
-# Only low-conflict-risk permit types are used for background traffic —
+# Only low-conflict-risk permit types are used for background traffic;
 # deterministic conflict checking is Step 3's job; Step 2 just needs
 # plausible, non-scenario-narrative activity in the background.
 BACKGROUND_PERMIT_TYPES = [PermitType.COLD_WORK, PermitType.ELECTRICAL_ISOLATION]

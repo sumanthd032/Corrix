@@ -1,6 +1,6 @@
 """The event-trigger condition, per CORRIX_BUILD_PLAN.md Step 3: anomaly
 score or permit-conflict crossing a configured threshold. This is what
-will later convene the Safety Council (Step 4) — defined here as a plain
+will later convene the Safety Council (Step 4), defined here as a plain
 function, not one of the Council's siloed agents, since the fast-path
 trigger is explicitly allowed to look at both sensor and permit data at
 once (it's the deterministic baseline, not a Council member bound by the
@@ -63,7 +63,7 @@ def find_first_trigger(
     start_time: datetime,
 ) -> TriggerEvaluation | None:
     """Scan the full run and return the first tick where the trigger
-    condition fires, or None if it never does — the earliest point a
+    condition fires, or None if it never does: the earliest point a
     correct system could reasonably convene the Council."""
     points = score_series(values)
     for i in range(len(points)):

@@ -26,7 +26,7 @@ class TimeToCriticalForecast(BaseModel):
 
 class CouncilEvidence(BaseModel):
     """The four evidence agents' structured outputs, as received only by the
-    Chair (CORRIX_PROJECT.md §6.1) — no agent sees another agent's evidence."""
+    Chair (CORRIX_PROJECT.md §6.1); no agent sees another agent's evidence."""
 
     process_safety_engineer: str
     permit_control_officer: str

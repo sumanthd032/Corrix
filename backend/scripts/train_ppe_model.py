@@ -1,6 +1,6 @@
 """Fine-tunes YOLO11n on the real, open Ultralytics Construction-PPE
 dataset, per CORRIX_BUILD_PLAN.md Step 6. Zero-shot COCO-pretrained YOLO
-only knows "person" — it has no concept of a hardhat or a missing one —
+only knows "person"; it has no concept of a hardhat or a missing one,
 so fine-tuning on this dataset is what actually makes the Site Safety
 Observer's CV signal real PPE detection, not just person-counting.
 

@@ -1,5 +1,5 @@
 """Sensor Stream and Permit/Shift MCP servers' real Step 3 tools, called
-the way an MCP client actually would — through call_tool, not by
+the way an MCP client actually would: through call_tool, not by
 importing the underlying Python functions directly."""
 
 import json

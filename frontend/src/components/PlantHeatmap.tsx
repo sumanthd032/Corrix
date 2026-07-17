@@ -9,7 +9,7 @@ import { riskColorHex } from './RiskBadge'
 import type { RiskLevel } from '../types'
 
 /**
- * Colorblind-safe shape glyphs, one per risk level — checked against a
+ * Colorblind-safe shape glyphs, one per risk level, checked against a
  * deuteranopia/protanopia simulation of the rendered heatmap, which
  * showed SAFE (green) and CAUTION (yellow) fills becoming nearly
  * indistinguishable from each other. The side panels already pair color
@@ -34,7 +34,7 @@ const INITIAL_VIEW_STATE = {
   zoom: 2.1,
 }
 
-/** Isometric mode is a CSS transform on the canvas wrapper — additive,
+/** Isometric mode is a CSS transform on the canvas wrapper, additive,
  * never load-bearing: the flat 2D view stays the tested default. */
 const ISOMETRIC_TRANSFORM = 'rotateX(55deg) rotateZ(-45deg) scale(0.9)'
 
@@ -96,7 +96,7 @@ export function PlantHeatmap() {
         getTextAnchor: 'middle',
         getAlignmentBaseline: 'center',
         // deck.gl's TextLayer only rasterizes an ASCII default character
-        // set — these Unicode shape glyphs must be listed explicitly or
+        // set; these Unicode shape glyphs must be listed explicitly or
         // they silently fail to render (confirmed via a "Missing
         // character" console warning during verification).
         characterSet: Object.values(RISK_GLYPH),

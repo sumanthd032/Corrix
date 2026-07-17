@@ -1,6 +1,6 @@
 """Live CV inference pipeline, per CORRIX_BUILD_PLAN.md Step 6: real
 bounding-box detections from a fine-tuned YOLO11n model (trained on the
-real, open Ultralytics Construction-PPE dataset — see
+real, open Ultralytics Construction-PPE dataset; see
 scripts/train_ppe_model.py), run on a webcam feed or the sample clip,
 timestamped as produced. Genuine forward-pass inference, not a
 pre-baked detection log played back on a timer.
@@ -59,7 +59,7 @@ def run_inference_on_video(
     max_frames: int | None = None,
 ):
     """Yields (video_offset_seconds, wall_clock_timestamp, detections) for
-    frames sampled every `sample_interval_seconds` — real forward-pass
+    frames sampled every `sample_interval_seconds`, real forward-pass
     inference per sampled frame, not interpolated or faked between
     samples."""
     model = get_model()

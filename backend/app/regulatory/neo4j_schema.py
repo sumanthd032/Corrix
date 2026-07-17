@@ -6,22 +6,22 @@ lookup, and a compliance-check mode.
 
 Node labels
 -----------
-Zone             (zone_id, name, hazard_class) — same identity as the
+Zone             (zone_id, name, hazard_class): same identity as the
                  plant layout (Step 2), not a duplicate model, just the
                  graph-side representation the RAG layer needs to join
                  against.
-Equipment        (equipment_id, name, equipment_type, zone_id) — the
+Equipment        (equipment_id, name, equipment_type, zone_id): the
                  physical assets a permit or incident can be tied to.
-PermitType       (name) — one node per permit taxonomy entry (hot_work,
+PermitType       (name): one node per permit taxonomy entry (hot_work,
                  cold_work, confined_space_entry, lifting_operation,
                  electrical_isolation), so pattern-lookup queries can
                  traverse "which incidents involved this permit type."
 Incident         (entry_id, deviation_type, description, timestamp,
-                 source_framework, required_checklist_ref) — the mocked
+                 source_framework, required_checklist_ref): the mocked
                  near-miss/audit-log corpus (§10), schema-identical to
                  Step 1's AuditLogEntry.
 Clause           (clause_id, framework, source_document, section_number,
-                 section_title, text, embedding) — a chunked, vector-
+                 section_title, text, embedding): a chunked, vector-
                  indexed piece of real regulatory text (§11). `embedding`
                  is a list[float] scored by the vector index.
 
@@ -36,13 +36,13 @@ Relationships
                                                         record points to
 
 Why this shape: the doc's own pattern-lookup example question is "has a
-hot-work-near-gas pattern occurred before" — answerable as a graph
+hot-work-near-gas pattern occurred before", answerable as a graph
 traversal from PermitType through Incident to Zone (filtering on
 zone.hazard_class), not a vector search. The compliance-check mode is
 the same traversal from the other direction: given a permit type + zone
 + deviation type, find a matching Incident and follow CITES to its real
 clause. The regulatory Q&A mode is pure vector similarity over Clause
-nodes and doesn't touch the other four labels at all — one database,
+nodes and doesn't touch the other four labels at all: one database,
 three retrieval shapes, per the build plan's explicit instruction not to
 split this into three separate agents/servers.
 """

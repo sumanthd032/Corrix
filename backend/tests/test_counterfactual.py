@@ -17,7 +17,7 @@ def test_replay_timeline_builds_for_every_authored_scenario(scenario_id):
 def test_corrix_path_never_escalates_later_than_the_legacy_path():
     """The whole point of the comparison: Corrix's compound awareness
     (permit conflict included) can only catch things at least as early
-    as a legacy, signal-only system — never later."""
+    as a legacy, signal-only system, never later."""
     for scenario_id in ["S1", "S2", "S3", "S4"]:
         timeline = build_replay_timeline(scenario_id)
         if timeline.legacy_first_escalation_minute is None:
@@ -35,7 +35,7 @@ def test_replay_is_deterministic_given_the_same_seed():
 
 def test_at_least_one_scenario_shows_corrix_catching_it_earlier():
     """S2/S3/S4's permit-conflict path genuinely buys lead time over the
-    legacy path — this is the concrete proof, not just a mechanism check."""
+    legacy path. This is the concrete proof, not just a mechanism check."""
     found_a_gap = False
     for scenario_id in ["S1", "S2", "S3", "S4"]:
         timeline = build_replay_timeline(scenario_id)

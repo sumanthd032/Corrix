@@ -4,7 +4,7 @@ of Done: "Evaluation Report tab shows real, computed numbers (not
 placeholders)."
 
 Makes real Council LLM calls (one per scenario where some trigger path
-fires — see `app/evaluation/harness.py`'s module docstring for why that
+fires; see `app/evaluation/harness.py`'s module docstring for why that
 isn't a shortcut). Run from backend/: python scripts/run_evaluation_harness.py
 """
 

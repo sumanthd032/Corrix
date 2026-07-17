@@ -1,13 +1,13 @@
 """The Evaluation Harness, per CORRIX_BUILD_PLAN.md Step 8: runs the
 Step 3 baseline and the full pipeline (rule/threshold trigger OR the
-novelty-detector trigger OR — when a memory driver is supplied — the
+novelty-detector trigger OR (when a memory driver is supplied) the
 self-improving memory loop's retrieval-similarity trigger, then a real
 Council convening) across the complete scenario library, computing
 precision/recall/false-negative rate and lead time against the
 code-level ground truth (CORRIX_DATA_METHODOLOGY.md §14.1).
 
 The Council is only actually invoked (a real LLM call) when some trigger
-path fires at all — for the ~25% of the library that never triggers by
+path fires at all: for the ~25% of the library that never triggers by
 construction (S5's "before" state, every negative control), that's the
 correct behavior, not a shortcut: no trigger means no convening, in the
 live system as much as here.
@@ -47,7 +47,7 @@ SCENARIOS_DIR = REPO_ROOT / "data" / "scenarios"
 TICK_SECONDS = 5.0
 
 # Twenty scenario instances mean up to ~100 sequential LLM calls (4 agents
-# + Chair each) — enough to burst past Groq's per-minute token budget even
+# + Chair each), enough to burst past Groq's per-minute token budget even
 # on a fresh key, since the limit is account-wide, not per-key. A 429 here
 # is usually transient (the account's own error response reports the
 # budget refilling within single-digit seconds), so a short wait-and-retry
@@ -75,7 +75,7 @@ class ScenarioEvalResult:
     pipeline_lead_time: float | None
     pipeline_verdict_risk_level: str | None
     pipeline_verdict_confidence: float | None
-    # Set when a trigger fired but the real Council call itself failed —
+    # Set when a trigger fired but the real Council call itself failed:
     # both providers' free-tier quotas exhausted mid-run, say. Distinct
     # from "no trigger fired": this scenario's pipeline outcome is
     # genuinely unknown, not a confirmed miss, and compute_metrics
@@ -135,7 +135,7 @@ def evaluate_scenario(
 ) -> ScenarioEvalResult:
     """`memory_driver`: when supplied, also checks the self-improving
     memory loop's retrieval-similarity trigger (§6.3) as a third
-    candidate path, using whichever exemplars are currently stored —
+    candidate path, using whichever exemplars are currently stored.
     None (the default) reproduces the exact pre-memory-loop behavior,
     which is what the held-out "before" harness run needs."""
     config = load_scenario_config(path)
@@ -257,10 +257,10 @@ def run_harness(
 
 
 def compute_metrics(results: list[ScenarioEvalResult], pipeline: str) -> dict:
-    """`pipeline`: "baseline" or "pipeline" — which of the two triggered/
+    """`pipeline`: "baseline" or "pipeline", which of the two triggered/
     lead_time field pairs to score. Scenarios with a `skipped_reason`
     (a real Council-call failure, e.g. both LLM providers' quotas
-    exhausted) are excluded from pipeline metrics entirely — genuinely
+    exhausted) are excluded from pipeline metrics entirely: genuinely
     unknown isn't the same as a confirmed miss, and folding it in either
     direction would misreport the actual measured rate. The baseline
     never calls an LLM, so it's never affected by this."""

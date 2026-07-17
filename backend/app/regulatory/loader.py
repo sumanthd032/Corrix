@@ -1,6 +1,6 @@
 """Ingests everything into the single Neo4j AuraDB substrate: plant
 zones, illustrative equipment, permit types, the mocked near-miss corpus,
-and the real, chunked OISD/Factories Act clause text with embeddings —
+and the real, chunked OISD/Factories Act clause text with embeddings,
 per CORRIX_BUILD_PLAN.md Step 5's "one database, not a ChromaDB/NetworkX
 split" instruction.
 """
@@ -114,13 +114,13 @@ def _load_clauses(driver: Driver, chunks: list[Chunk]) -> None:
 def _link_incidents_to_clauses(driver: Driver, records: list[IncidentRecord]) -> None:
     """Matches each Incident's required_checklist_ref back to the real
     Clause it cites, by section number embedded in the ref string. Best-
-    effort string match — the ref format is authored to make this work
+    effort string match: the ref format is authored to make this work
     (see near_miss_corpus.yaml), not a general-purpose citation parser.
 
     A ref may cite a numbered sub-paragraph one level deeper than any
     independently-chunked Clause (e.g. "§6.6.10.2" is a real paragraph
     inside the "6.6.10" chunk, since sub-sub-sub-numbering wasn't split
-    into its own clause) — matched via the dotted-prefix form, not just
+    into its own clause), matched via the dotted-prefix form, not just
     the exact "§<number> (" leaf form.
     """
     with driver.session() as session:

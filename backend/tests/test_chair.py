@@ -1,5 +1,5 @@
 """The Chair synthesis node: real LLM calls against the hand-crafted
-S1-S4 payloads, per Step 4's Definition of Done — feeding a hand-crafted
+S1-S4 payloads, per Step 4's Definition of Done: feeding a hand-crafted
 evidence payload through produces a plausible, well-formed verdict, and
 S2-S4 produce sensible, differently-reasoned verdicts too, not just S1."""
 
@@ -40,13 +40,13 @@ def test_synthesize_produces_well_formed_compound_verdict(scenario_id):
     assert len(verdict.explanation) > 0
     assert len(verdict.recommended_action) > 0
     # the Chair's evidence in the verdict is our own assembled data, not
-    # an LLM echo — must match exactly
+    # an LLM echo; must match exactly
     assert verdict.council.process_safety_engineer == payload["process_safety_engineer"]
 
 
 def test_verdicts_are_differently_reasoned_not_templated():
     """A plausible failure mode would be the Chair returning the same
-    boilerplate explanation regardless of input — confirm the four
+    boilerplate explanation regardless of input; confirm the four
     explanations actually differ."""
     explanations = set()
     for scenario_id, payload in ALL_SAMPLE_PAYLOADS.items():
@@ -65,7 +65,7 @@ def test_verdicts_are_differently_reasoned_not_templated():
 def test_prompt_includes_memory_context_when_present():
     """The self-improving memory loop's whole mechanism depends on the
     Chair actually seeing the retrieved past miss, not just the trigger
-    deciding to convene — a fast, no-LLM-call check that the prompt
+    deciding to convene. This is a fast, no-LLM-call check that the prompt
     construction wires it in."""
     payload = ALL_SAMPLE_PAYLOADS["S1"]
     evidence = _evidence_from_payload(payload)

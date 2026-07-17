@@ -1,6 +1,6 @@
 """Translates real Step 2/3 data at a trigger moment into the same
 per-agent evidence-text shape the hand-crafted sample payloads use
-(backend/app/council/sample_payloads.py) — plain factual descriptions,
+(backend/app/council/sample_payloads.py), plain factual descriptions,
 not pre-written verdicts, consistent with the Council's silo design:
 each formatter only ever sees the slice of data its real-world
 counterpart would have.

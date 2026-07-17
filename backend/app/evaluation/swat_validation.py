@@ -2,13 +2,13 @@
 checks that Corrix's synthetic sensor noise "feels like" real industrial
 sensor noise, using only SWaT's normal-operation segment (never the
 attack-labeled rows) and only for this one narrow statistical-shape
-comparison — not a claim that Corrix models a water treatment plant.
+comparison, not a claim that Corrix models a water treatment plant.
 
 Procedure (§15.2): fit a discrete AR(1)/OU-equivalent model to a
 handful of real SWaT process tags via least squares, recovering an
 implied mean-reversion rate and noise variance, then compare the
 noise-to-signal ratio and residual shape (skew/kurtosis) against our
-own simulator's configured OU parameters — scaled to the same
+own simulator's configured OU parameters, scaled to the same
 per-minute time basis, since SWaT samples every second and our
 simulator ticks every 5 seconds.
 """
@@ -19,14 +19,14 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-# A handful of continuous-valued level/flow/pressure tags, per §15.2 —
+# A handful of continuous-valued level/flow/pressure tags, per §15.2:
 # one of each physical quantity type, all from SWaT's normal-operation
 # segment. AIT (analyzer) tags exist too but level/flow/pressure are
 # the closest physical analogue to Corrix's own gas-concentration
 # readings (a continuously-valued process measurement).
 REFERENCE_TAGS = ["LIT101", "FIT101", "PIT501"]
 
-# Our own simulator's configured OU parameters, per §3.4 — the actual
+# Our own simulator's configured OU parameters, per §3.4: the actual
 # values used across the authored S2-S5 gas scenarios and negative
 # controls, gathered directly from the scenario configs rather than
 # re-typed by hand, so this comparison can't silently drift out of sync
@@ -100,7 +100,7 @@ def fit_swat_reference_tags(csv_path: str, tags: list[str] = REFERENCE_TAGS) -> 
 
 
 def fit_our_simulator_reference() -> list[FittedProcess]:
-    """The same AR(1) fit, applied to our own simulator's output — real
+    """The same AR(1) fit, applied to our own simulator's output: real
     simulated runs, not the configured parameters read back verbatim,
     so both sides of the comparison go through the identical fitting
     procedure rather than one being "measured" and the other "assumed."

@@ -1,5 +1,5 @@
 """Serves precomputed Counterfactual Replay timelines to the frontend's
-scrubber UI. A REST fetch, not a WebSocket stream — scrubbing needs
+scrubber UI. A REST fetch, not a WebSocket stream: scrubbing needs
 random access to any minute instantly, which fits a single fully-
 computed array far better than a live-paced stream (`websocket.py`
 already owns that pattern for the actual live playback).

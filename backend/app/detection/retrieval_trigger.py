@@ -1,7 +1,7 @@
 """The memory loop's own independent trigger path, per CORRIX_PROJECT.md
 §6.3: alongside the rule/threshold trigger (Step 3) and the novelty-
 score trigger (§13), a third path checks the current evidence against
-the store of past Council misses — a close match convenes the Council
+the store of past Council misses: a close match convenes the Council
 even when neither of the other two paths fires, which is the mechanism
 that makes "the system learned from its own mistakes" a real, testable
 claim rather than a narrative one.
@@ -9,7 +9,7 @@ claim rather than a narrative one.
 Similarity is Mahalanobis distance over the joint-evidence vector
 (`joint_evidence.build_joint_evidence_series`), computed directly in
 Python against every stored exemplar, reusing the novelty detector's
-already-fitted covariance as the distance metric — see
+already-fitted covariance as the distance metric. See
 `app/memory/exemplar_store.py`'s module docstring for the real
 separability limit this design was calibrated against (no threshold
 perfectly separates a genuine S5 recurrence from every negative
@@ -50,7 +50,7 @@ SAMPLE_TICKS = int(60 / TICK_SECONDS)
 # held-out S5 seeds' own compound-risk-window snapshots measured 0.235
 # and 0.638. Four negative controls' own noise excursions measured
 # closer still (0.043-0.094) than the weaker of those two genuine
-# matches — no threshold separates the classes perfectly. 0.65 catches
+# matches. No threshold separates the classes perfectly. 0.65 catches
 # both held-out S5 seeds (the Definition of Done this exists to satisfy)
 # at the cost of a real, disclosed false-positive rate on the negative
 # controls that already sit below it.
@@ -84,7 +84,7 @@ def describe_evidence_snapshot(
 ) -> str:
     """The same plain-language evidence text the four Council personas
     already read (`app/api/live_evidence.py`), concatenated into one
-    human-readable description — stored alongside an exemplar purely so
+    human-readable description, stored alongside an exemplar purely so
     the Chair's synthesis prompt can quote *why* a match was found, not
     used for the similarity comparison itself (that's the joint-evidence
     vector, compared via Mahalanobis distance below)."""

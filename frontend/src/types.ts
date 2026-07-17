@@ -1,4 +1,4 @@
-/** Mirrors backend/app/schemas — kept in sync manually until Step 9
+/** Mirrors backend/app/schemas, kept in sync manually until Step 9
  * wires a live WebSocket feed and these can be generated from the
  * backend's own Pydantic schemas. */
 

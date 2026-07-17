@@ -1,6 +1,6 @@
 """The Safety Council LangGraph state machine, per CORRIX_PROJECT.md §6.1
 and CORRIX_BUILD_PLAN.md Step 4: four evidence agents run (conceptually
-in parallel — each depends only on the initial state, not on each
+in parallel; each depends only on the initial state, not on each
 other), converge into the Chair, which is the only node that sees all
 four structured outputs.
 
@@ -9,7 +9,7 @@ UI-only pause: the graph is compiled with `interrupt_before=["chair"]`
 and a checkpointer, so it genuinely stops execution after the four
 evidence nodes and before the Chair runs. A human note is written into
 the checkpointed state, and resuming re-invokes the graph from that
-checkpoint — the Chair then sees the note as part of its input, not as
+checkpoint. The Chair then sees the note as part of its input, not as
 a cosmetic addition bolted on after the verdict already exists.
 """
 
@@ -104,7 +104,7 @@ def run_council(
     thread_id: str = "default",
     memory_context: str | None = None,
 ) -> CouncilVerdict:
-    """Run the Council to completion (no override) — convenience wrapper
+    """Run the Council to completion (no override), a convenience wrapper
     for the common case."""
     graph = build_council_graph()
     config = {"configurable": {"thread_id": thread_id}}
@@ -118,7 +118,7 @@ def run_council(
         },
         config,
     )
-    # graph paused before "chair" (interrupt_before) — resume to completion
+    # graph paused before "chair" (interrupt_before); resume to completion
     final_state = graph.invoke(None, config)
     return final_state["verdict"]
 
@@ -132,7 +132,7 @@ def apply_safety_officer_override(graph, config: dict, note: str):
 
     `as_node` is required because the four evidence nodes update state in
     the same parallel superstep, which makes LangGraph's automatic
-    "which node does this update belong to" inference ambiguous — any
+    "which node does this update belong to" inference ambiguous; any
     valid node name works here, it's bookkeeping, not a claim about which
     node produced the human's input.
     """

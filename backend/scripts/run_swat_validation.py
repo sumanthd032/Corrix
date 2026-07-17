@@ -1,9 +1,9 @@
 """Runs the SWaT external-validation comparison for real, per
 CORRIX_DATA_METHODOLOGY.md §15.2, and writes the comparison table to
-data/evaluation/ — a runnable script, not a hand-typed table.
+data/evaluation/, a runnable script, not a hand-typed table.
 
 Requires the real SWaT dataset's normal+attack merged CSV (only the
-Normal-labeled rows are used) at data/swat/merged.csv — a real, access-
+Normal-labeled rows are used) at data/swat/merged.csv, a real, access-
 restricted dataset from iTrust SUTD, provided by the user rather than
 downloaded automatically (see CLAUDE.md section 3 on external assets).
 
@@ -30,7 +30,7 @@ RESULTS_DIR = REPO_ROOT / "data" / "evaluation"
 def main() -> None:
     if not SWAT_CSV_PATH.exists():
         raise SystemExit(
-            f"SWaT dataset not found at {SWAT_CSV_PATH} — this is a real, "
+            f"SWaT dataset not found at {SWAT_CSV_PATH}. This is a real, "
             "access-restricted dataset that must be provided manually."
         )
 
@@ -79,10 +79,10 @@ def main() -> None:
     print(
         "\nReal, disclosed difference (not hidden): SWaT's residual kurtosis is "
         "extremely high (hundreds to hundreds of thousands) compared to our "
-        "simulator's near-zero kurtosis — real industrial sensors show heavy-"
+        "simulator's near-zero kurtosis; real industrial sensors show heavy-"
         "tailed spikes (likely actuator switching events), while our OU process "
         "produces genuinely Gaussian noise. This validates the noise-to-signal "
-        "scale, not the tail shape — a limitation worth stating plainly, per "
+        "scale, not the tail shape, a limitation worth stating plainly, per "
         "CORRIX_DATA_METHODOLOGY.md section 15.3."
     )
     print(f"\nResults written to {RESULTS_DIR / 'swat_validation.json'}")

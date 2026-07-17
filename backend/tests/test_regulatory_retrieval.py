@@ -1,7 +1,7 @@
 """The one retrieval layer's three query shapes, per Step 5's Definition
 of Done: a real citation to a checkable section number, a correct
 pattern-lookup answer, a correctly-flagged compliance deviation, and
-honest DGMS-supplementary labeling — all against the live Neo4j
+honest DGMS-supplementary labeling, all against the live Neo4j
 instance, not a mock."""
 
 from pathlib import Path
@@ -84,7 +84,7 @@ def test_dgms_scoped_question_returns_the_real_verified_circular_labeled_supplem
 
 def test_dgms_scoped_question_with_no_relevant_match_is_still_honest(driver):
     """A DGMS-scoped question far outside the one ingested circular's
-    subject should not be forced into a false-positive match — Neo4j's
+    subject should not be forced into a false-positive match. Neo4j's
     vector search always returns its top-k nearest neighbors regardless
     of relevance, so this only confirms the framework filter itself
     still works with a single-document corpus, not topical relevance."""

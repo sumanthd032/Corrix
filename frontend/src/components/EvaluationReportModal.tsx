@@ -67,11 +67,11 @@ type LoadState =
   | { status: 'loaded'; report: EvaluationReport }
 
 function pct(value: number | null): string {
-  return value === null ? '—' : `${Math.round(value * 100)}%`
+  return value === null ? 'N/A' : `${Math.round(value * 100)}%`
 }
 
 function minutes(value: number | null): string {
-  return value === null ? '—' : `${value.toFixed(1)} min`
+  return value === null ? 'N/A' : `${value.toFixed(1)} min`
 }
 
 function MetricsCard({ title, metrics }: { title: string; metrics: PipelineMetrics }) {
@@ -107,7 +107,7 @@ function MemoryLoopSection({ memoryLoop }: { memoryLoop: MemoryLoopReport }) {
   return (
     <div className="flex flex-col gap-3 rounded-[var(--radius-control)] bg-white/[0.03] p-4">
       <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">
-        Self-improving memory loop — held-out only
+        Self-improving memory loop (held-out only)
       </h3>
       <p className="text-xs text-[var(--color-text-secondary)]">
         {nExemplarsStored} exemplar(s) stored from population-split misses. False-negative rate
@@ -129,7 +129,7 @@ function MemoryLoopSection({ memoryLoop }: { memoryLoop: MemoryLoopReport }) {
       </div>
       <p className="text-[10px] text-[var(--color-text-secondary)]">
         The retrieval trigger carries a real, disclosed false-positive risk on some negative
-        controls whose own noise happens to resemble a stored exemplar — visible above as a
+        controls whose own noise happens to resemble a stored exemplar. This shows up above as a
         higher false-positive rate after population, not hidden.
       </p>
     </div>
@@ -143,7 +143,7 @@ function SwatValidationSection({ swat }: { swat: SwatValidation }) {
         External validation against SWaT (real industrial dataset)
       </h3>
       <p className="text-xs text-[var(--color-text-secondary)]">
-        Noise-to-signal ratio range — SWaT (real):{' '}
+        Noise-to-signal ratio range, SWaT (real):{' '}
         <span className="font-mono-data text-[var(--color-text-primary)]">
           {swat.swatNoiseToSignalRange[0].toFixed(3)}–{swat.swatNoiseToSignalRange[1].toFixed(3)}
         </span>{' '}
@@ -189,7 +189,7 @@ function SwatValidationSection({ swat }: { swat: SwatValidation }) {
         </table>
       </div>
       <p className="text-[10px] text-[var(--color-text-secondary)]">
-        Real, disclosed limitation: SWaT's residual kurtosis is far higher than ours — real
+        Real, disclosed limitation: SWaT's residual kurtosis is far higher than ours. Real
         industrial sensors show heavy-tailed spikes (likely actuator switching), while our OU
         process produces genuinely Gaussian noise. This validates the noise-to-signal scale, not
         the tail shape.
@@ -198,7 +198,7 @@ function SwatValidationSection({ swat }: { swat: SwatValidation }) {
   )
 }
 
-/** A hand-rolled SVG reliability diagram — no charting library needed for
+/** A hand-rolled SVG reliability diagram. No charting library needed for
  * one scatter plot against a reference diagonal. Point radius scales with
  * the bin's sample count so a bin with n=1 doesn't visually overstate a
  * bin with n=8. */

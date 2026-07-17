@@ -38,7 +38,7 @@ def test_training_set_is_nonempty_and_fixed_length():
 )
 def test_every_known_positive_scenario_is_flagged_novel(model, scenario_dir):
     """The novelty path should independently agree with the rule/threshold
-    path on S1-S4 — not the point of the feature (they're already caught),
+    path on S1-S4. This is not the point of the feature (they're already caught),
     but a sanity check that the model responds to real compound risk."""
     for path in sorted((SCENARIOS_DIR / scenario_dir).glob("*.yaml")):
         config = load_scenario_config(path)
@@ -52,7 +52,7 @@ def test_every_known_positive_scenario_is_flagged_novel(model, scenario_dir):
 def test_s5_is_a_genuine_miss_for_both_independent_trigger_paths(model, path):
     """S5's entire purpose (§12.3): unsolvable by the rule/threshold path
     *and* the novelty path, by construction, for every seed actually
-    shipped — only the third path (retrieval-similarity, once the memory
+    shipped. Only the third path (retrieval-similarity, once the memory
     loop exists) should ever catch it."""
     config = load_scenario_config(path)
     out = run_scenario(config)

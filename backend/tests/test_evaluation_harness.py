@@ -90,7 +90,7 @@ def test_compute_metrics_counts_misses_and_false_alarms():
 def test_compute_metrics_excludes_skipped_from_pipeline_but_not_baseline():
     """A scenario where the Council call itself failed (both LLM
     providers' quotas exhausted, say) is genuinely unknown for the
-    pipeline, not a confirmed miss — it must not be counted as a false
+    pipeline, not a confirmed miss; it must not be counted as a false
     negative, but the baseline (no LLM involved) is unaffected."""
     results = [
         _result(True, True, lead_time=10.0),

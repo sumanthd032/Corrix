@@ -1,5 +1,5 @@
 """Step 6's Definition of Done: live inference runs at acceptable FPS on
-actual demo hardware — measured here, not assumed. This machine is
+actual demo hardware, measured here, not assumed. This machine is
 CPU-only (no GPU); the bound below is deliberately generous rather than
 tuned to look good, since demo hardware is what it is."""
 

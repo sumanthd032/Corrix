@@ -1,6 +1,6 @@
 """Scripted correlation layer, per CORRIX_DATA_METHODOLOGY.md §9: a CV
 detection's plant-context correlation is checked against the Step 2
-worker-location/badge-ping stream — not an implied badge system, and
+worker-location/badge-ping stream, not an implied badge system, and
 not a hardcoded guess. `source` and `correlation_source` are kept as
 distinct, explicitly-typed fields on the resulting event (Step 1's
 CVObservationEvent schema), so the real/simulated split can't

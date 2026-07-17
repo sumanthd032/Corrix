@@ -5,7 +5,7 @@ simulator itself uses (Section 3.2), not a fresh implementation.
 
 Scoped to gas-based zones (S2/S3/S4-style) only, matching the doc's own
 literal description ("the same calibrated (k, C_baseline, sigma) for
-that zone") — S1's compliance signal is a single Bernoulli lapse event,
+that zone"); S1's compliance signal is a single Bernoulli lapse event,
 not an OU process, so this specific mechanism doesn't apply to it; the
 Chair's LLM-estimated placeholder remains S1's time-to-critical for now,
 a real and honest scope limit, not something quietly assumed away.
@@ -71,7 +71,7 @@ def _roll_forward_paths(
         iqr_low = float(np.percentile(crossing_times, 25))
         iqr_high = float(np.percentile(crossing_times, 75))
     else:
-        # No path crossed within the horizon at all — report the horizon
+        # No path crossed within the horizon at all, so report the horizon
         # itself rather than fabricating a number the rollout never
         # actually produced.
         median = float(horizon_minutes)
@@ -94,7 +94,7 @@ def forecast_time_to_critical(
 ) -> TimeToCriticalForecast:
     """N independent stochastic rollouts from the currently observed
     state, using the zone's own calibrated OU parameters and the same
-    baseline the live z-score trigger scores against — median +
+    baseline the live z-score trigger scores against: median +
     interquartile crossing time, not a point estimate, per §3.6."""
     result = _roll_forward_paths(
         current_value, elapsed_minutes, gas_config, baseline_mean, baseline_std,

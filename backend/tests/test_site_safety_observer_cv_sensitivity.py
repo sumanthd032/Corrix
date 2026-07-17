@@ -1,6 +1,6 @@
 """Step 6's Definition of Done: the Site Safety Observer agent's
 assessment must visibly change when a CV event is present vs. absent,
-on an otherwise identical evidence payload — proving the real CV signal
+on an otherwise identical evidence payload. This proves the real CV signal
 actually reaches and influences the Council, not just the schema."""
 
 from app.council.agents import SITE_SAFETY_OBSERVER
@@ -13,7 +13,7 @@ BASE_CONTEXT = f"Badge W-0142 has an active permit-covered presence window in Zo
 def test_agent_response_differs_with_and_without_cv_event():
     with_cv_event = (
         f"{BASE_CONTEXT} A real-time CV detection just flagged a person in Zone "
-        f"{ZONE} with no matching badge-ping — unconfirmed presence, source: "
+        f"{ZONE} with no matching badge-ping; unconfirmed presence, source: "
         "real_inference, correlation_source: simulated."
     )
     without_cv_event = f"{BASE_CONTEXT} No CV detection system is currently reporting for this zone."

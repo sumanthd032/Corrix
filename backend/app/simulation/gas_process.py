@@ -1,9 +1,9 @@
 """Ornstein-Uhlenbeck gas-concentration simulator, per
-CORRIX_DATA_METHODOLOGY.md §3. Used for S2/S3/S4 — NOT for S1, which uses
+CORRIX_DATA_METHODOLOGY.md §3. Used for S2/S3/S4, NOT for S1, which uses
 the structurally separate procedural-compliance model (compliance_process.py).
 
 `step()` is deliberately standalone and reused, unmodified, as the engine
-behind the Monte Carlo Time-to-Critical forecaster in Step 8 — one
+behind the Monte Carlo Time-to-Critical forecaster in Step 8, one
 implementation serves both the offline simulator and the live forecaster.
 """
 
@@ -37,14 +37,14 @@ def step(
 
 
 def ramp_source(t_minute: float, a: float, t0: float, t_rise: float) -> float:
-    """Steady accumulation (§3.3) — used for S3."""
+    """Steady accumulation (§3.3), used for S3."""
     if t_minute < t0:
         return 0.0
     return a * min(1.0, (t_minute - t0) / t_rise)
 
 
 def step_decay_source(t_minute: float, a: float, t0: float, tau: float) -> float:
-    """Sudden release, slow dissipation (§3.3) — used for S4."""
+    """Sudden release, slow dissipation (§3.3), used for S4."""
     if t_minute < t0:
         return 0.0
     return a * math.exp(-(t_minute - t0) / tau)
@@ -60,7 +60,7 @@ def ramp_with_plateau_source(
     secondary_magnitude: float | None,
 ) -> float:
     """Accumulation that stabilizes, then a secondary compounding ramp
-    (§3.3) — used for S2, where personnel entry / changeover-driven
+    (§3.3), used for S2, where personnel entry / changeover-driven
     inattention is what pushes an already-plateaued reading critical."""
     primary = 0.0 if t_minute < t0 else a * min(1.0, (t_minute - t0) / t_rise)
     secondary = 0.0

@@ -1,13 +1,13 @@
 """Hand-crafted evidence payloads for S1-S4, per CORRIX_BUILD_PLAN.md Step 4:
-"Prompt-engineer each persona against hand-fed sample payloads first —
+"Prompt-engineer each persona against hand-fed sample payloads first;
 don't wait for Step 2/3 to be fully wired; a hardcoded S1-shaped JSON blob
 is enough to start." These are the raw, per-agent evidence slices fed to
-each persona's LLM call — deliberately plain factual descriptions, not
+each persona's LLM call, deliberately plain factual descriptions, not
 pre-written English verdicts, so the persona's own prompt is what does
 the actual reasoning.
 
 Each payload only contains the fields that agent's own real-world
-counterpart would actually see — mirroring the agent-silo design, not
+counterpart would actually see, mirroring the agent-silo design, not
 just narratively but in the shape of this test data too.
 """
 

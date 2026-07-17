@@ -58,8 +58,8 @@ class CVEventInjectionConfig(BaseModel):
 
 
 class ScenarioSignals(BaseModel):
-    """A scenario injects at most one of the two signal models — S1 uses
-    `compliance`, S2-S4 use `gas` — never both, per §2's structural split."""
+    """A scenario injects at most one of the two signal models: S1 uses
+    `compliance`, S2-S4 use `gas`, never both, per §2's structural split."""
 
     compliance: ComplianceSignalConfig | None = None
     gas: GasSignalConfig | None = None
@@ -70,7 +70,7 @@ class ScenarioSignals(BaseModel):
 
 
 class ScenarioGroundTruth(BaseModel):
-    """Code-level incident-threshold definition, per §14.1 — the reference
+    """Code-level incident-threshold definition, per §14.1: the reference
     points lead time and the memory-loop evaluation are measured against."""
 
     compound_risk_window_start_minute: float
@@ -78,7 +78,7 @@ class ScenarioGroundTruth(BaseModel):
 
 
 class ScenarioConfig(BaseModel):
-    """A versioned scenario config, per §12.1 — YAML in, this model out, then
+    """A versioned scenario config, per §12.1: YAML in, this model out, then
     fed to the scenario engine's simulator parameters. Not a hardcoded
     script: every parameter here is what makes the library extensible."""
 

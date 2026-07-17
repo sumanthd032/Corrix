@@ -3,7 +3,7 @@ node that sees all four evidence agents' structured output, and the only
 one that produces the final CouncilVerdict.
 
 The Chair is asked for judgment fields only (risk_level, confidence,
-compound_flag, time_to_critical, explanation, recommended_action) —
+compound_flag, time_to_critical, explanation, recommended_action);
 zone_id/scenario_id/trigger_reason/timestamp/council are assembled
 programmatically from values already known to the caller, not trusted to
 an LLM's JSON echo. This keeps the one place where correctness actually
@@ -14,12 +14,12 @@ still letting the LLM do the actual synthesis judgment.
 band. For gas-based zones, the live WebSocket layer (`app/api/websocket.
 _convene_council`) overwrites it after synthesis with the real Step 8
 Monte Carlo rollout (`app/detection/time_to_critical.py`), which reuses
-the simulator's own `step()` function — deliberately done as a
+the simulator's own `step()` function, deliberately done as a
 post-synthesis replacement rather than feeding the forecast into the
 Chair's own prompt, since the forecast is a deterministic computation,
 not a judgment call the LLM should be asked to reproduce or second-guess.
 S1's compliance signal isn't an OU process, so it keeps this LLM
-estimate — a real, documented scope limit, not an oversight.
+estimate (a real, documented scope limit, not an oversight).
 """
 
 import json
@@ -30,13 +30,13 @@ from app.schemas import CouncilEvidence, CouncilVerdict, TimeToCriticalForecast,
 
 CHAIR_SYSTEM_PROMPT = (
     "You are the Chair of an industrial Safety Council. Four specialist "
-    "agents — a Process Safety Engineer, a Permit Control Officer, a Shift "
-    "Operations lead, and a Site Safety Observer — have each independently "
+    "agents (a Process Safety Engineer, a Permit Control Officer, a Shift "
+    "Operations lead, and a Site Safety Observer) have each independently "
     "assessed the same situation from their own narrow perspective, without "
     "seeing each other's evidence. None of them can see the compound picture "
     "you can see.\n\n"
     "A compound risk is a combination of ordinary-looking conditions that, "
-    "together, are dangerous — even though no single one of them would "
+    "together, are dangerous, even though no single one of them would "
     "trigger an alarm on its own. This is the central failure mode you "
     "exist to catch: a real worker fatality happened when a physical "
     "condition (entrapped gas in a ladle) coincided with an active lifting "
@@ -45,7 +45,7 @@ CHAIR_SYSTEM_PROMPT = (
     "or degrading process/compliance readings, an imminent shift changeover, "
     "and a worker's physical presence all coincide in the same zone as at "
     "least HIGH risk with compound_flag true, even if each individual "
-    "reading looks moderate — the danger is in the coincidence, not in any "
+    "reading looks moderate. The danger is in the coincidence, not in any "
     "one number. Only rate SAFE or CAUTION when the evidence genuinely "
     "shows no meaningful overlap between conditions (e.g. no active permit, "
     "or the compliance/process signal is still nominal).\n\n"
@@ -82,7 +82,7 @@ def _build_user_prompt(
     override_block = ""
     if override_note:
         override_block = f"""
-A human Safety Officer has paused the Council and added this note — you
+A human Safety Officer has paused the Council and added this note; you
 must take it into account and reflect it in your explanation and
 recommended_action:
 "{override_note}"
@@ -93,7 +93,7 @@ recommended_action:
 This case was flagged by the self-improving memory loop, not the rule
 threshold or novelty score: the current evidence closely resembles a
 documented past miss, described below. Weigh this precedent seriously
-even if the current readings look individually unremarkable — that
+even if the current readings look individually unremarkable; that
 past case was missed for exactly that reason:
 "{memory_context}"
 """

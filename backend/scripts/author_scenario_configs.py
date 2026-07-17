@@ -1,6 +1,6 @@
 """Authoring tool that emits the versioned scenario config YAML files under
 data/scenarios/. Per CORRIX_DATA_METHODOLOGY.md §16 (Reproducibility),
-the YAML files themselves are the source of truth going forward — this
+the YAML files themselves are the source of truth going forward, this
 script is a one-time (or re-run-when-parameters-change) authoring
 convenience, not something the running application depends on.
 
@@ -52,7 +52,7 @@ def author_s1() -> None:
         seed = base_seed + i
         config = ScenarioConfig(
             scenario_id="S1",
-            name="Anchor case — ladle moisture/entrapped-gas compound risk",
+            name="Anchor case, ladle moisture/entrapped-gas compound risk",
             seed=seed,
             memory_split=split,
             duration_minutes=90,
@@ -205,10 +205,10 @@ def author_s4() -> None:
 def author_s5() -> None:
     """Silent sensor drift (near-miss), per §12.3: a slow OU-process ramp
     in Z2 (the same zone as the AL-0003/AL-0008 historical near-miss
-    recurrence — a hot-work-near-gas-main pattern, Section 10) that is
+    recurrence, a hot-work-near-gas-main pattern, Section 10) that is
     deliberately parameterized to never cross the z-score scorer's
-    HIGH/CRITICAL threshold. Deliberately carries no scripted permit —
-    unlike S3/S4, which also live in Z2 — since `generate_background_
+    HIGH/CRITICAL threshold. Deliberately carries no scripted permit,
+    unlike S3/S4, which also live in Z2, since `generate_background_
     permits` populates every zone with unscripted background traffic
     regardless of scenario, and a permit in a high-hazard zone conflicts
     at CAUTION per the rule table (`permit_conflict.py`).
@@ -216,18 +216,18 @@ def author_s5() -> None:
     A real gap was found and worked around here, checked empirically
     rather than assumed: the OU process's own noise alone (verified with
     a=0.0, no drift at all) occasionally produces transient CAUTION-range
-    z-score spikes purely from randomness — up to ~14 for some seeds,
+    z-score spikes purely from randomness, up to ~14 for some seeds,
     well below HIGH_Z=20 but well above CAUTION_Z=6. For a high-hazard
     zone, if one of those transient spikes happens to overlap a
     background permit's active window, `check_permit_conflict` fires
-    regardless of any injected drift — a latent false-trigger risk that
+    regardless of any injected drift, a latent false-trigger risk that
     exists for any high-hazard-zone scenario, not something specific to
     S5, but one that would specifically defeat S5's entire purpose if hit
     (its one documented job is to be a guaranteed miss for the rule/
     threshold path, not a probabilistic one). The first five sequential
     seeds weren't safe (seed 90503 hit exactly this overlap, confirmed by
     running the real `find_first_trigger` end-to-end, not just checking
-    the z-score in isolation) — so the seeds below were selected by
+    the z-score in isolation), so the seeds below were selected by
     searching forward from 90500 and keeping only the ones that
     empirically never trigger the real Step 3 pipeline (background
     permits included), the same "check against real code, not just
@@ -238,11 +238,11 @@ def author_s5() -> None:
     detector (`novelty_detector.py`) existed to check S5 against: seed
     90507 passed the rule/threshold check but its own z-score noise still
     spiked high enough (~16) to clear the novelty detector's calibrated
-    threshold on its own — a real, honest false-positive rate that's fine
+    threshold on its own, a real, honest false-positive rate that's fine
     for a negative control (that's what the Evaluation Harness measures),
     but not acceptable for S5, whose specific job is to be a genuine miss
     on *both* independent trigger paths for every seed actually shipped.
-    90507 was swapped for 90509 — which turned out, on a closer check
+    90507 was swapped for 90509, which turned out, on a closer check
     against the exact config actually shipped (worker_location and
     cv_event blocks included, not a stripped-down test config), to still
     clear the novelty threshold; 90509 was swapped again for 90510, this
@@ -251,7 +251,7 @@ def author_s5() -> None:
 
     `incident_threshold_minute` is a sentinel equal to `duration_minutes`
     (documented in data/scenarios/README.md alongside the negative
-    controls' identical convention) — a near-miss has no real point of
+    controls' identical convention), a near-miss has no real point of
     no return, since no incident actually occurs; `compound_risk_window_
     start_minute` marks the point in the drift where a vigilant system
     should have been able to recognize the pattern, for lead-time scoring
@@ -261,7 +261,7 @@ def author_s5() -> None:
     for seed, split in zip(verified_safe_seeds, SEED_SPLIT):
         config = ScenarioConfig(
             scenario_id="S5",
-            name="Silent sensor drift (near-miss) — sub-threshold Z2 gas trend",
+            name="Silent sensor drift (near-miss), sub-threshold Z2 gas trend",
             seed=seed,
             memory_split=split,
             duration_minutes=100,
@@ -300,14 +300,14 @@ NEGATIVE_CONTROL_BASELINE_BY_HAZARD = {"high": 2.0, "medium": 1.5, "low": 0.5}
 
 def author_negative_controls() -> None:
     """Matched volume to the 25 positive instances above (§12.4, extended
-    from 20 when S5 was added in Step 8 — the harness's false-positive
+    from 20 when S5 was added in Step 8, the harness's false-positive
     rate needs to stay fair against the real positive-scenario count,
     not the count from before S5 existed): identical
     generators, S(t) = 0 for the entire run (i.e. the gas OU process still
-    runs — baseline + noise only, no source term — a=0.0 realizes "S(t)=0"
-    exactly per the §3.1 formula), p_lapse(t) left at its normal low
+    runs (baseline + noise only, no source term; a=0.0 realizes "S(t)=0"
+    exactly per the §3.1 formula)), p_lapse(t) left at its normal low
     background rate. Every zone still gets a real gas reading series, not
-    an empty stream — needed for the anomaly scorer (Step 3) and the
+    an empty stream, needed for the anomaly scorer (Step 3) and the
     Evaluation Harness (Step 8) to measure a false-positive rate against
     an actual signal, not an absence of one.
 
@@ -319,13 +319,13 @@ def author_negative_controls() -> None:
     (see `author_s5`'s docstring for the full explanation): `n23`'s
     default seed (90022, zone Z7, high-hazard) hit the same background-
     permit/transient-CAUTION-noise overlap purely by chance, tripping
-    `test_negative_controls_never_trigger` — a real, already-locked-in
+    `test_negative_controls_never_trigger`, a real, already-locked-in
     Step 3 guarantee, not a soft expectation. Negative controls exist to
     measure the harness's false-positive rate on a genuinely quiet day;
     a seed that happens to fire isn't "honest signal" here the way it
     would be for an actual live deployment, since these are meant to
     exercise the identical zero-event generators every other negative
-    control uses — so the one offending seed is overridden below with a
+    control uses, so the one offending seed is overridden below with a
     verified-safe replacement, found the same way S5's seeds were:
     running the real `find_first_trigger` end-to-end and keeping only a
     seed that doesn't trip it, rather than assuming one will.
@@ -341,7 +341,7 @@ def author_negative_controls() -> None:
         baseline = NEGATIVE_CONTROL_BASELINE_BY_HAZARD[ZONE_HAZARD_CLASS[zone]]
         config = ScenarioConfig(
             scenario_id=f"N{i + 1}",
-            name=f"Negative control {i + 1} — normal operating day, zone {zone}",
+            name=f"Negative control {i + 1}, normal operating day, zone {zone}",
             seed=seed,
             memory_split=split,
             duration_minutes=duration_minutes,

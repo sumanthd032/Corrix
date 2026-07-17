@@ -1,5 +1,5 @@
 """Loads the eight-zone plant layout + adjacency graph, per
-CORRIX_DATA_METHODOLOGY.md §7. Hand-authored static JSON, not generated —
+CORRIX_DATA_METHODOLOGY.md §7. Hand-authored static JSON, not generated;
 the layout itself doesn't vary per scenario or seed."""
 
 import json

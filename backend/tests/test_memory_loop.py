@@ -5,7 +5,7 @@ library rather than synthetic vectors.
 A real, honest finding shapes several of these tests: no Mahalanobis
 distance threshold perfectly separates a genuine S5 near-miss recurrence
 from ordinary negative-control noise (see `retrieval_trigger.py`'s
-module docstring) — four specific negative controls (n01, n09, n10,
+module docstring): four specific negative controls (n01, n09, n10,
 n17) sit closer to the stored exemplar than the weaker of the two
 genuine held-out matches does. Rather than pick a "safe" negative
 control at random and hope it doesn't happen to be one of those four,

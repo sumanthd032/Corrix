@@ -1,6 +1,6 @@
 """S1's procedural-compliance degradation process, per
 CORRIX_DATA_METHODOLOGY.md §4 and §2. Deliberately NOT the OU gas model
-(gas_process.py) — the real, verified anchor incident's mechanism is a
+(gas_process.py); the real, verified anchor incident's mechanism is a
 procedural/human-factors lapse, not a rising ambient concentration, and
 forcing it into the gas model's shape would misrepresent the incident.
 
@@ -10,7 +10,7 @@ p_lapse(t) is coupled to shift-changeover proximity (§4.1): the model
 captures that changeover pressure both *causes* a lapse and *independently*
 elevates operational risk. A lapse is sampled once per tick (Bernoulli);
 once sampled, Q permanently drops by `degradation_step` (floored at 0) and
-no further lapses are sampled for the remainder of the run — this models
+no further lapses are sampled for the remainder of the run; this models
 the single pre-lift moisture/dryness check the scenario is about, not a
 repeatedly-degrading process.
 """
@@ -30,7 +30,7 @@ def lapse_probability(
     window_minutes: float = 20.0,
 ) -> float:
     """Per-tick lapse probability, elevated near shift-changeover proximity
-    (§4.1) — a documented human-factors risk driver."""
+    (§4.1), a documented human-factors risk driver."""
     distance = abs(t_minute - changeover_at_minute)
     if distance <= window_minutes:
         proximity = 1.0 - distance / window_minutes

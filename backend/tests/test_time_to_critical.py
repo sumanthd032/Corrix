@@ -41,7 +41,7 @@ def test_forecast_reports_a_band_not_a_point():
 
 def test_forecast_at_a_real_trigger_shows_high_escalation_probability():
     """At the moment S2/S3/S4 actually trigger, the gas signal is already
-    trending hard toward its scripted threshold — the rollout should
+    trending hard toward its scripted threshold, so the rollout should
     agree that escalation is highly likely, not a coin flip."""
     for scenario_id in ["S2", "S3", "S4"]:
         forecast = _forecast_at_trigger(scenario_id)
@@ -68,7 +68,7 @@ def test_forecast_on_a_quiet_negative_control_shows_low_escalation_probability()
 
 def test_forecast_on_s5_reflects_its_own_sub_threshold_construction():
     """S5 never actually reaches HIGH/CRITICAL by construction (see
-    author_s5's docstring) — the forecast should honestly report that,
+    author_s5's docstring); the forecast should honestly report that,
     not manufacture false confidence."""
     path = sorted((SCENARIOS_DIR / "s5").glob("*.yaml"))[0]
     config = load_scenario_config(path)
@@ -89,7 +89,7 @@ def test_forecast_on_s5_reflects_its_own_sub_threshold_construction():
 
 def test_forecast_reuses_the_horizon_as_the_never_crossed_sentinel():
     """A path that never crosses within the horizon isn't silently
-    dropped — the forecaster should report the horizon itself rather
+    dropped; the forecaster should report the horizon itself rather
     than fabricating a crossing time nothing in the rollout produced."""
     forecast = _forecast_at_trigger("S3")
     assert forecast.horizon_minutes == 60

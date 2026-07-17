@@ -13,7 +13,7 @@ class RegulatoryFramework(str, Enum):
 class AuditLogEntry(BaseModel):
     """Historical near-miss / inspection-log corpus entry, per
     CORRIX_DATA_METHODOLOGY.md §10. Hand-authored and illustrative, but each
-    entry must reference a real, checkable clause — the mocked incident
+    entry must reference a real, checkable clause: the mocked incident
     record is not real, the regulatory citation it points to is."""
 
     entry_id: str

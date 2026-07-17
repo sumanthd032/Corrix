@@ -1,6 +1,6 @@
 """Serves the Evaluation Harness's real, precomputed results to the
 frontend's Evaluation Report tab. Reads the JSON files
-`scripts/run_evaluation_harness.py` writes to `data/evaluation/` —
+`scripts/run_evaluation_harness.py` writes to `data/evaluation/`,
 deliberately not a live recompute-on-every-request: the harness makes
 real Council LLM calls across the whole scenario library, expensive and
 slow enough that it belongs in an offline batch step, not a page load.
@@ -58,7 +58,7 @@ def get_evaluation_report() -> dict:
     if not RESULTS_PATH.exists() or not METRICS_PATH.exists():
         raise HTTPException(
             status_code=404,
-            detail="Evaluation Harness has not been run yet — run "
+            detail="Evaluation Harness has not been run yet. Run "
             "backend/scripts/run_evaluation_harness.py first.",
         )
 

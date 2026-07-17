@@ -3,7 +3,7 @@
 Zone-level granularity, mirroring real badge/turnstile RTLS reporting, not
 fabricated continuous GPS. Background pings (a small roster stationed
 across zones, low-hazard-weighted) plus one scripted zone-entry event
-consistent with the scenario's own permit/zone context — a worker with an
+consistent with the scenario's own permit/zone context: a worker with an
 active permit in the scenario's zone actually shows up as present there.
 """
 

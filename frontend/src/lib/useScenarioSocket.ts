@@ -22,7 +22,7 @@ interface ServerMessage {
 
 /** Connects to the live scenario WebSocket and drives the Zustand store
  * from real backend messages. Falls back to mock data (already the
- * store's default) if the connection never opens or drops — the
+ * store's default) if the connection never opens or drops. The
  * "mock data / backend live" indicator in App.tsx reflects this same
  * connection state. */
 export function useScenarioSocket() {

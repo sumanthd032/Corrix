@@ -1,6 +1,6 @@
 """Verify the agent-silo constraint BY CONSTRUCTION, per CORRIX_PROJECT.md
 §6.1 and Step 4's Definition of Done: each agent's bound tool set must
-literally not include tools from servers it isn't supposed to see —
+literally not include tools from servers it isn't supposed to see,
 checked by inspecting the agent's actual bound tool list, not by reading
 its prompt."""
 
@@ -49,7 +49,7 @@ def test_site_safety_observer_only_has_cv_and_worker_location_tools():
 
 
 def test_no_two_agents_share_all_the_same_tools():
-    """Sanity check that the silo actually differentiates agents — if two
+    """Sanity check that the silo actually differentiates agents: if two
     agents ended up with identical bound tools, the silo would be
     cosmetic, not structural."""
     agents = [
@@ -61,7 +61,7 @@ def test_no_two_agents_share_all_the_same_tools():
     tool_sets = [frozenset(a.bound_tool_names) for a in agents]
     # Permit Control Officer and Shift Operations legitimately share a
     # server per §6.1 ("Shift Operations → Permit/Shift MCP (roster/
-    # changeover data only)") — every other pair must differ.
+    # changeover data only)"); every other pair must differ.
     for i, a in enumerate(agents):
         for j, b in enumerate(agents):
             if i >= j:

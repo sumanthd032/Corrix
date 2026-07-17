@@ -1,6 +1,6 @@
 """Scripted correlation layer: a CV detection's zone-context correlation
 is checked against the real Step 2 worker-location stream, not
-hardcoded — per CORRIX_DATA_METHODOLOGY.md §9 and Step 6's Definition of
+hardcoded, per CORRIX_DATA_METHODOLOGY.md §9 and Step 6's Definition of
 Done (source/correlation_source fields correctly valued)."""
 
 from datetime import datetime, timedelta

@@ -1,6 +1,6 @@
 """Rolling z-score anomaly scorer: correctness and Step 3's Definition of
 Done, checked against the actual scenario library, not synthetic
-examples alone — a first naive implementation passed unit tests but had
+examples alone. A first naive implementation passed unit tests but had
 a 100% false-positive rate on real negative controls, so this suite
 checks the whole library explicitly."""
 

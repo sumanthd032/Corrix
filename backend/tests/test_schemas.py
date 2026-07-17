@@ -1,5 +1,5 @@
 """Every schema round-trips from the exact example payloads given in
-CORRIX_DATA_METHODOLOGY.md and CORRIX_PROJECT.md, with zero manual patching —
+CORRIX_DATA_METHODOLOGY.md and CORRIX_PROJECT.md, with zero manual patching,
 Step 1's Definition of Done for the schema layer."""
 
 import yaml
@@ -160,7 +160,7 @@ def test_plant_layout_zones_and_adjacency():
 def test_scenario_config_from_doc_yaml_example():
     raw_yaml = """
     scenario_id: S1
-    name: "Anchor case — ladle moisture/entrapped-gas compound risk"
+    name: "Anchor case: ladle moisture/entrapped-gas compound risk"
     seed: 20260714
     memory_split: population
     duration_minutes: 90

@@ -1,5 +1,5 @@
 """Chunk the real OISD and Factories Act PDFs on clause/section
-boundaries, per CORRIX_DATA_METHODOLOGY.md §11.2 — not fixed-token
+boundaries, per CORRIX_DATA_METHODOLOGY.md §11.2, not fixed-token
 windows, so a retrieved chunk is a coherent clause a human (or a judge)
 could look up and check directly.
 
@@ -9,7 +9,8 @@ gets its own boundary regex rather than one generic splitter:
 - The Factories Act, 1948 numbers top-level sections as a plain integer
   optionally suffixed with a letter for later-inserted sections (e.g.
   "7A.", "7B."), followed immediately by a title-cased heading and a
-  period/em-dash — e.g. "1. Short title, extent and commencement.—(1)...".
+  period or an em dash, as in "1. Short title, extent and commencement."
+  followed by "(1)...".
   Sub-clause markers like "(a)", "(i)", or bracketed amendment markers
   like "1[(ii)" don't match this shape, so they don't fragment a section.
 - The OISD Working Group report numbers sections with decimal notation
@@ -85,7 +86,7 @@ def _is_plausible_title(title: str) -> bool:
 
 def _filter_monotonic(matches_with_numbers: list[tuple]) -> list[int]:
     """Keep only matches whose leading section number doesn't fall back
-    below the highest number seen so far — this is what filters out a
+    below the highest number seen so far: this is what filters out a
     Schedule's independently-numbered list (e.g. the Third Schedule's
     disease list restarting at 1) or trailing footnote markers, both of
     which appear after the real numbered sections and would otherwise be
@@ -102,7 +103,7 @@ def _filter_monotonic(matches_with_numbers: list[tuple]) -> list[int]:
 def _dedup_keep_longest(chunks: list[Chunk]) -> list[Chunk]:
     """The Factories Act's front-matter "ARRANGEMENT OF SECTIONS" table
     of contents lists every section title in the same shape a real
-    section boundary has, so a handful of sections get matched twice —
+    section boundary has, so a handful of sections get matched twice:
     once as a near-empty ToC line, once as the real body text. Keep
     whichever match has the longer text per section number; the ToC
     mention is always short, the real section never is."""
@@ -123,7 +124,7 @@ def chunk_factories_act(pdf_path: Path) -> list[Chunk]:
 
     # The PDF opens with an "ARRANGEMENT OF SECTIONS" table of contents
     # that lists every section number and title in the exact same shape
-    # a real section boundary has, and — critically — in the same
+    # a real section boundary has, and, critically, in the same
     # monotonically increasing 1..120 order the real body also uses.
     # Chunking the whole document let the ToC's sequence win the
     # monotonic filter and silently swallowed most of the real body
@@ -175,7 +176,7 @@ def _find_chapter_anchors(matches: list) -> list:
     "1.0 INTRODUCTION", "6.0 OBSERVATIONS & DELIBERATIONS"). An early
     executive-summary/statistics section contains numeric values shaped
     just like subsection numbers (e.g. "29.2 MMT (0.59 mbpd)..."),
-    appearing in the text *before* the real chapter structure — which
+    appearing in the text *before* the real chapter structure, which
     poisons a simple monotonic filter applied to all matches at once,
     rejecting real later chapters because a bogus larger number appeared
     earlier. Anchoring on ".0" chapter headers first, then keeping only

@@ -1,6 +1,6 @@
 """The Open Challenge, per CORRIX_DATA_METHODOLOGY.md §13.5: checks the
 trigger mechanism (novelty wins before rule/threshold, for every curated
-combination) against the real detection pipeline — no LLM calls needed
+combination) against the real detection pipeline. No LLM calls needed
 for this part, so it runs in every test suite pass regardless of API
 quota. The actual Council-convening verdict for each combination is
 verified separately by `scripts/validate_open_challenge.py`, which does
@@ -30,7 +30,7 @@ def test_at_least_five_curated_combinations_exist():
 
 
 def test_no_combination_reuses_an_authored_scenario_zone():
-    """S1-S5's gas-based scenarios live in Z1, Z2, and Z7 — every
+    """S1-S5's gas-based scenarios live in Z1, Z2, and Z7; every
     curated Open Challenge combination lives elsewhere, so a real
     trigger here can't be mistaken for a relabeled authored scenario."""
     authored_gas_zones = {"Z1", "Z2", "Z7"}
@@ -53,7 +53,7 @@ def test_curated_combination_triggers_via_novelty_not_rule_threshold(novelty_mod
     if rule_trigger is not None:
         assert novelty_index < rule_trigger.index, (
             f"{params.label}: rule/threshold ({rule_trigger.index}) fired before or with "
-            f"novelty ({novelty_index}) — this combination doesn't prove the novelty path"
+            f"novelty ({novelty_index}); this combination doesn't prove the novelty path"
         )
 
 

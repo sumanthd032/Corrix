@@ -1,13 +1,13 @@
 """Deterministic permit-conflict rule table, per CORRIX_BUILD_PLAN.md
 Step 3: "hot work + high-hazard zone + elevated anomaly = conflict, etc."
-Not LLM-generated — a fully auditable, inspectable rule table, consistent
+Not LLM-generated: a fully auditable, inspectable rule table, consistent
 with CORRIX_DATA_METHODOLOGY.md §5's principle that core safety logic
 should be rule-based and auditable.
 
 The gating rule is permit-type-agnostic (keyed only on the zone's hazard
 class and the current anomaly risk level): this generalizes the doc's
 named example (hot work) to the pattern the brief itself names verbatim
-for S3 — a *maintenance* (cold_work) permit co-occurring with rising gas
+for S3: a *maintenance* (cold_work) permit co-occurring with rising gas
 is exactly as much a compound risk as a hot-work permit is, and gating
 only on permit type would miss it. The permit type is still recorded in
 the conflict's reason string for explainability, just not used to decide
@@ -23,7 +23,7 @@ _RISK_ORDER = {"SAFE": 0, "CAUTION": 1, "HIGH": 2, "CRITICAL": 3}
 
 # Minimum anomaly risk level required, per zone hazard class, before an
 # active permit in that zone counts as a conflict. LOW-hazard zones never
-# conflict — no rule table entry needed, no permit there is dangerous
+# conflict: no rule table entry needed, no permit there is dangerous
 # enough to flag regardless of anomaly score.
 CONFLICT_RULE_TABLE: dict[HazardClass, RiskLevel] = {
     HazardClass.HIGH: "CAUTION",

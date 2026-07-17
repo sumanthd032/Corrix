@@ -38,7 +38,7 @@ def _timestamps(out: ScenarioOutput) -> list[datetime]:
 
 def _changeover_proximity(shifts: list[ShiftRecord], zone_id: str, at_time: datetime) -> float:
     """1.0 at the moment of changeover, decaying linearly to 0.0 at
-    `CHANGEOVER_PROXIMITY_WINDOW_MINUTES` away or beyond — 0.0 if no
+    `CHANGEOVER_PROXIMITY_WINDOW_MINUTES` away or beyond; 0.0 if no
     shift record covers this zone/time at all."""
     relevant = [s for s in shifts if zone_id in s.zones and s.start_time <= at_time <= s.end_time]
     if not relevant:

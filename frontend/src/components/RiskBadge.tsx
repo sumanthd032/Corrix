@@ -3,7 +3,7 @@ import type { RiskLevel } from '../types'
 
 /**
  * Every risk-state indicator in the app must go through this component.
- * Per CLAUDE.md §6: color is never the only signal — each level pairs a
+ * Per CLAUDE.md §6: color is never the only signal; each level pairs a
  * distinct shape (circle / triangle / diamond / octagon), so the states
  * remain distinguishable under red-green colorblindness (~8% of men).
  */

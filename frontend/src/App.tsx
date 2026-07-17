@@ -29,8 +29,8 @@ function App() {
         className="fixed bottom-2 left-2 flex items-center gap-1 font-mono-data text-[10px] text-[var(--color-text-secondary)]"
         title={
           connectionMode === 'live'
-            ? 'Connected to the live backend — real scenario stream and Safety Council'
-            : 'Backend unreachable — showing mock data'
+            ? 'Connected to the live backend: real scenario stream and Safety Council'
+            : 'Backend unreachable, showing mock data'
         }
       >
         <span

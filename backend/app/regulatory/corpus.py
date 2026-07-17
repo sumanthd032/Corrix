@@ -1,7 +1,7 @@
 """Loads the mocked near-miss/audit-log corpus, per
 CORRIX_DATA_METHODOLOGY.md §10. Each entry validates as a Step 1
 AuditLogEntry, plus two extra graph-only fields (`permit_type`,
-`zone_hazard_class`) used to build the Neo4j INVOLVED_PERMIT_TYPE edge —
+`zone_hazard_class`) used to build the Neo4j INVOLVED_PERMIT_TYPE edge;
 these aren't part of the locked AuditLogEntry schema since they exist
 only to drive graph traversal, not the wire schema itself.
 """

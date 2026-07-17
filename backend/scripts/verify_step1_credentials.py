@@ -23,7 +23,7 @@ def verify_groq(api_key: str) -> None:
         max_tokens=5,
     )
     content = response.choices[0].message.content
-    print(f"Groq: OK — response: {content!r}")
+    print(f"Groq: OK, response: {content!r}")
 
 
 def verify_gemini(api_key: str) -> None:
@@ -34,7 +34,7 @@ def verify_gemini(api_key: str) -> None:
         model="gemini-flash-latest",
         contents="Reply with the single word: ok",
     )
-    print(f"Gemini: OK — response: {response.text!r}")
+    print(f"Gemini: OK, response: {response.text!r}")
 
 
 def verify_neo4j(uri: str, username: str, password: str) -> None:
@@ -46,7 +46,7 @@ def verify_neo4j(uri: str, username: str, password: str) -> None:
         with driver.session() as session:
             result = session.run("RETURN 1 AS ok")
             record = result.single()
-            print(f"Neo4j: OK — query result: {dict(record)}")
+            print(f"Neo4j: OK, query result: {dict(record)}")
     finally:
         driver.close()
 
@@ -67,8 +67,8 @@ def main() -> None:
     ]:
         try:
             fn()
-        except Exception as exc:  # noqa: BLE001 — report every failure, don't stop early
-            print(f"{name}: FAILED — {type(exc).__name__}: {exc}")
+        except Exception as exc:  # noqa: BLE001, report every failure, don't stop early
+            print(f"{name}: FAILED, {type(exc).__name__}: {exc}")
             failures.append(name)
 
     if failures:

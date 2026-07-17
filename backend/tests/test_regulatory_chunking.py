@@ -6,7 +6,7 @@ silently shifts section boundaries gets caught.
 Known limitation, not chased further given effort/scope: a handful of
 Factories Act sections (e.g. 3, 4, 7A, 7B) are missing or have a title
 corrupted by an adjacent footnote/amendment marker in the extracted
-text — dense legal-document footnote interference, not something a
+text, dense legal-document footnote interference, not something a
 regex-based chunker fully solves. The corpus still has substantial real
 coverage (113 Factories Act + 62 OISD sections) and every chunk that
 does exist is genuinely real, citable text.
@@ -50,7 +50,7 @@ def test_oisd_report_chunks_key_real_sections():
 
 def test_no_chunk_title_contains_digits_from_data_values():
     """Regression guard for the "29.2 MMT (0.59 mbpd)" class of false
-    positive — a data value masquerading as a section boundary."""
+    positive: a data value masquerading as a section boundary."""
     fa_chunks = chunk_factories_act(SOURCES_DIR / "factories_act_1948.pdf")
     oisd_chunks = chunk_oisd_report(SOURCES_DIR / "oisd_guideline.pdf")
     for chunk in fa_chunks + oisd_chunks:

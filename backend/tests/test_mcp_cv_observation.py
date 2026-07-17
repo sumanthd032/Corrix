@@ -1,5 +1,5 @@
 """CV/Observation MCP server: real inference on the actual sample clip,
-correlated against a real scenario's worker-location stream — Step 6's
+correlated against a real scenario's worker-location stream, per Step 6's
 Definition of Done, checked via a real tool call."""
 
 import json

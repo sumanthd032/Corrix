@@ -34,7 +34,7 @@ def test_every_cited_clause_exists_in_the_real_chunked_source():
 
 def test_pattern_lookup_seed_data_covers_hot_work_near_gas():
     """The doc's own example pattern-lookup question is "has a hot-work-
-    near-gas pattern occurred before" — confirm the corpus actually has
+    near-gas pattern occurred before"; confirm the corpus actually has
     matching seed data for it to find."""
     records = load_near_miss_corpus()
     hot_work_in_gas_zone = [

@@ -3,8 +3,8 @@ CORRIX_DATA_METHODOLOGY.md §12.1. Ties together the gas process, the
 compliance process, and the permit/shift/worker-location generators.
 
 Deliberately does NOT generate CVObservationEvent objects from a
-scenario's `cv_event` block: CV events are hybrid — real inference,
-simulated correlation (§9) — and the CVObservationEvent schema's `source`
+scenario's `cv_event` block: CV events are hybrid, real inference,
+simulated correlation (§9), and the CVObservationEvent schema's `source`
 field is `Literal["real_inference"]` for exactly that reason. Fabricating
 one here would misrepresent simulated data as real inference output. The
 `cv_event` config block is metadata Step 6's live-inference correlation

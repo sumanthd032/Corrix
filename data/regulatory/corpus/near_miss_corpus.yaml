@@ -1,6 +1,6 @@
 # Mocked near-miss / audit-log corpus, per CORRIX_DATA_METHODOLOGY.md §10.
 #
-# Every entry is illustrative/mocked — not a real incident record — but
+# Every entry is illustrative/mocked, not a real incident record, but
 # every `required_checklist_ref` points at a real, checkable section in
 # one of the two source PDFs actually downloaded and chunked in
 # data/regulatory/sources/ (see backend/app/regulatory/chunking.py).
@@ -108,7 +108,7 @@ entries:
     description: >
       A second hot-work permit near the gas collection main, issued
       three months after AL-0003, was again missing the required LEL
-      reading field — a recurrence of the same deviation type in the
+      reading field, a recurrence of the same deviation type in the
       same zone.
     source_framework: OISD
     required_checklist_ref: "OISD Working Group Report on Safety in the Indian Petroleum Sector §6.6.10.2 (Work Permit System)"

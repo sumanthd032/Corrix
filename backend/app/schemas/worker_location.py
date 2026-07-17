@@ -13,7 +13,7 @@ class BadgeEventType(str, Enum):
 class BadgePingEvent(BaseModel):
     """Worker-location/badge-ping event, per CORRIX_DATA_METHODOLOGY.md §8.2.
     Zone-level granularity, mirroring how real badge/turnstile RTLS systems
-    actually report — not fabricated continuous GPS."""
+    actually report, not fabricated continuous GPS."""
 
     badge_id: str
     zone_id: str

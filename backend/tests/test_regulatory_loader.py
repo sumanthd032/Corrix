@@ -1,5 +1,5 @@
 """Neo4j ingestion pipeline: real integration test against the live
-AuraDB instance — zones, equipment, permit types, incidents, and real
+AuraDB instance: zones, equipment, permit types, incidents, and real
 chunked clauses, with every Incident correctly linked to the real
 Clause it cites."""
 

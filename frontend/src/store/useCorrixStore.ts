@@ -88,8 +88,8 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
   setCouncilStage: (stage) => set({ councilStage: stage }),
   pauseForOverride: () => {
     // In live mode the graph only actually pauses at its own real
-    // interrupt point (applyLiveDeliberating, driven by the backend) —
-    // manually forcing this state here would show an override control
+    // interrupt point (applyLiveDeliberating, driven by the backend).
+    // Manually forcing this state here would show an override control
     // with nothing real behind it to resume.
     if (get().connectionMode === 'live') return
     set({ overridePaused: true, councilStage: 'deliberating' })

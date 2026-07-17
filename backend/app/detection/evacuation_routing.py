@@ -5,7 +5,7 @@ into any other currently HIGH/CRITICAL zone penalized so the route
 actively avoids other unsafe zones rather than just finding the
 geometrically shortest path.
 
-Dijkstra, not A* or anything more elaborate — the graph is 8 nodes, and
+Dijkstra, not A* or anything more elaborate: the graph is 8 nodes, and
 the simplest algorithm that solves the actual problem is the correct
 engineering choice here, not the most impressive-sounding one.
 """
@@ -49,7 +49,7 @@ def find_evacuation_route(
     layout: PlantLayout, zone_risk: dict[str, RiskLevel], source_zone_id: str
 ) -> EvacuationRoute | None:
     """The risk-weighted shortest path from `source_zone_id` to whichever
-    assembly point (§7 — Z4 Control Room or Z8 Perimeter/Walkway) is
+    assembly point (§7, Z4 Control Room or Z8 Perimeter/Walkway) is
     cheapest to reach, avoiding other elevated-risk zones where a safe
     alternative exists. Returns None if `source_zone_id` is itself an
     assembly point (nothing to route) or is unreachable from any

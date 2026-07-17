@@ -2,12 +2,12 @@
  * Synthetic 2D plant layout for the heatmap, mirroring the eight zones
  * and adjacency graph authored in the backend
  * (data/layout/plant_layout.json, Step 2). Coordinates are a schematic
- * arrangement for the dashboard, not a literal architectural drawing —
+ * arrangement for the dashboard, not a literal architectural drawing;
  * the adjacency graph itself (used for evacuation routing, Step 8)
  * doesn't depend on zones visually touching on screen.
  *
  * Units are arbitrary "plant meters" consumed directly by deck.gl's
- * OrthographicView (no real-world lat/lng — this is an industrial
+ * OrthographicView (no real-world lat/lng; this is an industrial
  * facility, not a map).
  */
 
