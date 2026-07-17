@@ -2,11 +2,20 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import DeckGL from '@deck.gl/react'
 import { OrthographicView } from '@deck.gl/core'
 import { PathLayer, PolygonLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers'
-import { Box, Users } from 'lucide-react'
+import { Box, Boxes, Square, Users } from 'lucide-react'
 import { PLANT_ZONES, ZONE_BOUNDS } from '../data/plantLayout'
 import { useCorrixStore } from '../store/useCorrixStore'
 import { riskColorHex } from './RiskBadge'
+import { PlantScene3D } from './PlantScene3D'
 import type { RiskLevel } from '../types'
+
+type ViewMode = 'flat' | 'isometric' | '3d'
+
+const VIEW_MODES: { mode: ViewMode; label: string; Icon: typeof Square }[] = [
+  { mode: 'flat', label: 'Flat', Icon: Square },
+  { mode: 'isometric', label: 'Isometric', Icon: Box },
+  { mode: '3d', label: '3D', Icon: Boxes },
+]
 
 /**
  * Colorblind-safe shape glyphs, one per risk level, checked against a
@@ -118,7 +127,7 @@ export function PlantHeatmap() {
   const zoneRisk = useCorrixStore((s) => s.zoneRisk)
   const workers = useCorrixStore((s) => s.workers)
   const evacuationRoute = useCorrixStore((s) => s.verdict?.evacuationRoute ?? null)
-  const [isometric, setIsometric] = useState(false)
+  const [viewMode, setViewMode] = useState<ViewMode>('flat')
   const [now, setNow] = useState(() => performance.now())
 
   const activeRiskZones = useMemo(
@@ -369,39 +378,57 @@ export function PlantHeatmap() {
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsometric((v) => !v)}
-          className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-control)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+        <div
+          className="flex shrink-0 gap-0.5 rounded-[var(--radius-control)] p-0.5"
           style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}
+          role="group"
+          aria-label="Heatmap view mode"
         >
-          <Box size={13} aria-hidden="true" />
-          {isometric ? 'Flat view' : 'Isometric view'}
-        </button>
+          {VIEW_MODES.map(({ mode, label, Icon }) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => setViewMode(mode)}
+              aria-pressed={viewMode === mode}
+              className="flex items-center gap-1.5 rounded-[6px] px-2.5 py-1 text-xs transition-colors"
+              style={{
+                backgroundColor: viewMode === mode ? 'var(--color-accent)' : 'transparent',
+                color: viewMode === mode ? 'var(--color-base)' : 'var(--color-text-secondary)',
+              }}
+            >
+              <Icon size={13} aria-hidden="true" />
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div
-        className="h-full w-full transition-transform duration-500"
-        style={{
-          transform: isometric ? ISOMETRIC_TRANSFORM : 'none',
-          transformStyle: 'preserve-3d',
-        }}
-      >
-        <DeckGL
-          views={new OrthographicView({ id: 'plant' })}
-          initialViewState={INITIAL_VIEW_STATE}
-          controller={true}
-          layers={[
-            zoneLayer,
-            zoneLabelLayer,
-            zoneRiskGlyphLayer,
-            gasLayer,
-            evacuationRouteLayer,
-            workerLayer,
-          ].filter(Boolean)}
-          style={{ position: 'relative', width: '100%', height: '100%' }}
-        />
-      </div>
+      {viewMode === '3d' ? (
+        <PlantScene3D zoneRisk={zoneRisk} workers={workers} evacuationRoute={evacuationRoute} />
+      ) : (
+        <div
+          className="h-full w-full transition-transform duration-500"
+          style={{
+            transform: viewMode === 'isometric' ? ISOMETRIC_TRANSFORM : 'none',
+            transformStyle: 'preserve-3d',
+          }}
+        >
+          <DeckGL
+            views={new OrthographicView({ id: 'plant' })}
+            initialViewState={INITIAL_VIEW_STATE}
+            controller={true}
+            layers={[
+              zoneLayer,
+              zoneLabelLayer,
+              zoneRiskGlyphLayer,
+              gasLayer,
+              evacuationRouteLayer,
+              workerLayer,
+            ].filter(Boolean)}
+            style={{ position: 'relative', width: '100%', height: '100%' }}
+          />
+        </div>
+      )}
     </section>
   )
 }
