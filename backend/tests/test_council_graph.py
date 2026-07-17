@@ -41,6 +41,7 @@ def test_s2_s3_s4_produce_differently_reasoned_verdicts():
     """Not just S1: the same graph must generalize, not fit one scripted
     case (Step 4 DoD)."""
     explanations = set()
+    any_fallback = False
     for scenario_id in ["S2", "S3", "S4"]:
         payload = ALL_SAMPLE_PAYLOADS[scenario_id]
         with skip_on_rate_limit():
@@ -51,8 +52,16 @@ def test_s2_s3_s4_produce_differently_reasoned_verdicts():
                 scenario_id=scenario_id,
                 thread_id=f"test-vary-{scenario_id}",
             )
+        if verdict.confidence == 0.0:
+            # A genuine, honestly-labeled cached-fallback verdict (both
+            # providers exhausted for this call), not a skip-worthy
+            # exception: "differently reasoned" tests real synthesis,
+            # which this run didn't get to exercise.
+            any_fallback = True
         explanations.add(verdict.explanation)
         assert verdict.risk_level in ("HIGH", "CRITICAL")
+    if any_fallback:
+        pytest.skip("both LLM providers were exhausted for at least one call; got a fallback verdict")
     assert len(explanations) == 3
 
 

@@ -23,10 +23,13 @@ estimate (a real, documented scope limit, not an oversight).
 """
 
 import json
+import logging
 from datetime import datetime, timezone
 
 from app.council.llm_client import chat_completion
 from app.schemas import CouncilEvidence, CouncilVerdict, TimeToCriticalForecast, TriggerReason
+
+logger = logging.getLogger(__name__)
 
 CHAIR_SYSTEM_PROMPT = (
     "You are the Chair of an industrial Safety Council. Four specialist "
@@ -123,6 +126,59 @@ Respond with ONLY this JSON shape:
 }}"""
 
 
+def _fallback_verdict(
+    zone_id: str,
+    trigger_reason: TriggerReason,
+    evidence: CouncilEvidence,
+    scenario_id: str | None,
+    timestamp: datetime,
+    reason: str,
+    override_note: str | None = None,
+) -> CouncilVerdict:
+    """Used only when the Chair's own synthesis call fails entirely (both
+    Groq and Gemini down, or a malformed response neither retry recovers):
+    a deterministic, honestly-labeled degraded verdict rather than a
+    crash. Escalates to HIGH and a human-review action by default, since
+    a trigger already fired to reach the Chair at all, and silently
+    downgrading an unconfirmed compound risk is a worse failure mode than
+    over-escalating one. confidence=0.0 is a real signal, not a filled-in
+    number: nothing here reflects actual synthesis judgment.
+
+    `override_note`: there is no LLM here to weigh a human Safety
+    Officer's free-text note into the reasoning, so it is not
+    synthesized, only preserved verbatim, the same undecorated-but-
+    honest treatment raw evidence gets when an evidence agent falls
+    back (app/council/agents.py). Dropping it silently would be worse
+    than surfacing it plainly."""
+    logger.error("Chair synthesis unavailable, returning fallback verdict: %s", reason)
+    override_block = f" Safety Officer note: {override_note}" if override_note else ""
+    return CouncilVerdict(
+        zone_id=zone_id,
+        scenario_id=scenario_id,
+        trigger_reason=trigger_reason,
+        timestamp=timestamp,
+        council=evidence,
+        risk_level="HIGH",
+        confidence=0.0,
+        compound_flag=True,
+        time_to_critical=TimeToCriticalForecast(
+            median_minutes=30.0, iqr_low_minutes=10.0, iqr_high_minutes=60.0,
+            escalation_probability=0.5, horizon_minutes=60.0,
+        ),
+        explanation=(
+            "Automated Council synthesis was unavailable (both the primary and "
+            "secondary inference providers failed), so this is a rule-based "
+            f"fallback verdict from the {trigger_reason} trigger alone, not a "
+            "synthesized Council judgment. Escalated to HIGH as a safe default "
+            f"pending human review.{override_block}"
+        ),
+        recommended_action=(
+            "Escalate to a human safety officer for manual review of the "
+            "underlying evidence; automated synthesis could not be completed."
+        ),
+    )
+
+
 def synthesize(
     zone_id: str,
     trigger_reason: TriggerReason,
@@ -136,19 +192,23 @@ def synthesize(
     user_prompt = _build_user_prompt(
         zone_id, trigger_reason, evidence, override_note, memory_context
     )
-    response = chat_completion(CHAIR_SYSTEM_PROMPT, user_prompt, max_tokens=500)
-    data = _extract_json(response.text)
-
-    return CouncilVerdict(
-        zone_id=zone_id,
-        scenario_id=scenario_id,
-        trigger_reason=trigger_reason,
-        timestamp=timestamp,
-        council=evidence,
-        risk_level=data["risk_level"],
-        confidence=float(data["confidence"]),
-        compound_flag=bool(data["compound_flag"]),
-        time_to_critical=TimeToCriticalForecast(**data["time_to_critical"]),
-        explanation=data["explanation"],
-        recommended_action=data["recommended_action"],
-    )
+    try:
+        response = chat_completion(CHAIR_SYSTEM_PROMPT, user_prompt, max_tokens=500)
+        data = _extract_json(response.text)
+        return CouncilVerdict(
+            zone_id=zone_id,
+            scenario_id=scenario_id,
+            trigger_reason=trigger_reason,
+            timestamp=timestamp,
+            council=evidence,
+            risk_level=data["risk_level"],
+            confidence=float(data["confidence"]),
+            compound_flag=bool(data["compound_flag"]),
+            time_to_critical=TimeToCriticalForecast(**data["time_to_critical"]),
+            explanation=data["explanation"],
+            recommended_action=data["recommended_action"],
+        )
+    except Exception as exc:
+        return _fallback_verdict(
+            zone_id, trigger_reason, evidence, scenario_id, timestamp, str(exc), override_note
+        )

@@ -12,6 +12,7 @@ interface ServerMessage {
     | 'deliberating'
     | 'verdict'
     | 'ero_fired'
+    | 'council_error'
     | 'playback_complete'
   minute?: number
   zoneRisk?: Record<string, RiskLevel>
@@ -23,6 +24,7 @@ interface ServerMessage {
   deliveredOk?: boolean
   evidenceHash?: string
   firedAt?: string
+  message?: string
 }
 
 /** Connects to the live scenario WebSocket and drives the Zustand store
@@ -92,6 +94,9 @@ export function useScenarioSocket() {
               firedAt: msg.firedAt,
             })
           }
+          break
+        case 'council_error':
+          store.applyCouncilError(msg.message ?? 'The Safety Council could not complete its deliberation.')
           break
         case 'playback_complete':
           break

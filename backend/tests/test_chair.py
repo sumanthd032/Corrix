@@ -49,6 +49,7 @@ def test_verdicts_are_differently_reasoned_not_templated():
     boilerplate explanation regardless of input; confirm the four
     explanations actually differ."""
     explanations = set()
+    any_fallback = False
     for scenario_id, payload in ALL_SAMPLE_PAYLOADS.items():
         evidence = _evidence_from_payload(payload)
         with skip_on_rate_limit():
@@ -58,7 +59,19 @@ def test_verdicts_are_differently_reasoned_not_templated():
                 evidence=evidence,
                 scenario_id=scenario_id,
             )
+        if verdict.confidence == 0.0:
+            # A deliberate, honestly-labeled cached-fallback verdict
+            # (app/council/chair.py's _fallback_verdict), not a real
+            # synthesis call: both providers were genuinely exhausted for
+            # this call rather than raising, so skip_on_rate_limit's own
+            # except-based skip never triggers. "Differently reasoned" is
+            # a property of real synthesis, not of the fallback (which is
+            # deliberately templated per trigger_reason), so this run
+            # can't test what it's meant to.
+            any_fallback = True
         explanations.add(verdict.explanation)
+    if any_fallback:
+        pytest.skip("both LLM providers were exhausted for at least one call; got a fallback verdict")
     assert len(explanations) == 4
 
 

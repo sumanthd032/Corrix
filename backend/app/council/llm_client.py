@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 GROQ_MODEL = "llama-3.1-8b-instant"
 GEMINI_MODEL = "gemini-flash-latest"
 
-Backend = Literal["groq", "gemini"]
+Backend = Literal["groq", "gemini", "fallback"]
 
 _semaphore_lock = threading.Lock()
 _request_semaphore: threading.Semaphore | None = None
@@ -133,7 +133,11 @@ def chat_completion(
 ) -> LLMResponse:
     """Try Groq first (with its own short, bounded retry on a rate limit);
     on any failure, fall back to Gemini once. If both fail, the second
-    exception propagates. There is no third path."""
+    exception propagates; this function has no third path of its own.
+    Callers that need one (app/council/agents.py, app/council/chair.py)
+    build a degraded, honestly-labeled fallback from what they already
+    know, rather than this generic text-completion primitive guessing at
+    Council-specific behavior."""
     try:
         text = _call_groq(system_prompt, user_prompt, max_tokens)
         return LLMResponse(text=text, backend="groq")

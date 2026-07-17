@@ -49,6 +49,7 @@ interface CorrixState {
   applyLiveDeliberating: (evidence: CouncilEvidence) => void
   applyLiveVerdict: (verdict: CouncilVerdict) => void
   applyEroFired: (event: EroFiredEvent) => void
+  applyCouncilError: (message: string) => void
 }
 
 const initialMock = scenarioMock('S1')
@@ -158,4 +159,18 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
   applyLiveVerdict: (verdict) =>
     set({ councilStage: 'verdict_reached', verdict, liveEvidence: null, overridePaused: false }),
   applyEroFired: (event) => set({ eroFired: event }),
+  applyCouncilError: (message) =>
+    set((state) => ({
+      councilStage: 'idle',
+      alerts: [
+        {
+          id: `alert-error-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          zoneId: state.verdict?.zoneId ?? state.scenarioId,
+          riskLevel: 'CAUTION',
+          summary: message,
+        },
+        ...state.alerts,
+      ],
+    })),
 }))

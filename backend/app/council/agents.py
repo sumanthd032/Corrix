@@ -14,12 +14,15 @@ wiring agents to call their own bound tools live is Step 9 integration
 work once there's a running app state to query.
 """
 
+import logging
 from dataclasses import dataclass, field
 
 from mcp.server.fastmcp import FastMCP
 
 from app.council.llm_client import LLMResponse, chat_completion
 from app.mcp_servers import cv_observation, permit_shift, sensor_stream, worker_location
+
+logger = logging.getLogger(__name__)
 
 
 def _tool_names(server: FastMCP) -> list[str]:
@@ -66,7 +69,20 @@ class EvidenceAgent:
         return names
 
     def run(self, evidence_text: str) -> LLMResponse:
-        return chat_completion(self.system_prompt, evidence_text, max_tokens=150)
+        """Falls back to the raw evidence text, unchanged, if both Groq and
+        Gemini fail: this persona's job is to restate the raw data in its
+        own voice, and the raw data is already fully available, so a
+        Council convening should degrade to plainer wording rather than
+        crash. The Chair still receives every real identifier and value,
+        just without the persona narration."""
+        try:
+            return chat_completion(self.system_prompt, evidence_text, max_tokens=150)
+        except Exception as exc:
+            logger.warning(
+                "%s: both LLM providers failed, falling back to raw evidence text: %s",
+                self.display_name, exc,
+            )
+            return LLMResponse(text=evidence_text, backend="fallback")
 
 
 PROCESS_SAFETY_ENGINEER = EvidenceAgent(

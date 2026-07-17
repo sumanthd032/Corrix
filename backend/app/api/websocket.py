@@ -20,12 +20,15 @@ Server -> client:
   {"type": "deliberating", "council": {...four evidence texts...}}
   {"type": "verdict", "verdict": {...camelCase CouncilVerdict...}}
   {"type": "ero_fired", "zoneId": ..., "deliveredOk": bool, "evidenceHash": "..."}
+  {"type": "council_error", "message": "..."}   convening failed unexpectedly;
+                                                 playback continues past it
   {"type": "playback_complete"}
 """
 
 import asyncio
+import logging
 import time
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import WebSocket, WebSocketDisconnect
 
@@ -54,6 +57,8 @@ from app.simulation.open_challenge import CURATED_COMBINATIONS
 from app.simulation.plant_layout import load_plant_layout
 from app.simulation.scenario_engine import DEFAULT_START_TIME
 from app.state.live_risk_state import update_zone_risk_state
+
+logger = logging.getLogger(__name__)
 
 PLAYBACK_FRAME_SECONDS = 0.35
 OVERRIDE_WINDOW_SECONDS = 8.0
@@ -198,18 +203,34 @@ async def _convene_council(
             badge_id for badge_id, zone_id in frame.worker_positions.items()
             if zone_id == verdict.zone_id
         ]
-        alert = await asyncio.to_thread(
-            fire_emergency_response, verdict, worker_badge_ids, get_shared_driver()
-        )
-        await websocket.send_json(
-            {
-                "type": "ero_fired",
-                "zoneId": alert.zone_id,
-                "deliveredOk": alert.delivery_error is None,
-                "evidenceHash": alert.evidence_hash,
-                "firedAt": alert.fired_at,
-            }
-        )
+        try:
+            alert = await asyncio.to_thread(
+                fire_emergency_response, verdict, worker_badge_ids, get_shared_driver()
+            )
+            await websocket.send_json(
+                {
+                    "type": "ero_fired",
+                    "zoneId": alert.zone_id,
+                    "deliveredOk": alert.delivery_error is None,
+                    "evidenceHash": alert.evidence_hash,
+                    "firedAt": alert.fired_at,
+                }
+            )
+        except Exception as exc:
+            # The verdict has already been delivered to the client above; a
+            # transient failure here (a Neo4j hiccup writing the incident
+            # alert, say, genuinely seen during this project's own testing)
+            # must not take down the connection after that.
+            logger.error("ERO firing failed unexpectedly: %s", exc)
+            await websocket.send_json(
+                {
+                    "type": "ero_fired",
+                    "zoneId": verdict.zone_id,
+                    "deliveredOk": False,
+                    "evidenceHash": "unavailable",
+                    "firedAt": datetime.now(timezone.utc).isoformat(),
+                }
+            )
 
 
 async def _stream_playback(
@@ -239,7 +260,22 @@ async def _stream_playback(
         await asyncio.sleep(PLAYBACK_FRAME_SECONDS)
 
         if i == playback.trigger_frame_index:
-            await _convene_council(websocket, incoming, playback)
+            try:
+                await _convene_council(websocket, incoming, playback)
+            except Exception as exc:
+                # Both evidence-agent and Chair failures already degrade to a
+                # fallback (app/council/agents.py, app/council/chair.py)
+                # rather than raising; anything that still reaches here is
+                # genuinely unexpected, and a live demo crashing outright is
+                # a worse outcome than one convening being visibly reported
+                # as failed while the rest of the connection keeps working.
+                logger.error("Council convening failed unexpectedly: %s", exc)
+                await websocket.send_json(
+                    {
+                        "type": "council_error",
+                        "message": "The Safety Council could not complete its deliberation.",
+                    }
+                )
 
     await websocket.send_json({"type": "playback_complete"})
     return None
