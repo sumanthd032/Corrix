@@ -4,7 +4,7 @@ Scoped exclusively to the Process Safety Engineer agent (CORRIX_PROJECT.md
 §6.1): gas sensor readings (S2-S4) and the S1 compliance signal.
 
 Real tools as of Step 3: both run an actual authored scenario through the
-Step 2 simulator and the Step 3 anomaly scorer — there is no live-running
+Step 2 simulator and the Step 3 anomaly scorer. There is no live-running
 plant state yet (that lands with the full app in Step 9), so a scenario
 config is the unit of "current state" a tool call operates on.
 """
@@ -74,4 +74,4 @@ def get_anomaly_score(scenario_id: str, seed: int, zone_id: str) -> dict:
 
 
 if __name__ == "__main__":
-    server.run_stdio_async()
+    server.run()

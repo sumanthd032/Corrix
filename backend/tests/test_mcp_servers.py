@@ -1,9 +1,10 @@
-"""All five MCP server stubs boot and respond to a basic tool-list call —
-Step 1's Definition of Done for the MCP tool layer."""
+"""All five MCP server stubs boot and respond to a basic tool-list call,
+per Step 1's Definition of Done for the MCP tool layer."""
 
 import pytest
 
 from app.mcp_servers import (
+    corrix_risk,
     cv_observation,
     permit_shift,
     regulatory_intelligence,
@@ -23,6 +24,7 @@ SERVERS = [
     ),
     (cv_observation.server, {"get_recent_detections"}),
     (worker_location.server, {"get_zone_occupancy"}),
+    (corrix_risk.server, {"get_zone_compound_risk", "list_zones"}),
 ]
 
 

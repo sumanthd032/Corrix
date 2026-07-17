@@ -4,7 +4,7 @@ Scoped to the Permit Control Officer (permit + zone data) and Shift
 Operations (roster/changeover data only) agents (CORRIX_PROJECT.md §6.1).
 
 Real tools as of Step 3, operating against a seeded scenario run (there is
-no live-running plant state yet — that lands with the full app in Step 9).
+no live-running plant state yet, that lands with the full app in Step 9).
 `check_permit_conflict` takes `risk_level` as an explicit caller-supplied
 argument rather than reaching into Sensor Stream's data itself: this MCP
 server has no access to sensor data, consistent with the agent-silo design
@@ -107,4 +107,4 @@ def get_shift_status(scenario_id: str, seed: int, zone_id: str, at_minute: float
 
 
 if __name__ == "__main__":
-    server.run_stdio_async()
+    server.run()

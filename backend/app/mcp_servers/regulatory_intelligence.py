@@ -3,7 +3,7 @@
 One server covering RAG Q&A, pattern lookup, and compliance checking
 against the unified Neo4j substrate (CORRIX_PROJECT.md §7.1, §8 Pillar 3;
 CORRIX_DATA_METHODOLOGY.md §11). Real tools as of Step 5, backed by the
-single Neo4j AuraDB instance — vector similarity, graph traversal, and
+single Neo4j AuraDB instance: vector similarity, graph traversal, and
 compliance checking all read from the same database, per the build
 plan's explicit instruction not to split this into three servers.
 """
@@ -30,7 +30,7 @@ _driver = GraphDatabase.driver(
 def query_regulatory_corpus(question: str, framework: str | None = None) -> dict:
     """Answer a regulatory question via vector similarity over the
     OISD/Factories Act/DGMS corpus. Pass framework="DGMS" to scope to
-    DGMS content specifically — returns an honest "not yet ingested"
+    DGMS content specifically, and get an honest "not yet ingested"
     note rather than a fabricated primary citation if none exists."""
     return answer_regulatory_question(_driver, question, framework=framework)
 
@@ -52,4 +52,4 @@ def check_compliance(deviation_type: str) -> dict:
 
 
 if __name__ == "__main__":
-    server.run_stdio_async()
+    server.run()

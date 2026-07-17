@@ -6,8 +6,8 @@ Emergency Response Orchestrator's zone-occupancy query.
 
 Real tool as of Step 4: computes actual occupancy from the Step 2
 badge-ping stream of a seeded scenario run. A badge counts as present in
-a zone if its most recent ping at or before `at_minute` was in that zone
-— consistent with how the generator emits events (zone_entry once, then
+a zone if its most recent ping at or before `at_minute` was in that zone,
+consistent with how the generator emits events (zone_entry once, then
 periodic heartbeats in the same zone until the run ends; no zone_exit
 events are generated since none of the authored scenarios script a
 worker leaving mid-run).
@@ -54,4 +54,4 @@ def get_zone_occupancy(scenario_id: str, seed: int, zone_id: str, at_minute: flo
 
 
 if __name__ == "__main__":
-    server.run_stdio_async()
+    server.run()

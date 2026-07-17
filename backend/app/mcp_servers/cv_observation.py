@@ -5,7 +5,7 @@ Scoped, alongside Worker Location, to the Site Safety Observer agent
 forward-pass inference on a sample frame from the real demo clip
 (assets/videos/test_site.mp4), then correlates any person-class
 detection against the Step 2 worker-location stream for the given
-scenario at the given minute — the real/simulated split is encoded in
+scenario at the given minute. The real/simulated split is encoded in
 the returned event's `source`/`correlation_source` fields, not just a
 label.
 """
@@ -84,4 +84,4 @@ def get_recent_detections(
 
 
 if __name__ == "__main__":
-    server.run_stdio_async()
+    server.run()
