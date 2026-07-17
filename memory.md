@@ -409,3 +409,25 @@ External access: Real Groq and Gemini calls throughout (all failing, both provid
 Open questions or blockers: Groq's and Gemini's free-tier daily quotas remain exhausted, still blocking the regression pass and LLM call-volume measurement, both of which need real, successful live Council convenings to mean anything.
 
 Next action: The cross-device/responsiveness check next, since it has no dependency on LLM quota; the regression pass and LLM call-volume measurement once quota headroom returns.
+
+---
+
+## 2026-07-17 — Step 9 (continued): cross-device/responsiveness check, three real layout bugs found and fixed
+
+What was done: Step 9's cross-device check, done as an actual check rather than an assumption that the existing layout was fine. Screenshotted the real running app at four viewport sizes (1440, 1366, 1024, 768px wide) and scripted a genuine overflow check (`document.documentElement.scrollWidth > clientWidth`) rather than eyeballing it. This found three real bugs, not hypothetical ones, all present before this entry's fix:
+
+1. The top control bar's single-row flex layout pushed the Incident Report button, the ERO indicator, and the Safety Officer Override control completely off-screen at 1024px and narrower, causing real page-level horizontal overflow, confirmed by the scripted check, not just a visual impression.
+2. The heatmap panel's title/tracked-count group and its isometric-view toggle button are two independently absolutely-positioned corner overlays; once the panel narrowed enough (case 768px), they collided into overlapping, unreadable text, since neither could reflow around the other.
+3. At 768px (tablet portrait), the main content area's fixed-width 380px sidebar squeezed the heatmap into an unreadably narrow column instead of ever stacking, technically not "overflowing" but a real usability regression a judge on a tablet would hit immediately.
+
+Fixed by letting the top bar wrap onto a second row (`flex-wrap`) instead of clipping, restructuring the heatmap's two corner overlays into one `flex-wrap` header so they reflow together instead of colliding, and making the main content area switch to a vertical stack (heatmap full-width on top, sidebar full-width below) beneath Tailwind's `lg` breakpoint instead of squeezing two columns into a width that can't hold them. Rechecked all four viewports after the fix: zero horizontal overflow at every size via the same scripted check, plus a visual confirmation at each size, plus the Regulatory Intelligence chat drawer expanded at 768px to confirm its own content (chat bubbles, input field) wraps correctly rather than assuming a fix to one component didn't affect another.
+
+Why: this is Step 9's own explicit DoD item ("not just the presenter's machine"), and CLAUDE.md Section 6 holds every screen to a considered, finished-state bar regardless of viewport; a command-center UI that visibly breaks on a tablet during a demo would undercut the same polish this project has held itself to everywhere else.
+
+Files touched: `frontend/src/App.tsx`, `frontend/src/components/{TopControlBar,PlantHeatmap}.tsx`.
+
+External access: None; this check needed no LLM calls, which is why it was done now rather than waiting for Groq/Gemini quota to reset.
+
+Open questions or blockers: Groq's and Gemini's free-tier daily quotas remain exhausted, still blocking the regression pass and LLM call-volume measurement, the two remaining Step 9 tasks, both of which need real, successful live Council convenings to mean anything.
+
+Next action: Run the regression pass and measure real LLM call volume once quota headroom returns; Step 9 is otherwise complete (ERO, Incident Report generator, S5 live wiring, the outward-facing MCP server, the cached-fallback path, and the cross-device check are all done).
