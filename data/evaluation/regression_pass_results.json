@@ -1,0 +1,250 @@
+{
+  "negative_controls": {
+    "n_checked": 25,
+    "n_unconditionally_silent": 21,
+    "borderline_results": {
+      "N5": [
+        {
+          "rep": 1,
+          "risk_level": "HIGH",
+          "confidence": 0.95,
+          "is_fallback": false,
+          "elapsed_seconds": 2.282411000021966
+        },
+        {
+          "rep": 2,
+          "risk_level": "HIGH",
+          "confidence": 0.95,
+          "is_fallback": false,
+          "elapsed_seconds": 1.887566000019433
+        },
+        {
+          "rep": 3,
+          "risk_level": "HIGH",
+          "confidence": 0.95,
+          "is_fallback": false,
+          "elapsed_seconds": 5.407990699983202
+        }
+      ],
+      "N11": [
+        {
+          "rep": 1,
+          "risk_level": "CAUTION",
+          "confidence": 0.8,
+          "is_fallback": false,
+          "elapsed_seconds": 10.78777289998834
+        },
+        {
+          "rep": 2,
+          "risk_level": "CAUTION",
+          "confidence": 0.7,
+          "is_fallback": false,
+          "elapsed_seconds": 11.32507789999363
+        },
+        {
+          "rep": 3,
+          "risk_level": "CAUTION",
+          "confidence": 0.8,
+          "is_fallback": false,
+          "elapsed_seconds": 11.479641300014919
+        }
+      ],
+      "N16": [
+        {
+          "rep": 1,
+          "risk_level": "HIGH",
+          "confidence": 0.95,
+          "is_fallback": false,
+          "elapsed_seconds": 11.140043299994431
+        },
+        {
+          "rep": 2,
+          "risk_level": "HIGH",
+          "confidence": 0.95,
+          "is_fallback": false,
+          "elapsed_seconds": 13.930371900001774
+        },
+        {
+          "rep": 3,
+          "risk_level": "HIGH",
+          "confidence": 0.95,
+          "is_fallback": false,
+          "elapsed_seconds": 12.253561100020306
+        }
+      ],
+      "N20": [
+        {
+          "rep": 1,
+          "risk_level": "CAUTION",
+          "confidence": 0.8,
+          "is_fallback": false,
+          "elapsed_seconds": 11.822272899997188
+        },
+        {
+          "rep": 2,
+          "risk_level": "CAUTION",
+          "confidence": 0.8,
+          "is_fallback": false,
+          "elapsed_seconds": 12.371342600003118
+        },
+        {
+          "rep": 3,
+          "risk_level": "CAUTION",
+          "confidence": 0.8,
+          "is_fallback": false,
+          "elapsed_seconds": 12.172616800002288
+        }
+      ]
+    }
+  },
+  "positive_scenarios": {
+    "S1": [
+      {
+        "rep": 1,
+        "risk_level": "HIGH",
+        "confidence": 0.95,
+        "is_fallback": false,
+        "elapsed_seconds": 12.242340599972522
+      },
+      {
+        "rep": 2,
+        "risk_level": "HIGH",
+        "confidence": 0.95,
+        "is_fallback": false,
+        "elapsed_seconds": 11.501980300003197
+      },
+      {
+        "rep": 3,
+        "risk_level": "HIGH",
+        "confidence": 0.95,
+        "is_fallback": false,
+        "elapsed_seconds": 12.11831419999362
+      },
+      {
+        "rep": 4,
+        "risk_level": "HIGH",
+        "confidence": 0.9,
+        "is_fallback": false,
+        "elapsed_seconds": 11.90331869997317
+      },
+      {
+        "rep": 5,
+        "risk_level": "HIGH",
+        "confidence": 0.9,
+        "is_fallback": false,
+        "elapsed_seconds": 12.174176100001205
+      }
+    ],
+    "S2": [
+      {
+        "rep": 1,
+        "risk_level": "HIGH",
+        "confidence": 0.9,
+        "is_fallback": false,
+        "elapsed_seconds": 10.154516500013415
+      },
+      {
+        "rep": 2,
+        "risk_level": "HIGH",
+        "confidence": 0.95,
+        "is_fallback": false,
+        "elapsed_seconds": 8.815316099993652
+      },
+      {
+        "rep": 3,
+        "risk_level": "HIGH",
+        "confidence": 0.9,
+        "is_fallback": false,
+        "elapsed_seconds": 11.912439299980178
+      },
+      {
+        "rep": 4,
+        "risk_level": "HIGH",
+        "confidence": 0.95,
+        "is_fallback": false,
+        "elapsed_seconds": 10.675673399993684
+      },
+      {
+        "rep": 5,
+        "risk_level": "HIGH",
+        "confidence": 0.95,
+        "is_fallback": false,
+        "elapsed_seconds": 11.064167300006375
+      }
+    ],
+    "S3": [
+      {
+        "rep": 1,
+        "risk_level": "HIGH",
+        "confidence": 0.95,
+        "is_fallback": false,
+        "elapsed_seconds": 11.061955900018802
+      },
+      {
+        "rep": 2,
+        "risk_level": "HIGH",
+        "confidence": 0.95,
+        "is_fallback": false,
+        "elapsed_seconds": 11.78672160001588
+      },
+      {
+        "rep": 3,
+        "risk_level": "HIGH",
+        "confidence": 0.9,
+        "is_fallback": false,
+        "elapsed_seconds": 10.877908299997216
+      },
+      {
+        "rep": 4,
+        "risk_level": "HIGH",
+        "confidence": 0.9,
+        "is_fallback": false,
+        "elapsed_seconds": 12.622099499974865
+      },
+      {
+        "rep": 5,
+        "risk_level": "HIGH",
+        "confidence": 0.9,
+        "is_fallback": false,
+        "elapsed_seconds": 8.264490400004433
+      }
+    ],
+    "S4": [
+      {
+        "rep": 1,
+        "risk_level": "HIGH",
+        "confidence": 0.0,
+        "is_fallback": true,
+        "elapsed_seconds": 31.214766899996903
+      },
+      {
+        "rep": 2,
+        "risk_level": "HIGH",
+        "confidence": 0.0,
+        "is_fallback": true,
+        "elapsed_seconds": 30.835934700007783
+      },
+      {
+        "rep": 3,
+        "risk_level": "HIGH",
+        "confidence": 0.0,
+        "is_fallback": true,
+        "elapsed_seconds": 31.290998000011314
+      },
+      {
+        "rep": 4,
+        "risk_level": "HIGH",
+        "confidence": 0.0,
+        "is_fallback": true,
+        "elapsed_seconds": 27.91673290001927
+      },
+      {
+        "rep": 5,
+        "risk_level": "HIGH",
+        "confidence": 0.0,
+        "is_fallback": true,
+        "elapsed_seconds": 30.65395940002054
+      }
+    ]
+  }
+}

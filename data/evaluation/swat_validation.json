@@ -1,0 +1,75 @@
+{
+  "swat_tags": [
+    {
+      "tag": "LIT101",
+      "n_samples": 1387098,
+      "mean_reversion_rate": 0.005036231143158656,
+      "baseline": 587.8317321304526,
+      "implied_sigma": 12.0867282428892,
+      "noise_to_signal_ratio": 0.0205615443710121,
+      "residual_skew": -0.029974423101999013,
+      "residual_kurtosis": 116479.9196080882
+    },
+    {
+      "tag": "FIT101",
+      "n_samples": 1387098,
+      "mean_reversion_rate": 0.01816343578521395,
+      "baseline": 1.8461954750826735,
+      "implied_sigma": 0.2162147943207296,
+      "noise_to_signal_ratio": 0.1171137061264043,
+      "residual_skew": -1.5781855924663388,
+      "residual_kurtosis": 663.9456246003382
+    },
+    {
+      "tag": "PIT501",
+      "n_samples": 1387098,
+      "mean_reversion_rate": 0.02222644854079319,
+      "baseline": 250.8278072838929,
+      "implied_sigma": 3.057214356086434,
+      "noise_to_signal_ratio": 0.012188498512950783,
+      "residual_skew": -493.9558602176366,
+      "residual_kurtosis": 302278.6818431379
+    }
+  ],
+  "our_simulator_configs": [
+    {
+      "tag": "S2-style (Z7)",
+      "n_samples": 2401,
+      "mean_reversion_rate": 0.10304414984036417,
+      "baseline": 0.9262640491925899,
+      "implied_sigma": 0.05019130669374884,
+      "noise_to_signal_ratio": 0.054186823657357566,
+      "residual_skew": -0.046991722446215606,
+      "residual_kurtosis": 0.050531717676115306
+    },
+    {
+      "tag": "S3-style (Z2)",
+      "n_samples": 2401,
+      "mean_reversion_rate": 0.0830902126740444,
+      "baseline": 1.8156513690342873,
+      "implied_sigma": 0.10038254849071906,
+      "noise_to_signal_ratio": 0.05528734767187754,
+      "residual_skew": -0.046857670524380994,
+      "residual_kurtosis": 0.04954033440109429
+    },
+    {
+      "tag": "S4-style (Z2)",
+      "n_samples": 2401,
+      "mean_reversion_rate": 0.10304011719804639,
+      "baseline": 1.8820250681090211,
+      "implied_sigma": 0.08030469554035392,
+      "noise_to_signal_ratio": 0.04266930175432821,
+      "residual_skew": -0.047094276789073325,
+      "residual_kurtosis": 0.05015332078358625
+    }
+  ],
+  "swat_noise_to_signal_range": [
+    0.012188498512950783,
+    0.1171137061264043
+  ],
+  "our_noise_to_signal_range": [
+    0.04266930175432821,
+    0.05528734767187754
+  ],
+  "our_noise_to_signal_falls_within_swat_range": true
+}

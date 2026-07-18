@@ -1,0 +1,34 @@
+{
+  "before": {
+    "pipeline": "pipeline",
+    "n_skipped": 0,
+    "n_positive": 10,
+    "n_negative": 10,
+    "true_positives": 7,
+    "false_negatives": 3,
+    "false_positives": 2,
+    "true_negatives": 8,
+    "precision": 0.7777777777777778,
+    "recall": 0.7,
+    "false_negative_rate": 0.3,
+    "false_positive_rate": 0.2,
+    "mean_lead_time_minutes": 51.33333333333333
+  },
+  "after": {
+    "pipeline": "pipeline",
+    "n_skipped": 0,
+    "n_positive": 10,
+    "n_negative": 10,
+    "true_positives": 10,
+    "false_negatives": 0,
+    "false_positives": 5,
+    "true_negatives": 5,
+    "precision": 0.6666666666666666,
+    "recall": 1.0,
+    "false_negative_rate": 0.0,
+    "false_positive_rate": 0.5,
+    "mean_lead_time_minutes": 66.1
+  },
+  "n_exemplars_stored": 3,
+  "false_negative_rate_change": -0.3
+}
