@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { useCorrixStore } from '../store/useCorrixStore'
+import { Tooltip } from './Tooltip'
 import { CounterfactualReplayModal } from './CounterfactualReplayModal'
 import { EvaluationReportModal } from './EvaluationReportModal'
 
@@ -154,119 +155,167 @@ export function TopControlBar() {
         </div>
       </div>
 
-      <motion.button {...BUTTON_MOTION} type="button" onClick={() => setReplayOpen(true)} className={chipClass}>
-        <Radio size={15} aria-hidden="true" />
-        Replay
-      </motion.button>
-
-      <motion.button
-        {...BUTTON_MOTION}
-        type="button"
-        onClick={triggerOpenChallenge}
-        disabled={connectionMode !== 'live'}
-        title={
-          connectionMode !== 'live'
-            ? 'Requires the live backend, which draws and runs an unscripted evidence combination live'
-            : 'Draw one of the curated Open Challenge combinations and run it live'
-        }
-        className={chipClass}
+      <Tooltip
+        label="Counterfactual Replay"
+        hint="Scrub a legacy single-signal timeline against Corrix's compound-aware track to see the real lead-time gap."
       >
-        <Sparkles size={15} aria-hidden="true" />
-        Open Challenge
-        {openChallengeLabel && (
-          <span className="ml-1 max-w-[180px] truncate font-mono-data text-[10px] text-[var(--color-accent)]">
-            {openChallengeLabel}
-          </span>
-        )}
-      </motion.button>
-
-      <div className="ml-auto flex flex-wrap items-center gap-2">
-        <motion.button {...BUTTON_MOTION} type="button" onClick={() => setReportOpen(true)} className={chipClass}>
-          <BarChart3 size={15} aria-hidden="true" />
-          Evaluation
+        <motion.button {...BUTTON_MOTION} type="button" onClick={() => setReplayOpen(true)} className={chipClass}>
+          <Radio size={15} aria-hidden="true" />
+          Replay
         </motion.button>
+      </Tooltip>
 
+      <Tooltip
+        label="Open Challenge"
+        hint={
+          connectionMode !== 'live'
+            ? 'Requires the live backend. Draws an unrehearsed evidence combination and runs it through the joint-evidence novelty detector.'
+            : 'Draws an unrehearsed evidence combination and convenes the Council via the novelty path, not a scripted scenario.'
+        }
+      >
         <motion.button
           {...BUTTON_MOTION}
           type="button"
-          onClick={downloadIncidentReport}
-          disabled={!verdict || incidentReportState === 'loading'}
-          title={!verdict ? 'No verdict available yet to report on' : 'Download a PDF incident report for the current verdict'}
+          onClick={triggerOpenChallenge}
+          disabled={connectionMode !== 'live'}
           className={chipClass}
         >
-          {incidentReportState === 'loading' ? (
-            <Loader2 size={15} className="animate-spin" aria-hidden="true" />
-          ) : incidentReportState === 'error' ? (
-            <CircleAlert size={15} style={{ color: 'var(--color-risk-critical)' }} aria-hidden="true" />
-          ) : (
-            <Download size={15} aria-hidden="true" />
+          <Sparkles size={15} aria-hidden="true" />
+          Open Challenge
+          {openChallengeLabel && (
+            <span className="ml-1 max-w-[180px] truncate font-mono-data text-[10px] text-[var(--color-accent)]">
+              {openChallengeLabel}
+            </span>
           )}
-          {incidentReportState === 'error' ? 'Report failed' : 'Incident Report'}
         </motion.button>
+      </Tooltip>
 
-        <motion.span
-          key={eroFired ? `${eroFired.zoneId}-${eroFired.deliveredOk}` : 'idle'}
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-          className="flex items-center gap-1.5 rounded-[var(--radius-control)] border px-2.5 py-1.5 text-xs"
-          style={{
-            borderColor: eroFired
-              ? eroFired.deliveredOk
-                ? 'color-mix(in srgb, var(--color-accent) 45%, transparent)'
-                : 'color-mix(in srgb, var(--color-risk-critical) 55%, transparent)'
-              : 'var(--color-hairline)',
-            color: eroFired
-              ? eroFired.deliveredOk
-                ? 'var(--color-accent)'
-                : 'var(--color-risk-critical)'
-              : 'var(--color-text-tertiary)',
-          }}
-          title={
-            eroFired
-              ? `Emergency Response Orchestrator fired for Zone ${eroFired.zoneId}.\n` +
-                `${eroFired.deliveredOk ? 'A real alert was delivered.' : 'Delivery failed (see logs).'}\n` +
-                `Evidence hash (SHA-256): ${eroFired.evidenceHash}\nFired at: ${eroFired.firedAt}`
-              : 'Emergency Response Orchestrator: idle.\n' +
-                'On a CRITICAL verdict it automatically sends a real email alert with a ' +
-                'hashed evidence snapshot and the evacuation route.\n' +
-                'It stays idle until a convening is rated CRITICAL; most scenarios peak at HIGH.'
+      <div className="ml-auto flex flex-wrap items-center gap-2">
+        <Tooltip
+          label="Evaluation Report"
+          hint="Precision, recall, lead time, confidence calibration, and the held-out memory-loop result across the full scenario library."
+        >
+          <motion.button {...BUTTON_MOTION} type="button" onClick={() => setReportOpen(true)} className={chipClass}>
+            <BarChart3 size={15} aria-hidden="true" />
+            Evaluation
+          </motion.button>
+        </Tooltip>
+
+        <Tooltip
+          label="Incident Report"
+          hint={
+            !verdict
+              ? 'Available once a verdict exists. Generates a PDF incident report for the current verdict, rendered from real HTML.'
+              : 'Download a PDF incident report for the current verdict, including the evidence snapshot and, if fired, the ERO hash.'
           }
         >
-          <ShieldAlert size={14} aria-hidden="true" />
-          {eroFired
-            ? eroFired.deliveredOk
-              ? `ERO · Zone ${eroFired.zoneId}`
-              : `ERO · Zone ${eroFired.zoneId} (failed)`
-            : 'ERO idle'}
-        </motion.span>
+          <motion.button
+            {...BUTTON_MOTION}
+            type="button"
+            onClick={downloadIncidentReport}
+            disabled={!verdict || incidentReportState === 'loading'}
+            className={chipClass}
+          >
+            {incidentReportState === 'loading' ? (
+              <Loader2 size={15} className="animate-spin" aria-hidden="true" />
+            ) : incidentReportState === 'error' ? (
+              <CircleAlert size={15} style={{ color: 'var(--color-risk-critical)' }} aria-hidden="true" />
+            ) : (
+              <Download size={15} aria-hidden="true" />
+            )}
+            {incidentReportState === 'error' ? 'Report failed' : 'Incident Report'}
+          </motion.button>
+        </Tooltip>
 
-        <motion.button
-          {...BUTTON_MOTION}
-          type="button"
-          onClick={connectionMode === 'live' ? requestOverrideFocus : pauseForOverride}
-          disabled={
-            connectionMode === 'live'
-              ? councilStage !== 'deliberating'
-              : overridePaused || councilStage !== 'verdict_reached'
+        <Tooltip
+          content={
+            eroFired ? (
+              <>
+                <div className="font-semibold text-[var(--color-text-primary)]">
+                  ERO fired · Zone {eroFired.zoneId}
+                </div>
+                <div className="mt-1">
+                  {eroFired.deliveredOk ? 'A real alert was delivered.' : 'Delivery failed (see logs).'}
+                </div>
+                <div className="mt-1.5 break-all font-mono-data text-[10px] text-[var(--color-text-tertiary)]">
+                  SHA-256 {eroFired.evidenceHash}
+                </div>
+                <div className="font-mono-data text-[10px] text-[var(--color-text-tertiary)]">
+                  fired {eroFired.firedAt}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="font-semibold text-[var(--color-text-primary)]">
+                  Emergency Response Orchestrator
+                </div>
+                <div className="mt-1">
+                  On a CRITICAL verdict it automatically sends a real email alert with a hashed evidence
+                  snapshot and the evacuation route. It stays idle until a convening is rated CRITICAL;
+                  most scenarios peak at HIGH.
+                </div>
+              </>
+            )
           }
-          title={
+        >
+          <motion.span
+            key={eroFired ? `${eroFired.zoneId}-${eroFired.deliveredOk}` : 'idle'}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+            className="flex items-center gap-1.5 rounded-[var(--radius-control)] border px-2.5 py-1.5 text-xs"
+            style={{
+              borderColor: eroFired
+                ? eroFired.deliveredOk
+                  ? 'color-mix(in srgb, var(--color-accent) 45%, transparent)'
+                  : 'color-mix(in srgb, var(--color-risk-critical) 55%, transparent)'
+                : 'var(--color-hairline)',
+              color: eroFired
+                ? eroFired.deliveredOk
+                  ? 'var(--color-accent)'
+                  : 'var(--color-risk-critical)'
+                : 'var(--color-text-tertiary)',
+            }}
+          >
+            <ShieldAlert size={14} aria-hidden="true" />
+            {eroFired
+              ? eroFired.deliveredOk
+                ? `ERO · Zone ${eroFired.zoneId}`
+                : `ERO · Zone ${eroFired.zoneId} (failed)`
+              : 'ERO idle'}
+          </motion.span>
+        </Tooltip>
+
+        <Tooltip
+          label="Safety Officer Override"
+          hint={
             connectionMode === 'live'
               ? councilStage === 'deliberating'
-                ? 'Jump to the override note field while the Council is deliberating'
-                : 'Available only while the Council is deliberating (the live override window)'
-              : 'Add a Safety Officer note to the current verdict'
+                ? 'Jump to the override note field while the Council is deliberating.'
+                : 'Available only while the Council is deliberating (the live 8-second override window). Enter the note in the Council panel.'
+              : 'Add a Safety Officer note to the current verdict and re-run the Chair.'
           }
-          className="flex items-center gap-1.5 rounded-[var(--radius-control)] border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-40"
-          style={{
-            borderColor: 'color-mix(in srgb, var(--color-accent) 45%, transparent)',
-            backgroundColor: 'var(--color-accent-dim)',
-            color: 'var(--color-accent)',
-          }}
         >
-          <PauseCircle size={15} aria-hidden="true" />
-          Override
-        </motion.button>
+          <motion.button
+            {...BUTTON_MOTION}
+            type="button"
+            onClick={connectionMode === 'live' ? requestOverrideFocus : pauseForOverride}
+            disabled={
+              connectionMode === 'live'
+                ? councilStage !== 'deliberating'
+                : overridePaused || councilStage !== 'verdict_reached'
+            }
+            className="flex items-center gap-1.5 rounded-[var(--radius-control)] border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-40"
+            style={{
+              borderColor: 'color-mix(in srgb, var(--color-accent) 45%, transparent)',
+              backgroundColor: 'var(--color-accent-dim)',
+              color: 'var(--color-accent)',
+            }}
+          >
+            <PauseCircle size={15} aria-hidden="true" />
+            Override
+          </motion.button>
+        </Tooltip>
       </div>
 
       <AnimatePresence>

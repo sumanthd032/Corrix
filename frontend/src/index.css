@@ -243,6 +243,36 @@
     }
   }
 
+  /* Styled tactical tooltip, rendered through a portal to document.body
+     (so the top bar's backdrop-filter containing block can't clip it). */
+  .tactical-tooltip {
+    position: fixed;
+    z-index: 200;
+    max-width: 288px;
+    padding: 8px 11px;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--color-hairline-strong);
+    background: color-mix(in srgb, var(--color-surface-1) 97%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-raised), inset 0 1px 0 color-mix(in srgb, var(--color-accent) 28%, transparent);
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+    pointer-events: none;
+  }
+
+  /* Inline wrapper the Tooltip component puts around its trigger. When the
+     trigger is a disabled control, disabling its pointer events lets the
+     hover reach this wrapper so the tooltip still explains why it's
+     disabled (a disabled button otherwise swallows the hover entirely). */
+  .tooltip-wrap {
+    display: inline-flex;
+  }
+  .tooltip-wrap > :disabled {
+    pointer-events: none;
+  }
+
   /* Thin custom scrollbars so overflow areas read as instrument panels. */
   .thin-scroll {
     scrollbar-width: thin;
