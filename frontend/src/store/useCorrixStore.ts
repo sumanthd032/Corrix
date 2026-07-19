@@ -12,6 +12,8 @@ import type {
 import { MOCK_CHAT_HISTORY, scenarioMock } from '../data/mockData'
 import { jitterForBadge } from '../lib/jitter'
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
+
 type ConnectionMode = 'mock' | 'live'
 
 interface CorrixState {
@@ -22,6 +24,7 @@ interface CorrixState {
   councilStage: CouncilStage
   alerts: AlertFeedEntry[]
   chatHistory: RegulatoryChatMessage[]
+  chatPending: boolean
   overridePaused: boolean
   overrideNote: string
 
@@ -36,7 +39,7 @@ interface CorrixState {
   setCouncilStage: (stage: CouncilStage) => void
   pauseForOverride: () => void
   submitOverrideNote: (note: string) => void
-  sendChatMessage: (text: string) => void
+  sendChatMessage: (text: string) => Promise<void>
   triggerOpenChallenge: () => void
 
   setConnectionMode: (mode: ConnectionMode) => void
@@ -62,6 +65,7 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
   councilStage: 'verdict_reached',
   alerts: initialMock.alerts,
   chatHistory: MOCK_CHAT_HISTORY,
+  chatPending: false,
   overridePaused: false,
   overrideNote: '',
 
@@ -118,13 +122,42 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
         : state.verdict,
     }))
   },
-  sendChatMessage: (text) =>
+  sendChatMessage: async (text) => {
+    const userMessageId = `msg-${Date.now()}-user`
     set((state) => ({
-      chatHistory: [
-        ...state.chatHistory,
-        { id: `msg-${state.chatHistory.length + 1}`, role: 'user', text },
-      ],
-    })),
+      chatHistory: [...state.chatHistory, { id: userMessageId, role: 'user', text }],
+      chatPending: true,
+    }))
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/regulatory-chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: text }),
+      })
+      if (!response.ok) throw new Error(`Regulatory chat request failed (${response.status})`)
+      const data: { answer: string; citations: RegulatoryChatMessage['citations'] } =
+        await response.json()
+      set((state) => ({
+        chatHistory: [
+          ...state.chatHistory,
+          { id: `${userMessageId}-reply`, role: 'assistant', text: data.answer, citations: data.citations },
+        ],
+        chatPending: false,
+      }))
+    } catch {
+      set((state) => ({
+        chatHistory: [
+          ...state.chatHistory,
+          {
+            id: `${userMessageId}-error`,
+            role: 'assistant',
+            text: 'Could not reach the Regulatory Intelligence backend for a real answer. Confirm the backend is running and reachable, then try again.',
+          },
+        ],
+        chatPending: false,
+      }))
+    }
+  },
   triggerOpenChallenge: () => {
     const sender = get().openChallengeSender
     if (get().connectionMode === 'live' && sender) {

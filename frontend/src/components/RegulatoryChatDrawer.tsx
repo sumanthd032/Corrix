@@ -7,6 +7,7 @@ export function RegulatoryChatDrawer() {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState('')
   const chatHistory = useCorrixStore((s) => s.chatHistory)
+  const chatPending = useCorrixStore((s) => s.chatPending)
   const sendChatMessage = useCorrixStore((s) => s.sendChatMessage)
 
   return (
@@ -66,13 +67,24 @@ export function RegulatoryChatDrawer() {
                   ))}
                 </motion.div>
               ))}
+              {chatPending && (
+                <motion.div
+                  key="chat-pending"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="max-w-[85%] self-start rounded-[var(--radius-control)] px-3 py-2 text-sm text-[var(--color-text-secondary)]"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.04)' }}
+                >
+                  Searching the regulatory corpus…
+                </motion.div>
+              )}
             </AnimatePresence>
           </div>
 
           <form
             onSubmit={(e) => {
               e.preventDefault()
-              if (!draft.trim()) return
+              if (!draft.trim() || chatPending) return
               sendChatMessage(draft)
               setDraft('')
             }}
@@ -82,13 +94,15 @@ export function RegulatoryChatDrawer() {
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               placeholder="Ask about OISD, Factories Act, or DGMS guidance…"
-              className="flex-1 rounded-[var(--radius-control)] bg-white/[0.04] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-secondary)]"
+              disabled={chatPending}
+              className="flex-1 rounded-[var(--radius-control)] bg-white/[0.04] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-secondary)] disabled:opacity-50"
             />
             <motion.button
               type="submit"
-              whileHover={{ scale: 1.06 }}
-              whileTap={{ scale: 0.92 }}
-              className="rounded-[var(--radius-control)] p-2 text-[var(--color-accent)]"
+              disabled={chatPending || !draft.trim()}
+              whileHover={{ scale: chatPending ? 1 : 1.06 }}
+              whileTap={{ scale: chatPending ? 1 : 0.92 }}
+              className="rounded-[var(--radius-control)] p-2 text-[var(--color-accent)] disabled:opacity-50"
               style={{ backgroundColor: 'color-mix(in srgb, var(--color-accent) 18%, transparent)' }}
               aria-label="Send"
             >

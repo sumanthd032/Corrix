@@ -666,3 +666,25 @@ External access: real Groq, Gemini, and Neo4j AuraDB calls throughout the full b
 Open questions or blockers: the CV checkpoint gap above; Render deployment remains the one build-plan task not yet done, unchanged from the previous entry.
 
 Next action: none required by this audit itself. Deploying to Render remains the next real task whenever the user is ready to walk through it.
+
+---
+
+## 2026-07-19 — A real gap the audit missed: the Regulatory Intelligence chat drawer was never wired to the backend at all
+
+What was done: immediately after the audit above, the user reported that asking a question in the running app's Regulatory Intelligence chat drawer produced nothing. This was a real gap the audit had not caught, because the audit verified the regulatory backend directly (Python calls, MCP tool calls, the retrieval functions) and verified the chat drawer's component and mock rendering, but never traced the actual "type a question, get a reply" path end to end through the frontend. That path did not exist: `sendChatMessage` in `frontend/src/store/useCorrixStore.ts` only ever appended the user's own typed text to local state and returned; no fetch, no WebSocket message, nothing called the backend, in either mock or live mode. The static `MOCK_CHAT_HISTORY` pair (Factories Act §37) was the only "assistant" content the drawer could ever show, and it was baked in at store initialization, not generated in response to a new question. `CORRIX_BUILD_PLAN.md` Step 7 names "Regulatory RAG Assistant chat drawer" as a key task, and Step 5's own backend (proven real by this same audit) has existed since 2026-07-16; the two were simply never connected.
+
+Fixed by building the missing link. `backend/app/api/regulatory_chat.py` (new): a `POST /api/regulatory-chat` REST endpoint, the same one-shot request/response shape `replay.py` and `evaluation.py` already use, calling the existing `answer_regulatory_question` (`app/regulatory/retrieval.py`) via the already-shared, already-cached Neo4j driver (`app/memory/exemplar_store.get_shared_driver`), not a new database connection or a parallel implementation. Registered in `app/main.py`. `backend/tests/test_regulatory_chat.py` (new, 2 tests, both passing against the live database): a real question returns a real, checkable citation; a low-relevance question still returns a valid, honestly-shaped response rather than a 500.
+
+On the frontend, `sendChatMessage` became async: appends the user's message immediately, sets a new `chatPending` flag, calls the new endpoint, and appends either a real assistant reply with citations or, on any fetch failure, an honest message naming the actual problem ("could not reach the Regulatory Intelligence backend") rather than silently doing nothing, the same no-dead-ends discipline the rest of the app already follows. `RegulatoryChatDrawer.tsx` renders a "Searching the regulatory corpus..." bubble while pending and disables the input/send control during that window, closing the missing loading state CLAUDE.md §6 requires for every interactive element.
+
+Verified live, not just by type-checking: with the user's own already-running dev backend (`--reload`) and frontend picking up the change via hot-reload, drove an actual headless-Chromium session against the real running app (Playwright, temporary tooling, not committed): opened the drawer, typed a new question, watched the pending bubble appear and clear, and confirmed a real reply with a real citation rendered, "backend live" indicator showing throughout, zero console errors. Re-ran the full backend suite afterward to confirm nothing else regressed.
+
+Why: this is exactly the class of gap the project's own standard exists to catch, a feature that looks finished (a real, polished UI, a real backend that works when called directly) but was never actually connected, and it took a real user actually using the running app to surface it rather than either the build-time verification or this session's own code-reading audit. Recorded plainly, including that the audit missed it, rather than folded quietly into the audit entry above as if it had been part of that pass.
+
+Files touched: `backend/app/api/regulatory_chat.py` (new), `backend/app/main.py` (router registration), `backend/tests/test_regulatory_chat.py` (new), `frontend/src/store/useCorrixStore.ts` (`sendChatMessage` now async and real, new `chatPending` state), `frontend/src/components/RegulatoryChatDrawer.tsx` (pending indicator, disabled input while pending).
+
+External access: real Neo4j AuraDB calls (the new endpoint's live tests and the live browser verification), no LLM calls (RAG retrieval is pure vector search, no `chat_completion` involved, consistent with what the call-volume measurement in Step 9 already established).
+
+Open questions or blockers: none. The CV checkpoint gap and the pending Render deployment, both noted in the previous entry, are unchanged.
+
+Next action: worth a quick pass to confirm no other button or control in the app has the same "looks wired, isn't" gap now that one has turned up; otherwise, Render deployment remains the next real task.
