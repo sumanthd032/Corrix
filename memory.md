@@ -688,3 +688,32 @@ External access: real Neo4j AuraDB calls (the new endpoint's live tests and the 
 Open questions or blockers: none. The CV checkpoint gap and the pending Render deployment, both noted in the previous entry, are unchanged.
 
 Next action: worth a quick pass to confirm no other button or control in the app has the same "looks wired, isn't" gap now that one has turned up; otherwise, Render deployment remains the next real task.
+
+---
+
+## 2026-07-19 — Second full frontend redesign: "Tactical Operations" command center
+
+What was done: the user, after seeing the working app (and the earlier 3D/motion overhaul recorded on 2026-07-18), rated the UI the worst and asked for a ground-up redesign to win the hackathon, giving a free hand. Rather than throw more effects at it, diagnosed the real problem as design fundamentals: the plant map read as flat colored rectangles floating in dark space, there was no visible telemetry (a safety product showing almost no numbers), the layout had large dead space, and the palette (green everywhere) was the wrong emotional register for a compound-risk product. Confirmed this against the actual running app via screenshots before touching code.
+
+Because the aesthetic direction is the one irreducibly-taste decision and the previous two UI versions had both missed, surfaced a single AskUserQuestion offering four distinct, preview-illustrated directions (Tactical Operations, Holographic HUD, Terminal/Ops Desk, Refined Premium) rather than either asking many small questions or guessing. The user chose Tactical Operations (the recommended option): graphite instrument-grade seriousness, one cold cyan signature accent, risk = amber/red only.
+
+Executed in six verified phases, frontend only, changing no data contracts, store actions, or WebSocket wiring (the whole point of the earlier build stays intact):
+
+1. Design tokens (`index.css`) reworked to layered graphite surfaces, a cold cyan accent, a new risk ramp (mint/amber/orange/red), plus HUD-grid, corner-bracket, eyebrow, and tabular-figure utilities. `.glass-panel` was redefined in place (crisp dark instrument panel instead of bright frosted steel-blue) so every existing panel upgraded at once. `RiskBadge`'s deck.gl color helpers were updated and a new `zoneFillHex` added so a nominal (SAFE) zone renders dark graphite on the map and only risk lights up, the key fix for the "coloring-book rectangles" problem.
+2. Command bar (`TopControlBar`) rebuilt as a tactical bar (CORRIX wordmark, LIVE/MOCK pill, scenario selector, bordered action chips), same handlers.
+3. New `TelemetryStrip` component: the "is everything okay in two seconds" rail with big tabular-number KPIs (compound risk, time-to-critical band, council confidence, workers on site, a live zone-risk distribution bar). Deliberately built only from real store state; specifically did NOT invent gas-ppm figures the frontend doesn't actually have, per the project's honesty rule.
+4. Plant map (`PlantHeatmap`) rebuilt into a real schematic: a dark facility footprint the zones sit on, dark-nominal/glowing-risk fills, short readable zone labels (the full facility names overran neighboring cells, so a short-name map was added), a HUD grid behind the canvas, a risk legend, and a zoom fixed from 1.75 to 1.5 so the bottom row is no longer cropped.
+5. Safety Council (`CouncilPanel`) rebuilt as agent stations feeding a "Fusion Core", with a commanding verdict card that now also shows the trigger-reason tell (rule/novelty/memory), a real differentiator. `CouncilScene3D` gained always-on connector lines from the four agents to the violet Chair so the "only fusion catches the compound pattern" thesis reads even at idle, not only during the convening burst; its stale accent hex was updated too.
+6. `AlertFeed` and `RegulatoryChatDrawer` restyled to match; leftover hardcoded old-palette hexes in `PlantScene3D` and `EvaluationReportModal`'s SVG chart were updated to the new tokens.
+
+Verification (the same discipline as the rest of the build): `tsc -b` clean and `npm run build` clean; a live Playwright pass against the real running backend across the boot sequence, the idle/nominal dashboard, a real lit HIGH state driven by an actual live scenario (Z1 glowing orange with gas particles, Z2/Z7 amber caution, the telemetry and distribution bar lighting up correctly while nominal zones stayed calm graphite), the 3D plant view, and the Evaluation Report modal; zero console errors everywhere; and a scripted horizontal-overflow check at 1920, 1366, 1024, and 768px all returning zero, confirming the responsive stacking still holds. One correctness bug was caught and fixed during the lit-state check: the compound-risk KPI subtitle said "all zones within limits" while showing HIGH mid-playback (no verdict yet); it now reports elevated-zone status when a zone is above threshold without a verdict.
+
+Why: this is a direct, explicit user instruction with real competitive stakes, and CLAUDE.md §6 puts the UI on equal footing with the reasoning system. The single AskUserQuestion (rather than many, or none) both respected the free hand and de-risked the taste alignment that had missed twice. Keeping the change strictly presentational protected all the verified backend/data work underneath.
+
+Files touched: `frontend/src/index.css`, `frontend/src/App.tsx`, `frontend/src/components/TelemetryStrip.tsx` (new), and `frontend/src/components/{TopControlBar,PlantHeatmap,CouncilPanel,CouncilScene3D,AlertFeed,RegulatoryChatDrawer,RiskBadge,PlantScene3D,EvaluationReportModal}.tsx`.
+
+External access: real Groq/Neo4j calls during the live lit-state verification (one real S1 scenario convening); no new services.
+
+Open questions or blockers: none. At 768px tablet-portrait the map body is compact (one zone row visible without scrolling); not broken and not overflowing, but a known trade-off of the desktop-first command-center layout. The CV checkpoint gap and the pending Render deployment are unchanged.
+
+Next action: await the user's reaction to the redesign. Render deployment remains the one outstanding build-plan task.
