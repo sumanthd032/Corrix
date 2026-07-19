@@ -12,13 +12,12 @@ import json
 
 import pytest
 
-from app.mcp_servers.corrix_risk import server
+from app.mcp_servers.corrix_risk import _get_driver, server
 from app.state.live_risk_state import (
     ensure_live_risk_state_schema,
     update_zone_risk_state,
     wipe_all_live_risk_state,
 )
-from app.mcp_servers.corrix_risk import _driver
 
 
 def _content_json(result):
@@ -27,10 +26,11 @@ def _content_json(result):
 
 @pytest.fixture(autouse=True)
 def _clean_live_risk_state():
-    ensure_live_risk_state_schema(_driver)
-    wipe_all_live_risk_state(_driver)
+    driver = _get_driver()
+    ensure_live_risk_state_schema(driver)
+    wipe_all_live_risk_state(driver)
     yield
-    wipe_all_live_risk_state(_driver)
+    wipe_all_live_risk_state(driver)
 
 
 @pytest.mark.anyio
@@ -59,7 +59,7 @@ async def test_zone_with_no_verdict_yet_is_reported_honestly_not_faked_safe():
 @pytest.mark.anyio
 async def test_zone_with_a_stored_verdict_returns_the_councils_own_judgment():
     update_zone_risk_state(
-        _driver,
+        _get_driver(),
         zone_id="Z1",
         risk_level="HIGH",
         confidence=0.81,

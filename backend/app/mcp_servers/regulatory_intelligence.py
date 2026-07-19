@@ -9,7 +9,7 @@ plan's explicit instruction not to split this into three servers.
 """
 
 from mcp.server.fastmcp import FastMCP
-from neo4j import GraphDatabase
+from neo4j import Driver, GraphDatabase
 
 from app.config import get_settings
 from app.regulatory.retrieval import (
@@ -20,19 +20,32 @@ from app.regulatory.retrieval import (
 
 server = FastMCP("corrix-regulatory-intelligence")
 
-_settings = get_settings()
-_driver = GraphDatabase.driver(
-    _settings.neo4j_uri, auth=(_settings.neo4j_username, _settings.neo4j_password)
-)
+_driver: Driver | None = None
+
+
+def _get_driver() -> Driver:
+    """Created lazily, on first real tool call, not at import time: a
+    missing or malformed NEO4J_URI should only fail the tool call that
+    actually needs Neo4j, not crash this module's import (and, with it,
+    every other test or process that imports this file)."""
+    global _driver
+    if _driver is None:
+        settings = get_settings()
+        _driver = GraphDatabase.driver(
+            settings.neo4j_uri, auth=(settings.neo4j_username, settings.neo4j_password)
+        )
+    return _driver
 
 
 @server.tool()
 def query_regulatory_corpus(question: str, framework: str | None = None) -> dict:
     """Answer a regulatory question via vector similarity over the
     OISD/Factories Act/DGMS corpus. Pass framework="DGMS" to scope to
-    DGMS content specifically, and get an honest "not yet ingested"
-    note rather than a fabricated primary citation if none exists."""
-    return answer_regulatory_question(_driver, question, framework=framework)
+    DGMS content specifically; results are honestly labeled
+    `is_supplementary: true` rather than presented as a primary
+    citation, since the source circular is a scanned PDF with no
+    extractable text layer."""
+    return answer_regulatory_question(_get_driver(), question, framework=framework)
 
 
 @server.tool()
@@ -40,7 +53,7 @@ def lookup_incident_pattern(permit_type: str, zone_hazard_class: str | None = No
     """Graph-traversal lookup: has a compound-risk pattern involving this
     permit type (optionally scoped to a zone hazard class) occurred
     before, per the mocked near-miss/audit-log corpus."""
-    return _lookup_incident_pattern(_driver, permit_type, zone_hazard_class)
+    return _lookup_incident_pattern(_get_driver(), permit_type, zone_hazard_class)
 
 
 @server.tool()
@@ -48,7 +61,7 @@ def check_compliance(deviation_type: str) -> dict:
     """Match a deviation type against the mocked audit-log corpus and,
     if it's a known seeded deviation, flag it with the real clause it
     violates."""
-    return _check_compliance(_driver, deviation_type)
+    return _check_compliance(_get_driver(), deviation_type)
 
 
 if __name__ == "__main__":

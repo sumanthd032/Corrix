@@ -20,7 +20,7 @@ Run standalone: python -m app.mcp_servers.corrix_risk
 """
 
 from mcp.server.fastmcp import FastMCP
-from neo4j import GraphDatabase
+from neo4j import Driver, GraphDatabase
 
 from app.config import get_settings
 from app.simulation.plant_layout import load_plant_layout
@@ -28,10 +28,21 @@ from app.state.live_risk_state import get_zone_risk_state
 
 server = FastMCP("corrix-risk")
 
-_settings = get_settings()
-_driver = GraphDatabase.driver(
-    _settings.neo4j_uri, auth=(_settings.neo4j_username, _settings.neo4j_password)
-)
+_driver: Driver | None = None
+
+
+def _get_driver() -> Driver:
+    """Created lazily, on first real tool call, not at import time: a
+    missing or malformed NEO4J_URI should only fail the tool call that
+    actually needs Neo4j, not crash this module's import (and, with it,
+    every other test or process that imports this file)."""
+    global _driver
+    if _driver is None:
+        settings = get_settings()
+        _driver = GraphDatabase.driver(
+            settings.neo4j_uri, auth=(settings.neo4j_username, settings.neo4j_password)
+        )
+    return _driver
 
 
 @server.tool()
@@ -46,7 +57,7 @@ def get_zone_compound_risk(zone_id: str) -> dict:
     if zone_id not in zones_by_id:
         return {"zone_id": zone_id, "error": f"unknown zone_id, expected one of {sorted(zones_by_id)}"}
 
-    state = get_zone_risk_state(_driver, zone_id)
+    state = get_zone_risk_state(_get_driver(), zone_id)
     if state is None:
         return {
             "zone_id": zone_id,

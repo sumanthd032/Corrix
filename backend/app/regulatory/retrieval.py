@@ -9,12 +9,16 @@ one database.
 3. `check_compliance`: matches a deviation type against the mocked
    audit-log corpus and returns the real clause it violates.
 
-DGMS handling: no DGMS content is ingested yet (§7.3, pending user
-selection/verification against dgms.gov.in). `answer_regulatory_question`
-still accepts `framework="DGMS"` and honestly reports zero results
-rather than silently falling back to OISD/Factories Act content and
-mislabeling it; once DGMS clauses exist, they carry `is_supplementary:
-true` in every result, never presented as a primary citation.
+DGMS handling: DGMS(Tech) Circular No. 04 of 2020, selected and verified
+against dgms.gov.in per §7.3, is ingested (app/regulatory/dgms.py,
+loaded via app/regulatory/loader.py). Its source PDF is a scanned image
+with no extractable text layer, so the ingested clause carries only what
+DGMS's own index confirms: the real circular number, date, and subject
+line, never a fabricated primary citation. Every DGMS result carries
+`is_supplementary: true`. `answer_regulatory_question` still honestly
+reports zero results for `framework="DGMS"` if a query genuinely
+matches nothing, rather than silently falling back to OISD/Factories
+Act content and mislabeling it.
 """
 
 from neo4j import Driver
