@@ -224,8 +224,13 @@ export function TopControlBar() {
           }}
           title={
             eroFired
-              ? `Evidence hash: ${eroFired.evidenceHash}\nFired at: ${eroFired.firedAt}`
-              : 'No CRITICAL verdict has fired the Emergency Response Orchestrator yet'
+              ? `Emergency Response Orchestrator fired for Zone ${eroFired.zoneId}.\n` +
+                `${eroFired.deliveredOk ? 'A real alert was delivered.' : 'Delivery failed (see logs).'}\n` +
+                `Evidence hash (SHA-256): ${eroFired.evidenceHash}\nFired at: ${eroFired.firedAt}`
+              : 'Emergency Response Orchestrator: idle.\n' +
+                'On a CRITICAL verdict it automatically sends a real email alert with a ' +
+                'hashed evidence snapshot and the evacuation route.\n' +
+                'It stays idle until a convening is rated CRITICAL; most scenarios peak at HIGH.'
           }
         >
           <ShieldAlert size={14} aria-hidden="true" />
