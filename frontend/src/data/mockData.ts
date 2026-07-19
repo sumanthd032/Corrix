@@ -3,9 +3,29 @@ import type {
   AlertFeedEntry,
   CouncilVerdict,
   RegulatoryChatMessage,
+  RegulatoryCitation,
   RiskLevel,
   WorkerMarker,
 } from '../types'
+
+/** Representative regulatory grounding for the mock verdicts; the live
+ * backend retrieves these per situation from the Neo4j substrate. */
+const MOCK_CITATIONS: RegulatoryCitation[] = [
+  {
+    framework: 'OISD',
+    sourceDocument: 'Report of the Working Group on Safety in the Indian Petroleum Sector (OISD)',
+    sectionNumber: '6.6.10',
+    sectionTitle: 'Work Permit System',
+    isSupplementary: false,
+  },
+  {
+    framework: 'Factories_Act_1948',
+    sourceDocument: 'The Factories Act, 1948',
+    sectionNumber: '37',
+    sectionTitle: 'Explosive or inflammable dust, gas, etc.',
+    isSupplementary: false,
+  },
+]
 
 /** Deterministic small jitter so the mock is stable across renders. */
 function jitterFor(seed: number): [number, number] {
@@ -76,6 +96,7 @@ const SCENARIO_MOCKS: Record<string, ScenarioMock> = {
       recommendedAction:
         'Suspend permit P-2291 pending gas verification; notify Zone 1 supervisor before shift handoff.',
       evacuationRoute: ['Z1', 'Z3', 'Z4'],
+      regulatoryCitations: MOCK_CITATIONS,
     },
     alerts: [
       {
@@ -129,6 +150,7 @@ const SCENARIO_MOCKS: Record<string, ScenarioMock> = {
       recommendedAction:
         'Withdraw personnel from Zone 7 pending gas re-verification; do not begin changeover handoff until cleared.',
       evacuationRoute: ['Z7', 'Z8'],
+      regulatoryCitations: MOCK_CITATIONS,
     },
     alerts: [
       {
@@ -174,6 +196,7 @@ const SCENARIO_MOCKS: Record<string, ScenarioMock> = {
       recommendedAction:
         'Suspend the maintenance permit in Zone 2 pending a fresh gas reading; do not extend the work window into changeover.',
       evacuationRoute: ['Z2', 'Z3', 'Z4'],
+      regulatoryCitations: MOCK_CITATIONS,
     },
     alerts: [
       {
@@ -218,6 +241,7 @@ const SCENARIO_MOCKS: Record<string, ScenarioMock> = {
       recommendedAction:
         'Halt hot work under permit P-9102 immediately; re-verify Zone 2 atmosphere before resuming.',
       evacuationRoute: ['Z2', 'Z3', 'Z4'],
+      regulatoryCitations: MOCK_CITATIONS,
     },
     alerts: [
       {
@@ -259,6 +283,7 @@ const SCENARIO_MOCKS: Record<string, ScenarioMock> = {
       recommendedAction:
         'Log for review; no immediate action required, but do not dismiss the pattern match.',
       evacuationRoute: null,
+      regulatoryCitations: MOCK_CITATIONS,
     },
     alerts: [
       {

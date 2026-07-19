@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Camera, Clock, FileCheck, Gauge, Gavel } from 'lucide-react'
+import { Camera, Clock, FileCheck, Gauge, Gavel, Scale } from 'lucide-react'
 import { useCorrixStore } from '../store/useCorrixStore'
 import { RiskBadge } from './RiskBadge'
 import { CouncilScene3D } from './CouncilScene3D'
@@ -203,6 +203,27 @@ export function CouncilPanel() {
             >
               {verdict.recommendedAction}
             </p>
+
+            {verdict.regulatoryCitations && verdict.regulatoryCitations.length > 0 && (
+              <div className="flex flex-col gap-1.5 border-t border-[var(--color-hairline)] pt-3">
+                <span className="flex items-center gap-1.5 eyebrow">
+                  <Scale size={11} aria-hidden="true" />
+                  Regulatory basis
+                </span>
+                {verdict.regulatoryCitations.map((c) => (
+                  <div
+                    key={`${c.framework}-${c.sectionNumber}`}
+                    className="tnum text-[11px] leading-snug text-[var(--color-accent)]"
+                  >
+                    {c.isSupplementary && (
+                      <span className="mr-1 text-[var(--color-risk-caution)]">[supp]</span>
+                    )}
+                    {c.sourceDocument} §{c.sectionNumber}
+                    <span className="text-[var(--color-text-tertiary)]"> · {c.sectionTitle}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

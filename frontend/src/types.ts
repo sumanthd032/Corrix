@@ -36,6 +36,18 @@ export interface CouncilVerdict {
    * point, risk-weighted so it avoids other elevated-risk zones (Step 8).
    * Only present on HIGH/CRITICAL verdicts where a route exists. */
   evacuationRoute: string[] | null
+  /** The regulation clauses this verdict is grounded in, retrieved from
+   * the Regulatory Intelligence substrate for the situation the Council
+   * judged. DGMS clauses are flagged supplementary. */
+  regulatoryCitations?: RegulatoryCitation[] | null
+}
+
+export interface RegulatoryCitation {
+  framework: string
+  sourceDocument: string
+  sectionNumber: string
+  sectionTitle: string
+  isSupplementary: boolean
 }
 
 export interface WorkerMarker {

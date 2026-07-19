@@ -52,7 +52,8 @@ from app.detection.novelty_training import get_cached_novelty_model
 from app.detection.time_to_critical import forecast_time_to_critical
 from app.emergency.orchestrator import fire_emergency_response
 from app.memory.exemplar_store import get_shared_driver
-from app.schemas import CouncilVerdict
+from app.regulatory.retrieval import find_regulatory_grounding
+from app.schemas import CouncilVerdict, RegulatoryCitation
 from app.simulation.open_challenge import CURATED_COMBINATIONS
 from app.simulation.plant_layout import load_plant_layout
 from app.simulation.scenario_engine import DEFAULT_START_TIME
@@ -89,6 +90,17 @@ def _verdict_to_camel(v: CouncilVerdict) -> dict:
         "explanation": v.explanation,
         "recommendedAction": v.recommended_action,
         "evacuationRoute": v.evacuation_route,
+        "regulatoryCitations": [
+            {
+                "framework": c.framework,
+                "sourceDocument": c.source_document,
+                "sectionNumber": c.section_number,
+                "sectionTitle": c.section_title,
+                "isSupplementary": c.is_supplementary,
+            }
+            for c in (v.regulatory_citations or [])
+        ]
+        or None,
     }
 
 
@@ -182,6 +194,28 @@ async def _convene_council(
         route = find_evacuation_route(layout, frame.zone_risk, verdict.zone_id)
         if route is not None:
             verdict.evacuation_route = route.path
+
+    # Ground the verdict in the regulation most relevant to what the four
+    # agents actually reported. Never fatal to a convening: a lookup
+    # failure just leaves the verdict without a cited clause.
+    try:
+        situation = f"{raw_evidence['process_safety_engineer']} {raw_evidence['permit_control_officer']}"
+        citations = await asyncio.to_thread(
+            find_regulatory_grounding, get_shared_driver(), situation
+        )
+        if citations:
+            verdict.regulatory_citations = [
+                RegulatoryCitation(
+                    framework=c["framework"],
+                    source_document=c["source_document"],
+                    section_number=c["section_number"],
+                    section_title=c["section_title"],
+                    is_supplementary=c["is_supplementary"],
+                )
+                for c in citations
+            ]
+    except Exception as exc:
+        logger.warning("regulatory grounding lookup failed: %s", exc)
 
     await asyncio.to_thread(
         update_zone_risk_state,

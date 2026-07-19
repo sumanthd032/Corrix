@@ -34,6 +34,20 @@ class CouncilEvidence(BaseModel):
     site_safety_observer: str
 
 
+class RegulatoryCitation(BaseModel):
+    """A clause from the Regulatory Intelligence substrate (OISD, Factories
+    Act, DGMS) surfaced as the regulatory basis for a verdict: the specific
+    provision most relevant to the situation the Council just judged. DGMS
+    material is flagged supplementary, never presented as a primary
+    citation (CORRIX_PROJECT.md §7.3)."""
+
+    framework: str
+    source_document: str
+    section_number: str
+    section_title: str
+    is_supplementary: bool
+
+
 class CouncilVerdict(BaseModel):
     """The Safety Council's Chair-synthesized verdict, per
     CORRIX_PROJECT.md §6.2."""
@@ -50,3 +64,4 @@ class CouncilVerdict(BaseModel):
     explanation: str
     recommended_action: str
     evacuation_route: list[str] | None = None
+    regulatory_citations: list[RegulatoryCitation] | None = None

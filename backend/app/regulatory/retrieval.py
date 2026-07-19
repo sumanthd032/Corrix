@@ -99,6 +99,17 @@ def answer_regulatory_question(
     }
 
 
+def find_regulatory_grounding(driver: Driver, situation_text: str, top_k: int = 2) -> list[dict]:
+    """Return the clauses most relevant to a Council situation, to attach to
+    its verdict as the regulatory basis for the call. This is the same
+    vector search the RAG chat uses, pointed at the live situation rather
+    than a typed question, so an escalation can show which regulation it
+    sits on. DGMS results stay flagged `is_supplementary`. Returns an empty
+    list rather than raising if nothing relevant is found."""
+    result = answer_regulatory_question(driver, situation_text, top_k=top_k)
+    return result.get("citations") or []
+
+
 def lookup_incident_pattern(
     driver: Driver, permit_type: str, zone_hazard_class: str | None = None
 ) -> dict:

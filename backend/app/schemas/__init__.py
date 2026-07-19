@@ -19,6 +19,7 @@ from .shift import ShiftRecord
 from .verdict import (
     CouncilEvidence,
     CouncilVerdict,
+    RegulatoryCitation,
     RiskLevel,
     TimeToCriticalForecast,
     TriggerReason,
@@ -49,6 +50,7 @@ __all__ = [
     "ShiftRecord",
     "CouncilEvidence",
     "CouncilVerdict",
+    "RegulatoryCitation",
     "RiskLevel",
     "TimeToCriticalForecast",
     "TriggerReason",
