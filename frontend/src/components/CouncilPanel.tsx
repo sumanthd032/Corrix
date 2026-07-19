@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Camera, Clock, FileCheck, Gauge, Gavel } from 'lucide-react'
 import { useCorrixStore } from '../store/useCorrixStore'
@@ -33,7 +33,19 @@ export function CouncilPanel() {
   const submitOverrideNote = useCorrixStore((s) => s.submitOverrideNote)
   const liveEvidence = useCorrixStore((s) => s.liveEvidence)
   const connectionMode = useCorrixStore((s) => s.connectionMode)
+  const overrideFocusNonce = useCorrixStore((s) => s.overrideFocusNonce)
   const [noteText, setNoteText] = useState('')
+  const noteRef = useRef<HTMLTextAreaElement>(null)
+
+  // When the top-bar Override control is used in live mode, bring the note
+  // field into view and focus it (the field itself lives here, in the
+  // panel, and only during the deliberation window).
+  useEffect(() => {
+    if (overrideFocusNonce > 0 && noteRef.current) {
+      noteRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      noteRef.current.focus()
+    }
+  }, [overrideFocusNonce])
 
   const stage = STAGE[councilStage] ?? STAGE.idle
   const isActive = councilStage === 'convening' || councilStage === 'deliberating'
@@ -209,6 +221,7 @@ export function CouncilPanel() {
               : 'Council paused. Add a note for the Chair before resuming.'}
           </p>
           <textarea
+            ref={noteRef}
             value={noteText}
             onChange={(e) => setNoteText(e.target.value)}
             rows={2}

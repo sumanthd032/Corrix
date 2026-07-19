@@ -27,6 +27,11 @@ interface CorrixState {
   chatPending: boolean
   overridePaused: boolean
   overrideNote: string
+  /** Bumped when the top-bar Override control asks the Council panel to
+   * bring its note field into view and focus it (used in live mode,
+   * where the note is entered in the panel during the deliberation
+   * window, not in a top-bar popover). */
+  overrideFocusNonce: number
 
   connectionMode: ConnectionMode
   liveEvidence: CouncilEvidence | null
@@ -38,6 +43,7 @@ interface CorrixState {
   setScenario: (scenarioId: string) => void
   setCouncilStage: (stage: CouncilStage) => void
   pauseForOverride: () => void
+  requestOverrideFocus: () => void
   submitOverrideNote: (note: string) => void
   sendChatMessage: (text: string) => Promise<void>
   triggerOpenChallenge: () => void
@@ -68,6 +74,7 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
   chatPending: false,
   overridePaused: false,
   overrideNote: '',
+  overrideFocusNonce: 0,
 
   connectionMode: 'mock',
   liveEvidence: null,
@@ -103,6 +110,7 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
     if (get().connectionMode === 'live') return
     set({ overridePaused: true, councilStage: 'deliberating' })
   },
+  requestOverrideFocus: () => set((s) => ({ overrideFocusNonce: s.overrideFocusNonce + 1 })),
   submitOverrideNote: (note) => {
     const sender = get().liveOverrideSender
     if (get().connectionMode === 'live' && sender) {

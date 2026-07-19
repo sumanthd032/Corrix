@@ -41,6 +41,7 @@ export function TopControlBar() {
   const setScenario = useCorrixStore((s) => s.setScenario)
   const overridePaused = useCorrixStore((s) => s.overridePaused)
   const pauseForOverride = useCorrixStore((s) => s.pauseForOverride)
+  const requestOverrideFocus = useCorrixStore((s) => s.requestOverrideFocus)
   const councilStage = useCorrixStore((s) => s.councilStage)
   const connectionMode = useCorrixStore((s) => s.connectionMode)
   const triggerOpenChallenge = useCorrixStore((s) => s.triggerOpenChallenge)
@@ -238,8 +239,19 @@ export function TopControlBar() {
         <motion.button
           {...BUTTON_MOTION}
           type="button"
-          onClick={pauseForOverride}
-          disabled={overridePaused || councilStage !== 'verdict_reached'}
+          onClick={connectionMode === 'live' ? requestOverrideFocus : pauseForOverride}
+          disabled={
+            connectionMode === 'live'
+              ? councilStage !== 'deliberating'
+              : overridePaused || councilStage !== 'verdict_reached'
+          }
+          title={
+            connectionMode === 'live'
+              ? councilStage === 'deliberating'
+                ? 'Jump to the override note field while the Council is deliberating'
+                : 'Available only while the Council is deliberating (the live override window)'
+              : 'Add a Safety Officer note to the current verdict'
+          }
           className="flex items-center gap-1.5 rounded-[var(--radius-control)] border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-40"
           style={{
             borderColor: 'color-mix(in srgb, var(--color-accent) 45%, transparent)',
