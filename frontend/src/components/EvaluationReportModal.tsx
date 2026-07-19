@@ -118,7 +118,7 @@ function MemoryLoopSection({ memoryLoop }: { memoryLoop: MemoryLoopReport }) {
         </span>{' '}
         <span
           style={{
-            color: improved ? '#2e7d32' : 'var(--color-risk-caution)',
+            color: improved ? '#33c98b' : 'var(--color-risk-caution)',
           }}
         >
           ({improved ? 'improved' : 'no improvement'})
@@ -152,7 +152,7 @@ function SwatValidationSection({ swat }: { swat: SwatValidation }) {
         <span className="font-mono-data text-[var(--color-text-primary)]">
           {swat.ourNoiseToSignalRange[0].toFixed(3)}–{swat.ourNoiseToSignalRange[1].toFixed(3)}
         </span>{' '}
-        <span style={{ color: swat.ourNoiseToSignalFallsWithinSwatRange ? '#2e7d32' : 'var(--color-risk-caution)' }}>
+        <span style={{ color: swat.ourNoiseToSignalFallsWithinSwatRange ? '#33c98b' : 'var(--color-risk-caution)' }}>
           ({swat.ourNoiseToSignalFallsWithinSwatRange ? 'within range' : 'outside range'})
         </span>
       </p>
@@ -229,11 +229,11 @@ function ReliabilityDiagram({ bins }: { bins: CalibrationBin[] }) {
           />
           <line x1={pad} y1={size - pad} x2={size - pad} y2={size - pad} stroke="rgba(234,241,247,0.3)" strokeWidth={1} />
           <line x1={pad} y1={pad} x2={pad} y2={size - pad} stroke="rgba(234,241,247,0.3)" strokeWidth={1} />
-          <text x={size / 2} y={size - 6} textAnchor="middle" fontSize={9} fill="#8fa3b8">
+          <text x={size / 2} y={size - 6} textAnchor="middle" fontSize={9} fill="#93a6bb">
             predicted confidence
           </text>
           <text
-            x={10} y={size / 2} textAnchor="middle" fontSize={9} fill="#8fa3b8"
+            x={10} y={size / 2} textAnchor="middle" fontSize={9} fill="#93a6bb"
             transform={`rotate(-90 10 ${size / 2})`}
           >
             empirical accuracy
@@ -247,7 +247,7 @@ function ReliabilityDiagram({ bins }: { bins: CalibrationBin[] }) {
                 key={b.binLow}
                 cx={x} cy={y} r={r}
                 fill="rgba(0,180,216,0.75)"
-                stroke="#00b4d8"
+                stroke="#2dd4e8"
               >
                 <title>
                   [{b.binLow.toFixed(1)}-{b.binHigh.toFixed(1)}) · n={b.n} · accuracy{' '}

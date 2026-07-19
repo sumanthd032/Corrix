@@ -77,12 +77,28 @@ export function riskColor(level: RiskLevel): string {
   return RISK_CONFIG[level].colorVar
 }
 
+/** The pure, saturated risk hue (for borders, glyphs, route). Matches the
+ * --color-risk-* tokens. */
 export function riskColorHex(level: RiskLevel): [number, number, number, number] {
   const hex: Record<RiskLevel, [number, number, number, number]> = {
-    SAFE: [46, 125, 50, 200],
-    CAUTION: [242, 201, 76, 200],
-    HIGH: [255, 140, 0, 210],
-    CRITICAL: [214, 40, 40, 230],
+    SAFE: [51, 201, 139, 235],
+    CAUTION: [245, 195, 59, 235],
+    HIGH: [255, 138, 61, 240],
+    CRITICAL: [255, 61, 81, 245],
   }
   return hex[level]
+}
+
+/** The map ZONE FILL, deliberately different from the badge hue: a
+ * nominal (SAFE) zone is dark graphite so the plant reads calm by
+ * default and only risk lights up. Risk zones get a translucent wash of
+ * their hue over that dark base, brightening with severity. */
+export function zoneFillHex(level: RiskLevel): [number, number, number, number] {
+  const fill: Record<RiskLevel, [number, number, number, number]> = {
+    SAFE: [24, 34, 45, 235],
+    CAUTION: [92, 74, 30, 240],
+    HIGH: [110, 60, 26, 245],
+    CRITICAL: [120, 32, 42, 250],
+  }
+  return fill[level]
 }

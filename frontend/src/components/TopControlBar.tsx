@@ -1,6 +1,16 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { BarChart3, CircleAlert, Download, Loader2, PauseCircle, Radio, ShieldAlert, Sparkles } from 'lucide-react'
+import {
+  BarChart3,
+  ChevronDown,
+  CircleAlert,
+  Download,
+  Loader2,
+  PauseCircle,
+  Radio,
+  ShieldAlert,
+  Sparkles,
+} from 'lucide-react'
 import { useCorrixStore } from '../store/useCorrixStore'
 import { CounterfactualReplayModal } from './CounterfactualReplayModal'
 import { EvaluationReportModal } from './EvaluationReportModal'
@@ -11,16 +21,20 @@ const BUTTON_MOTION = {
 }
 
 const SCENARIOS = [
-  { id: 'S1', label: 'S1: Anchor (Ladle Bay)' },
-  { id: 'S2', label: 'S2: Confined Space' },
-  { id: 'S3', label: 'S3: Maintenance / Gas' },
-  { id: 'S4', label: 'S4: Hot Work / Gas' },
-  { id: 'S5', label: 'S5: Silent Drift (Near-Miss)' },
+  { id: 'S1', label: 'S1 · Anchor (Ladle Bay)' },
+  { id: 'S2', label: 'S2 · Confined Space' },
+  { id: 'S3', label: 'S3 · Maintenance / Gas' },
+  { id: 'S4', label: 'S4 · Hot Work / Gas' },
+  { id: 'S5', label: 'S5 · Silent Drift (Near-Miss)' },
 ]
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
 
 type ReportRequestState = 'idle' | 'loading' | 'error'
+
+/** Shared tactical action-chip styling: bordered, graphite, cyan on hover. */
+const chipClass =
+  'flex items-center gap-1.5 rounded-[var(--radius-control)] border border-[var(--color-hairline)] bg-[var(--color-surface-2)]/60 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] transition-colors hover:border-[color-mix(in_srgb,var(--color-accent)_45%,transparent)] hover:text-[var(--color-text-primary)] disabled:opacity-40 disabled:hover:border-[var(--color-hairline)]'
 
 export function TopControlBar() {
   const scenarioId = useCorrixStore((s) => s.scenarioId)
@@ -66,43 +80,82 @@ export function TopControlBar() {
 
   return (
     <motion.header
-      className="glass-panel flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3"
+      className="glass-panel flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5"
       initial={{ opacity: 0, y: -16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
     >
-      <div className="flex items-center gap-2 pr-4 border-r border-white/10">
+      {/* Wordmark + live status */}
+      <div className="flex items-center gap-3 pr-3">
+        <div className="flex items-center gap-2.5">
+          <span className="relative flex h-6 w-6 items-center justify-center">
+            <span
+              className="absolute inset-0 rounded-[var(--radius-sharp)] border"
+              style={{ borderColor: 'color-mix(in srgb, var(--color-accent) 55%, transparent)' }}
+              aria-hidden="true"
+            />
+            <span
+              className="h-2 w-2 rounded-full animate-pulse"
+              style={{ backgroundColor: 'var(--color-accent)', boxShadow: 'var(--shadow-glow-accent)' }}
+              aria-hidden="true"
+            />
+          </span>
+          <div className="flex flex-col leading-none">
+            <h1 className="font-display text-base font-semibold tracking-[0.14em] text-[var(--color-text-primary)]">
+              CORRIX
+            </h1>
+            <span className="eyebrow mt-0.5">Compound Risk Ops</span>
+          </div>
+        </div>
         <span
-          className="h-2 w-2 rounded-full animate-pulse"
-          style={{ backgroundColor: 'var(--color-accent)' }}
-          aria-hidden="true"
-        />
-        <h1 className="text-lg tracking-tight text-[var(--color-text-primary)]">Corrix</h1>
+          className="flex items-center gap-1.5 rounded-[var(--radius-sharp)] border px-2 py-1 eyebrow"
+          style={{
+            borderColor:
+              connectionMode === 'live'
+                ? 'color-mix(in srgb, var(--color-accent) 45%, transparent)'
+                : 'var(--color-hairline)',
+            color: connectionMode === 'live' ? 'var(--color-accent)' : 'var(--color-text-tertiary)',
+          }}
+          title={
+            connectionMode === 'live'
+              ? 'Connected to the live backend: real scenario stream and Safety Council'
+              : 'Backend unreachable, showing mock data'
+          }
+        >
+          <span
+            className="h-1.5 w-1.5 rounded-full"
+            style={{ backgroundColor: connectionMode === 'live' ? 'var(--color-accent)' : 'var(--color-text-tertiary)' }}
+          />
+          {connectionMode === 'live' ? 'LIVE' : 'MOCK'}
+        </span>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
-        Scenario
-        <select
-          value={scenarioId}
-          onChange={(e) => setScenario(e.target.value)}
-          className="glass-panel rounded-[var(--radius-control)] border-0 bg-transparent px-2 py-1 text-[var(--color-text-primary)] outline-none"
-        >
-          {SCENARIOS.map((s) => (
-            <option key={s.id} value={s.id} className="bg-[var(--color-base)]">
-              {s.label}
-            </option>
-          ))}
-        </select>
-      </label>
+      {/* Scenario selector */}
+      <div className="relative flex items-center">
+        <span className="eyebrow mr-2 hidden sm:inline">Scenario</span>
+        <div className="relative">
+          <select
+            value={scenarioId}
+            onChange={(e) => setScenario(e.target.value)}
+            className="appearance-none rounded-[var(--radius-control)] border border-[var(--color-hairline)] bg-[var(--color-surface-2)] py-1.5 pl-3 pr-8 font-mono-data text-xs text-[var(--color-text-primary)] outline-none transition-colors hover:border-[color-mix(in_srgb,var(--color-accent)_45%,transparent)]"
+          >
+            {SCENARIOS.map((s) => (
+              <option key={s.id} value={s.id} className="bg-[var(--color-base)] font-mono-data">
+                {s.label}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            size={14}
+            className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)]"
+            aria-hidden="true"
+          />
+        </div>
+      </div>
 
-      <motion.button
-        {...BUTTON_MOTION}
-        type="button"
-        onClick={() => setReplayOpen(true)}
-        className="flex items-center gap-1.5 rounded-[var(--radius-control)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-      >
+      <motion.button {...BUTTON_MOTION} type="button" onClick={() => setReplayOpen(true)} className={chipClass}>
         <Radio size={15} aria-hidden="true" />
-        Counterfactual Replay
+        Replay
       </motion.button>
 
       <motion.button
@@ -115,26 +168,21 @@ export function TopControlBar() {
             ? 'Requires the live backend, which draws and runs an unscripted evidence combination live'
             : 'Draw one of the curated Open Challenge combinations and run it live'
         }
-        className="flex items-center gap-1.5 rounded-[var(--radius-control)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors disabled:opacity-40"
+        className={chipClass}
       >
         <Sparkles size={15} aria-hidden="true" />
         Open Challenge
         {openChallengeLabel && (
-          <span className="ml-1 max-w-[220px] truncate font-mono-data text-[10px] text-[var(--color-accent)]">
+          <span className="ml-1 max-w-[180px] truncate font-mono-data text-[10px] text-[var(--color-accent)]">
             {openChallengeLabel}
           </span>
         )}
       </motion.button>
 
       <div className="ml-auto flex flex-wrap items-center gap-2">
-        <motion.button
-          {...BUTTON_MOTION}
-          type="button"
-          onClick={() => setReportOpen(true)}
-          className="flex items-center gap-1.5 rounded-[var(--radius-control)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-        >
+        <motion.button {...BUTTON_MOTION} type="button" onClick={() => setReportOpen(true)} className={chipClass}>
           <BarChart3 size={15} aria-hidden="true" />
-          Evaluation Report
+          Evaluation
         </motion.button>
 
         <motion.button
@@ -143,7 +191,7 @@ export function TopControlBar() {
           onClick={downloadIncidentReport}
           disabled={!verdict || incidentReportState === 'loading'}
           title={!verdict ? 'No verdict available yet to report on' : 'Download a PDF incident report for the current verdict'}
-          className="flex items-center gap-1.5 rounded-[var(--radius-control)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors disabled:opacity-40"
+          className={chipClass}
         >
           {incidentReportState === 'loading' ? (
             <Loader2 size={15} className="animate-spin" aria-hidden="true" />
@@ -160,13 +208,18 @@ export function TopControlBar() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-          className="flex items-center gap-1.5 text-xs"
+          className="flex items-center gap-1.5 rounded-[var(--radius-control)] border px-2.5 py-1.5 text-xs"
           style={{
+            borderColor: eroFired
+              ? eroFired.deliveredOk
+                ? 'color-mix(in srgb, var(--color-accent) 45%, transparent)'
+                : 'color-mix(in srgb, var(--color-risk-critical) 55%, transparent)'
+              : 'var(--color-hairline)',
             color: eroFired
               ? eroFired.deliveredOk
                 ? 'var(--color-accent)'
                 : 'var(--color-risk-critical)'
-              : 'var(--color-text-secondary)',
+              : 'var(--color-text-tertiary)',
           }}
           title={
             eroFired
@@ -177,8 +230,8 @@ export function TopControlBar() {
           <ShieldAlert size={14} aria-hidden="true" />
           {eroFired
             ? eroFired.deliveredOk
-              ? `ERO fired: Zone ${eroFired.zoneId}`
-              : `ERO fired: Zone ${eroFired.zoneId} (delivery failed)`
+              ? `ERO · Zone ${eroFired.zoneId}`
+              : `ERO · Zone ${eroFired.zoneId} (failed)`
             : 'ERO idle'}
         </motion.span>
 
@@ -187,14 +240,15 @@ export function TopControlBar() {
           type="button"
           onClick={pauseForOverride}
           disabled={overridePaused || councilStage !== 'verdict_reached'}
-          className="flex items-center gap-1.5 rounded-[var(--radius-control)] px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-40"
+          className="flex items-center gap-1.5 rounded-[var(--radius-control)] border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-40"
           style={{
-            backgroundColor: 'color-mix(in srgb, var(--color-accent) 18%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--color-accent) 45%, transparent)',
+            backgroundColor: 'var(--color-accent-dim)',
             color: 'var(--color-accent)',
           }}
         >
           <PauseCircle size={15} aria-hidden="true" />
-          Safety Officer Override
+          Override
         </motion.button>
       </div>
 

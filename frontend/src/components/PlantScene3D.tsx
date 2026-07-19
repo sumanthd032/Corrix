@@ -94,13 +94,13 @@ function ZoneBuilding({ zone, risk }: { zone: ZoneGeometry; risk: RiskLevel }) {
       {zone.isAssemblyPoint && (
         <mesh position={[0, zone.height + 0.12, 0]}>
           <coneGeometry args={[0.06, 0.14, 4]} />
-          <meshStandardMaterial color="#2e7d32" emissive="#2e7d32" emissiveIntensity={0.8} />
+          <meshStandardMaterial color="#33c98b" emissive="#33c98b" emissiveIntensity={0.8} />
         </mesh>
       )}
       <Text
         position={[0, zone.height + 0.28, 0]}
         fontSize={0.16}
-        color="#8fa3b8"
+        color="#93a6bb"
         anchorX="center"
         anchorY="middle"
       >
@@ -123,7 +123,7 @@ function WorkerMarkers({ workers }: { workers: WorkerMarker[] }) {
         return (
           <mesh key={w.badgeId} position={[x, zone.height + 0.1, z]}>
             <sphereGeometry args={[0.045, 8, 8]} />
-            <meshStandardMaterial color="#00b4d8" emissive="#00b4d8" emissiveIntensity={1.1} />
+            <meshStandardMaterial color="#2dd4e8" emissive="#2dd4e8" emissiveIntensity={1.1} />
           </mesh>
         )
       })}
@@ -192,15 +192,15 @@ function SceneContents({
     <>
       <ambientLight intensity={0.55} />
       <directionalLight position={[6, 10, 4]} intensity={1.4} color="#eaf1f7" />
-      <pointLight position={[0, 4, 0]} intensity={8} color="#00b4d8" />
+      <pointLight position={[0, 4, 0]} intensity={8} color="#2dd4e8" />
 
       <Grid
         position={[0, -0.01, 0]}
         args={[20, 14]}
         cellSize={0.5}
-        cellColor="#1f3a5f"
+        cellColor="#1a2530"
         sectionSize={2}
-        sectionColor="#00b4d8"
+        sectionColor="#2dd4e8"
         fadeDistance={18}
         fadeStrength={1.2}
         infiniteGrid

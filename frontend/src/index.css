@@ -2,59 +2,74 @@
 
 /*
  * Corrix design tokens: single source of truth, per CLAUDE.md §6.
- * "Industrial Command Center": dark, glassmorphic, per CORRIX_PROJECT.md §11.
+ * Direction: "Tactical Operations" — a graphite, instrument-grade command
+ * center (Palantir/Anduril seriousness), evolving CORRIX_PROJECT.md §11's
+ * dark/glassmorphic brief toward crisp depth over frosted noise.
  *
- * Risk-state color interpretation note: the design doc's palette table
- * names three risk colors (safe/caution/critical) but the verdict schema
- * has four levels (SAFE/CAUTION/HIGH/CRITICAL), and §11's own signature-
- * moments list describes a four-stop transition ("green → yellow → orange
- * → red"). Read literally, the doc's "amber" (#FF8C00) is that sequence's
- * "orange" stop, not its "yellow" one, so a distinct yellow was added for
- * CAUTION, and the doc's amber hex was kept, unchanged, for HIGH. Every
- * other hex below is copied directly from §11's table.
+ * The whole surface is calm graphite by default. One cold cyan signature
+ * accent carries system chrome and "live" state; a violet accent is
+ * reserved strictly for the AI reasoning moments (the Council convening,
+ * the boot sequence). The risk ramp (mint → amber → orange → red) is the
+ * only place warm color appears, so warmth on screen always means risk.
+ *
+ * Risk-state color is never the only signal: every level is also paired
+ * with a distinct shape (RiskBadge), so states stay legible under
+ * red-green colorblindness. On the plant map itself a nominal (SAFE) zone
+ * reads as dark graphite, not a filled color, so risk is what lights up.
  */
 
 @theme {
-  /* Color: base surfaces */
-  --color-base: #0b1015;
-  --color-panel: #1f3a5f;
-  --color-panel-border: color-mix(in srgb, var(--color-panel) 40%, transparent);
-  --color-base-raised: #10171f;
+  /* Base surfaces: near-black graphite, cool, layered for real depth */
+  --color-base: #06090d;
+  --color-base-raised: #0a0f15;
+  --color-surface-1: #0e141c;
+  --color-surface-2: #131c26;
+  --color-surface-3: #1a2530;
 
-  /* Color: text */
-  --color-text-primary: #eaf1f7;
-  --color-text-secondary: #8fa3b8;
-  --color-text-tertiary: #5b7086;
+  /* Panel aliases kept for components that reference them directly */
+  --color-panel: #0e141c;
+  --color-panel-border: rgba(125, 162, 194, 0.14);
 
-  /* Color: accent */
-  --color-accent: #00b4d8;
-  /* A second, cooler-violet accent reserved for "the AI is reasoning" moments
-     (the Council convening, the boot sequence) so those read as distinct
-     from plain data/navigation, which stays cyan. Never used for risk state. */
+  /* Hairlines: cool, faint, for instrument-panel separation */
+  --color-hairline: rgba(125, 162, 194, 0.12);
+  --color-hairline-strong: rgba(125, 162, 194, 0.24);
+
+  /* Text */
+  --color-text-primary: #e8eff6;
+  --color-text-secondary: #93a6bb;
+  --color-text-tertiary: #5c6f82;
+
+  /* Accent: cold ice-cyan (system chrome, "live", data navigation) */
+  --color-accent: #2dd4e8;
+  --color-accent-strong: #5ce6f5;
+  --color-accent-dim: rgba(45, 212, 232, 0.16);
+  /* Violet, reserved for "the AI is reasoning" (Council, boot). Never risk. */
   --color-accent-secondary: #8b5cf6;
 
-  /* Color: risk states, always paired with a distinct icon/shape, never color alone */
-  --color-risk-safe: #2e7d32;
-  --color-risk-caution: #f2c94c;
-  --color-risk-high: #ff8c00;
-  --color-risk-critical: #d62828;
+  /* Risk ramp: the only warm colors in the system. Each paired with a shape. */
+  --color-risk-safe: #33c98b;
+  --color-risk-caution: #f5c33b;
+  --color-risk-high: #ff8a3d;
+  --color-risk-critical: #ff3d51;
 
   /* Type scale */
   --font-display: 'Space Grotesk', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
   --font-body: 'Inter', system-ui, sans-serif;
 
-  /* Radii */
-  --radius-panel: 12px;
-  --radius-control: 8px;
+  /* Radii: tight, instrument-like */
+  --radius-panel: 10px;
+  --radius-control: 6px;
+  --radius-sharp: 3px;
   --radius-pill: 999px;
 
-  /* Shadows */
-  --shadow-panel: 0 8px 32px rgba(0, 0, 0, 0.45);
-  --shadow-glow-accent: 0 0 24px color-mix(in srgb, var(--color-accent) 45%, transparent);
-  --shadow-glow-critical: 0 0 24px color-mix(in srgb, var(--color-risk-critical) 55%, transparent);
-  --shadow-glow-accent-strong: 0 0 48px color-mix(in srgb, var(--color-accent) 65%, transparent);
+  /* Shadows and glows */
+  --shadow-panel: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 16px 44px rgba(0, 0, 0, 0.55);
+  --shadow-raised: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-glow-accent: 0 0 24px color-mix(in srgb, var(--color-accent) 40%, transparent);
+  --shadow-glow-accent-strong: 0 0 48px color-mix(in srgb, var(--color-accent) 60%, transparent);
   --shadow-glow-violet: 0 0 32px color-mix(in srgb, var(--color-accent-secondary) 55%, transparent);
+  --shadow-glow-critical: 0 0 24px color-mix(in srgb, var(--color-risk-critical) 55%, transparent);
   --shadow-glow-critical-strong: 0 0 64px color-mix(in srgb, var(--color-risk-critical) 70%, transparent);
 
   /* Motion: quick micro-interactions vs. slower, deliberate reveals */
@@ -94,27 +109,94 @@
     font-family: var(--font-display);
     font-weight: 600;
     margin: 0;
+    letter-spacing: -0.01em;
   }
 
   code,
   .font-mono-data {
     font-family: var(--font-mono);
   }
+
+  /* Tabular figures everywhere numbers are read as data, so digits never
+     jitter as values tick. */
+  .tnum {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
 }
 
 @layer utilities {
+  /* The default panel: a crisp graphite instrument surface. Kept under
+     the `.glass-panel` name so every component that already uses it
+     upgrades at once. A faint top highlight and a subtle radial lift give
+     depth without the old bright-frost look. */
   .glass-panel {
-    background: color-mix(in srgb, var(--color-panel) 70%, transparent);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--color-panel-border);
+    position: relative;
+    background:
+      radial-gradient(120% 140% at 50% 0%, rgba(125, 162, 194, 0.05), transparent 60%),
+      color-mix(in srgb, var(--color-surface-1) 92%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--color-hairline);
     border-radius: var(--radius-panel);
     box-shadow: var(--shadow-panel);
   }
 
-  /* A faint blueprint grid, used behind panels for the command-center
-     ambience (the hero/boot sequence, the plant-scene frame). Never used
-     where it would compete with data density. */
+  /* A slightly raised card used inside panels (KPI tiles, agent stations). */
+  .tactical-tile {
+    background: color-mix(in srgb, var(--color-surface-2) 85%, transparent);
+    border: 1px solid var(--color-hairline);
+    border-radius: var(--radius-control);
+  }
+
+  /* Eyebrow label: the small uppercase mono caption above a value or
+     section, the tactical-HUD idiom. */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-text-tertiary);
+  }
+
+  /* Corner brackets: four L-shaped ticks at a panel's corners, the
+     instrument-frame idiom. Applied via a wrapper with class
+     `corner-frame` (needs position: relative on the target). */
+  .corner-frame::before,
+  .corner-frame::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-color: var(--color-hairline-strong);
+    pointer-events: none;
+  }
+  .corner-frame::before {
+    top: 6px;
+    left: 6px;
+    border-top: 1px solid;
+    border-left: 1px solid;
+  }
+  .corner-frame::after {
+    bottom: 6px;
+    right: 6px;
+    border-bottom: 1px solid;
+    border-right: 1px solid;
+  }
+
+  /* A fine technical grid for the map frame and HUD surfaces. Two tiers:
+     a fine 24px grid and a heavier 120px grid, both keyed to the accent
+     at low opacity so they read as an engineering blueprint, not noise. */
+  .hud-grid {
+    background-image:
+      linear-gradient(color-mix(in srgb, var(--color-accent) 5%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--color-accent) 5%, transparent) 1px, transparent 1px),
+      linear-gradient(color-mix(in srgb, var(--color-accent) 8%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--color-accent) 8%, transparent) 1px, transparent 1px);
+    background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px;
+  }
+
   .bg-blueprint-grid {
     background-image:
       linear-gradient(color-mix(in srgb, var(--color-accent) 6%, transparent) 1px, transparent 1px),
@@ -122,38 +204,56 @@
     background-size: 48px 48px;
   }
 
-  /* A thin, slowly-repeating scanline texture for HUD surfaces (the boot
-     sequence, the 3D scene frames). Kept low-opacity so it reads as
-     texture, not noise. */
   .bg-scanlines {
     background-image: repeating-linear-gradient(
       to bottom,
-      rgba(234, 241, 247, 0.035) 0px,
-      rgba(234, 241, 247, 0.035) 1px,
+      rgba(232, 239, 246, 0.03) 0px,
+      rgba(232, 239, 246, 0.03) 1px,
       transparent 1px,
       transparent 3px
     );
   }
 
-  /* A near-static ambient backdrop so the app reads as alive even when
-     nothing is actively converging: a very slow grid drift plus a soft
-     radial glow, both cheap CSS (no extra WebGL context) since this
-     layer sits behind every panel at all times. */
+  /* Ambient backdrop behind every panel: a slow grid drift plus a soft
+     cool glow, so the app reads as alive at rest without a WebGL context. */
   @keyframes ambient-drift {
-    0%, 100% { background-position: 0px 0px, 0px 0px, 0% 0%; }
-    50% { background-position: 30px 20px, 30px 20px, 3% 2%; }
+    0%, 100% { background-position: 0px 0px, 0px 0px, 0% 0%, 100% 100%; }
+    50% { background-position: 28px 18px, 28px 18px, 3% 2%, 97% 98%; }
   }
   .ambient-backdrop {
+    background-color: var(--color-base);
     background-image:
-      linear-gradient(color-mix(in srgb, var(--color-accent) 5%, transparent) 1px, transparent 1px),
-      linear-gradient(90deg, color-mix(in srgb, var(--color-accent) 5%, transparent) 1px, transparent 1px),
-      radial-gradient(ellipse at 30% 20%, color-mix(in srgb, var(--color-accent-secondary) 8%, transparent), transparent 55%);
-    background-size: 64px 64px, 64px 64px, 140% 140%;
-    animation: ambient-drift 40s ease-in-out infinite;
+      linear-gradient(color-mix(in srgb, var(--color-accent) 4%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--color-accent) 4%, transparent) 1px, transparent 1px),
+      radial-gradient(ellipse at 22% 12%, color-mix(in srgb, var(--color-accent) 8%, transparent), transparent 55%),
+      radial-gradient(ellipse at 90% 96%, color-mix(in srgb, var(--color-accent-secondary) 7%, transparent), transparent 55%);
+    background-size: 64px 64px, 64px 64px, 140% 140%, 140% 140%;
+    animation: ambient-drift 44s ease-in-out infinite;
   }
+
+  /* A quiet live-telemetry sweep for "this value is streaming" chips. */
+  @keyframes hud-sweep {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(200%); }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .ambient-backdrop {
       animation: none;
     }
+  }
+
+  /* Thin custom scrollbars so overflow areas read as instrument panels. */
+  .thin-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-hairline-strong) transparent;
+  }
+  .thin-scroll::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .thin-scroll::-webkit-scrollbar-thumb {
+    background: var(--color-hairline-strong);
+    border-radius: 999px;
   }
 }

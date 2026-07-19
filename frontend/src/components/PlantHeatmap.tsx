@@ -2,10 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import DeckGL from '@deck.gl/react'
 import { OrthographicView } from '@deck.gl/core'
 import { PathLayer, PolygonLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers'
-import { Box, Boxes, Square, Users } from 'lucide-react'
+import { Box, Boxes, Radar, Square, Users } from 'lucide-react'
 import { PLANT_ZONES, ZONE_BOUNDS } from '../data/plantLayout'
 import { useCorrixStore } from '../store/useCorrixStore'
-import { riskColorHex } from './RiskBadge'
+import { riskColorHex, zoneFillHex } from './RiskBadge'
 import { PlantScene3D } from './PlantScene3D'
 import type { RiskLevel } from '../types'
 
@@ -19,20 +19,26 @@ const VIEW_MODES: { mode: ViewMode; label: string; Icon: typeof Square }[] = [
 
 /**
  * Colorblind-safe shape glyphs, one per risk level, checked against a
- * deuteranopia/protanopia simulation of the rendered heatmap, which
- * showed SAFE (green) and CAUTION (yellow) fills becoming nearly
- * indistinguishable from each other. The side panels already pair color
- * with a distinct Lucide icon (RiskBadge); the map itself needs its own
- * shape cue since it's pure fill color otherwise. Rendered via TextLayer
- * so it works inside deck.gl's own canvas, not a DOM overlay that would
- * need to be kept in sync with the projection on every pan/zoom.
+ * deuteranopia/protanopia simulation. The map is otherwise pure fill, so
+ * it carries its own shape cue independent of the side-panel RiskBadge.
+ * Rendered via TextLayer so it lives inside deck.gl's own canvas.
  */
 const RISK_GLYPH: Record<RiskLevel, string> = {
   SAFE: '●',
   CAUTION: '▲',
-  HIGH: '♦',
+  HIGH: '◆',
   CRITICAL: '■',
 }
+
+/** A margin of plant-meters padded around the zone bounds so the facility
+ * footprint reads as ground the zones sit on, not a tight crop. */
+const FOOTPRINT_PAD = 18
+const FOOTPRINT: [number, number][] = [
+  [ZONE_BOUNDS.minX - FOOTPRINT_PAD, ZONE_BOUNDS.minY - FOOTPRINT_PAD],
+  [ZONE_BOUNDS.maxX + FOOTPRINT_PAD, ZONE_BOUNDS.minY - FOOTPRINT_PAD],
+  [ZONE_BOUNDS.maxX + FOOTPRINT_PAD, ZONE_BOUNDS.maxY + FOOTPRINT_PAD],
+  [ZONE_BOUNDS.minX - FOOTPRINT_PAD, ZONE_BOUNDS.maxY + FOOTPRINT_PAD],
+]
 
 const INITIAL_VIEW_STATE = {
   target: [
@@ -40,18 +46,26 @@ const INITIAL_VIEW_STATE = {
     (ZONE_BOUNDS.minY + ZONE_BOUNDS.maxY) / 2,
     0,
   ] as [number, number, number],
-  zoom: 2.1,
+  zoom: 1.5,
 }
 
-/** Isometric mode is a CSS transform on the canvas wrapper, additive,
- * never load-bearing: the flat 2D view stays the tested default. */
-const ISOMETRIC_TRANSFORM = 'rotateX(55deg) rotateZ(-45deg) scale(0.9)'
+/** Short, screen-legible labels for the schematic. The full facility
+ * names (in plantLayout) are too long to sit inside a 50-unit cell
+ * without overrunning into the next one; these keep the plant readable. */
+const ZONE_SHORT_NAME: Record<string, string> = {
+  Z1: 'Ladle Bay',
+  Z2: 'Gas Main',
+  Z3: 'Maintenance',
+  Z4: 'Control Rm',
+  Z5: 'Scrap Yard',
+  Z6: 'Quench Pit',
+  Z7: 'Gas Vault',
+  Z8: 'Perimeter',
+}
 
-/** Zones at this risk or above get the gas-dispersion particle cloud and
- * the pulsing border. There is no gas-specific signal exposed to the
- * frontend (zoneRisk is a single risk level per zone, not per hazard
- * type), so risk level stands in for "an active gas reading" here; this
- * is a decorative signature moment, not a claim about what triggered it. */
+/** Isometric mode is a CSS transform on the canvas wrapper, additive. */
+const ISOMETRIC_TRANSFORM = 'rotateX(55deg) rotateZ(-45deg) scale(0.86)'
+
 const DISPERSION_RISK_LEVELS: RiskLevel[] = ['HIGH', 'CRITICAL']
 const PARTICLES_PER_ZONE = 14
 const PARTICLE_CYCLE_MS = 3200
@@ -64,10 +78,6 @@ interface GasParticleSeed {
   phaseMs: number
 }
 
-/** Deterministic per-zone particle field, seeded off the zone id so the
- * same zone always gets the same drift pattern instead of reshuffling on
- * every re-render (a plain Math.random() field would look like static,
- * not a drifting cloud). */
 function buildGasParticles(zoneId: string): GasParticleSeed[] {
   let seed = 0
   for (let i = 0; i < zoneId.length; i++) {
@@ -84,10 +94,6 @@ function buildGasParticles(zoneId: string): GasParticleSeed[] {
   }))
 }
 
-/** Returns the leading sub-path of `points` covering `progress` (0-1) of
- * its total length, cut exactly at that length rather than at the
- * nearest vertex, so the draw-in reads as a smooth line growing rather
- * than a path snapping between fixed waypoints. */
 function interpolatePath(
   points: [number, number][],
   progress: number,
@@ -123,12 +129,19 @@ function interpolatePath(
   return result
 }
 
+const RISK_ORDER: Record<RiskLevel, number> = { SAFE: 0, CAUTION: 1, HIGH: 2, CRITICAL: 3 }
+
 export function PlantHeatmap() {
   const zoneRisk = useCorrixStore((s) => s.zoneRisk)
   const workers = useCorrixStore((s) => s.workers)
   const evacuationRoute = useCorrixStore((s) => s.verdict?.evacuationRoute ?? null)
   const [viewMode, setViewMode] = useState<ViewMode>('flat')
   const [now, setNow] = useState(() => performance.now())
+
+  const elevatedCount = useMemo(
+    () => PLANT_ZONES.filter((z) => RISK_ORDER[zoneRisk[z.id] ?? 'SAFE'] >= 2).length,
+    [zoneRisk],
+  )
 
   const activeRiskZones = useMemo(
     () => PLANT_ZONES.filter((z) => DISPERSION_RISK_LEVELS.includes(zoneRisk[z.id] ?? 'SAFE')),
@@ -154,9 +167,6 @@ export function PlantHeatmap() {
     }
   }, [routeKey])
 
-  // Single animation clock driving the gas cloud, the pulsing zone
-  // borders, and the evacuation-route draw-in. Self-stops once nothing
-  // is left to animate rather than running a perpetual 60fps loop.
   useEffect(() => {
     if (activeRiskZoneIds.size === 0 && routeKey === null) return undefined
     let raf = 0
@@ -182,17 +192,44 @@ export function PlantHeatmap() {
       ? 0.5 + 0.5 * Math.sin((now / 1000) * ((2 * Math.PI) / PULSE_PERIOD_SECONDS))
       : 0
 
+  // The facility footprint the zones sit on: a dark plant floor with a
+  // faint accent hairline, so zones read as cells in a facility rather
+  // than colored rectangles floating in empty space.
+  const footprintLayer = useMemo(
+    () =>
+      new PolygonLayer({
+        id: 'facility-footprint',
+        data: [FOOTPRINT],
+        getPolygon: (d) => d,
+        getFillColor: [10, 15, 21, 235],
+        getLineColor: [45, 212, 232, 55],
+        getLineWidth: 1.5,
+        lineWidthUnits: 'pixels',
+        filled: true,
+        stroked: true,
+      }),
+    [],
+  )
+
   const zoneLayer = useMemo(
     () =>
       new PolygonLayer({
         id: 'zones',
         data: PLANT_ZONES,
         getPolygon: (z) => z.polygon,
-        getFillColor: (z) => riskColorHex(zoneRisk[z.id] ?? 'SAFE'),
+        getFillColor: (z) => zoneFillHex(zoneRisk[z.id] ?? 'SAFE'),
         getLineColor: (z) => {
-          if (!activeRiskZoneIds.has(z.id)) return [234, 241, 247, 120]
-          const [r, g, b] = riskColorHex(zoneRisk[z.id] ?? 'SAFE')
-          return [r, g, b, Math.round(160 + pulse * 90)]
+          const level = zoneRisk[z.id] ?? 'SAFE'
+          if (!activeRiskZoneIds.has(z.id)) {
+            // nominal zones: dim hairline; a faint risk tint for CAUTION
+            if (level === 'CAUTION') {
+              const [r, g, b] = riskColorHex(level)
+              return [r, g, b, 150]
+            }
+            return [125, 162, 194, 90]
+          }
+          const [r, g, b] = riskColorHex(level)
+          return [r, g, b, Math.round(180 + pulse * 75)]
         },
         getLineWidth: (z) => (activeRiskZoneIds.has(z.id) ? 2 + pulse * 3 : 1),
         lineWidthUnits: 'pixels',
@@ -201,7 +238,7 @@ export function PlantHeatmap() {
         pickable: true,
         updateTriggers: {
           getFillColor: [zoneRisk],
-          getLineColor: [activeRiskZoneIds, pulse],
+          getLineColor: [zoneRisk, activeRiskZoneIds, pulse],
           getLineWidth: [activeRiskZoneIds, pulse],
         },
         transitions: {
@@ -214,10 +251,6 @@ export function PlantHeatmap() {
   const gasLayer = useMemo(() => {
     if (activeRiskZones.length === 0) return null
     const points = activeRiskZones.flatMap((zone) => {
-      // A pale sulfurous haze, deliberately not one of the risk-level
-      // colors: a CRITICAL zone's fill is already deep red, and particles
-      // drawn in that same red would disappear into it. This needs to
-      // read as gas sitting on top of the risk color, at any level.
       const field = gasParticleFields.get(zone.id) ?? []
       return field.map((p) => {
         const t = (now + p.phaseMs) % PARTICLE_CYCLE_MS
@@ -247,18 +280,44 @@ export function PlantHeatmap() {
     })
   }, [activeRiskZones, gasParticleFields, now])
 
-  const zoneLabelLayer = useMemo(
+  // Zone ID, in a bold mono, anchored to each cell's top-left corner.
+  const zoneIdLayer = useMemo(
     () =>
       new TextLayer({
-        id: 'zone-labels',
+        id: 'zone-ids',
         data: PLANT_ZONES,
-        getPosition: (z) => [z.centroid[0], z.centroid[1] - 8] as [number, number],
+        getPosition: (z) => [z.polygon[0][0] + 4, z.polygon[0][1] + 5] as [number, number],
         getText: (z) => z.id,
-        getSize: 13,
-        getColor: [234, 241, 247, 220],
+        getSize: 12,
+        getColor: (z) => {
+          const level = zoneRisk[z.id] ?? 'SAFE'
+          if (RISK_ORDER[level] >= 1) return [...riskColorHex(level).slice(0, 3), 255] as unknown as [number, number, number, number]
+          return [201, 216, 232, 220]
+        },
         fontFamily: 'IBM Plex Mono, monospace',
-        getTextAnchor: 'middle',
-        getAlignmentBaseline: 'center',
+        fontWeight: 700,
+        getTextAnchor: 'start',
+        getAlignmentBaseline: 'top',
+        updateTriggers: { getColor: [zoneRisk] },
+      }),
+    [zoneRisk],
+  )
+
+  // Short zone name, small and dim, just under the ID, so the schematic
+  // names the facility without overrunning the cell.
+  const zoneNameLayer = useMemo(
+    () =>
+      new TextLayer({
+        id: 'zone-names',
+        data: PLANT_ZONES,
+        getPosition: (z) => [z.polygon[0][0] + 4, z.polygon[0][1] + 16] as [number, number],
+        getText: (z) => (ZONE_SHORT_NAME[z.id] ?? z.name).toUpperCase(),
+        getSize: 9,
+        sizeUnits: 'pixels',
+        getColor: [147, 166, 187, 200],
+        fontFamily: 'IBM Plex Mono, monospace',
+        getTextAnchor: 'start',
+        getAlignmentBaseline: 'top',
       }),
     [],
   )
@@ -268,20 +327,21 @@ export function PlantHeatmap() {
       new TextLayer({
         id: 'zone-risk-glyphs',
         data: PLANT_ZONES,
-        getPosition: (z) => [z.centroid[0], z.centroid[1] + 12] as [number, number],
+        getPosition: (z) => [z.centroid[0], z.centroid[1] + 6] as [number, number],
         getText: (z) => RISK_GLYPH[zoneRisk[z.id] ?? 'SAFE'],
-        getSize: 24,
-        getColor: [11, 16, 21, 235],
+        getSize: 22,
+        getColor: (z) => {
+          const level = zoneRisk[z.id] ?? 'SAFE'
+          if (level === 'SAFE') return [91, 111, 130, 220]
+          return [...riskColorHex(level).slice(0, 3), 255] as unknown as [number, number, number, number]
+        },
         fontWeight: 700,
         getTextAnchor: 'middle',
         getAlignmentBaseline: 'center',
-        // deck.gl's TextLayer only rasterizes an ASCII default character
-        // set; these Unicode shape glyphs must be listed explicitly or
-        // they silently fail to render (confirmed via a "Missing
-        // character" console warning during verification).
         characterSet: Object.values(RISK_GLYPH),
         updateTriggers: {
           getText: [zoneRisk],
+          getColor: [zoneRisk],
         },
       }),
     [zoneRisk],
@@ -307,13 +367,13 @@ export function PlantHeatmap() {
       id: 'workers',
       data: positioned,
       getPosition: (w) => w.position,
-      getFillColor: [0, 180, 216, 230],
-      getLineColor: [11, 16, 21, 255],
-      lineWidthMinPixels: 1,
+      getFillColor: [45, 212, 232, 235],
+      getLineColor: [6, 9, 13, 255],
+      lineWidthMinPixels: 1.5,
       stroked: true,
       getRadius: 3,
-      radiusMinPixels: 4,
-      radiusMaxPixels: 8,
+      radiusMinPixels: 3.5,
+      radiusMaxPixels: 7,
       pickable: true,
       updateTriggers: {
         getPosition: [workers],
@@ -343,8 +403,8 @@ export function PlantHeatmap() {
       id: 'evacuation-route',
       data: [{ path }],
       getPath: (d: { path: [number, number][] }) => d.path,
-      getColor: [255, 196, 0, 235],
-      getWidth: 4,
+      getColor: [45, 212, 232, 240],
+      getWidth: 3.5,
       widthUnits: 'pixels',
       capRounded: true,
       jointRounded: true,
@@ -353,36 +413,39 @@ export function PlantHeatmap() {
   }, [evacuationRoute, routeProgress])
 
   return (
-    <section className="glass-panel relative min-h-[320px] flex-1 overflow-hidden">
-      <div className="absolute left-4 right-4 top-4 z-10 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+    <section className="glass-panel corner-frame relative flex min-h-[320px] flex-1 flex-col overflow-hidden">
+      {/* Header rail */}
+      <div className="relative z-10 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-[var(--color-hairline)] px-4 py-3">
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="text-sm font-semibold tracking-wide text-[var(--color-text-primary)]">
-            Geospatial Safety Heatmap
-          </h2>
-          <span className="flex items-center gap-1 font-mono-data text-[11px] text-[var(--color-text-secondary)]">
+          <div className="flex items-center gap-2">
+            <Radar size={15} className="text-[var(--color-accent)]" aria-hidden="true" />
+            <h2 className="text-sm font-semibold tracking-wide text-[var(--color-text-primary)]">
+              Plant Schematic
+            </h2>
+          </div>
+          <span className="hidden h-3 w-px bg-[var(--color-hairline-strong)] sm:block" aria-hidden="true" />
+          <span className="flex items-center gap-1.5 tnum text-[11px] text-[var(--color-text-secondary)]">
             <Users size={12} aria-hidden="true" />
             {workers.length} tracked
           </span>
+          <span
+            className="tnum text-[11px]"
+            style={{ color: elevatedCount > 0 ? 'var(--color-risk-high)' : 'var(--color-text-secondary)' }}
+          >
+            {elevatedCount} zone{elevatedCount === 1 ? '' : 's'} elevated
+          </span>
           {evacuationRouteLayer && (
-            <span
-              className="flex items-center gap-1.5 font-mono-data text-[11px]"
-              style={{ color: 'rgb(255, 196, 0)' }}
-            >
-              <span
-                className="h-1.5 w-4 rounded-full"
-                style={{ backgroundColor: 'rgb(255, 196, 0)' }}
-                aria-hidden="true"
-              />
-              Evacuation route: {evacuationRoute!.join(' → ')}
+            <span className="flex items-center gap-1.5 tnum text-[11px] text-[var(--color-accent)]">
+              <span className="h-1.5 w-4 rounded-full bg-[var(--color-accent)]" aria-hidden="true" />
+              Evac: {evacuationRoute!.join(' → ')}
             </span>
           )}
         </div>
 
         <div
-          className="flex shrink-0 gap-0.5 rounded-[var(--radius-control)] p-0.5"
-          style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}
+          className="flex shrink-0 gap-0.5 rounded-[var(--radius-control)] border border-[var(--color-hairline)] p-0.5"
           role="group"
-          aria-label="Heatmap view mode"
+          aria-label="Plant view mode"
         >
           {VIEW_MODES.map(({ mode, label, Icon }) => (
             <button
@@ -390,7 +453,7 @@ export function PlantHeatmap() {
               type="button"
               onClick={() => setViewMode(mode)}
               aria-pressed={viewMode === mode}
-              className="flex items-center gap-1.5 rounded-[6px] px-2.5 py-1 text-xs transition-colors"
+              className="flex items-center gap-1.5 rounded-[var(--radius-sharp)] px-2.5 py-1 text-xs font-medium transition-colors"
               style={{
                 backgroundColor: viewMode === mode ? 'var(--color-accent)' : 'transparent',
                 color: viewMode === mode ? 'var(--color-base)' : 'var(--color-text-secondary)',
@@ -403,32 +466,67 @@ export function PlantHeatmap() {
         </div>
       </div>
 
-      {viewMode === '3d' ? (
-        <PlantScene3D zoneRisk={zoneRisk} workers={workers} evacuationRoute={evacuationRoute} />
-      ) : (
-        <div
-          className="h-full w-full transition-transform duration-500"
-          style={{
-            transform: viewMode === 'isometric' ? ISOMETRIC_TRANSFORM : 'none',
-            transformStyle: 'preserve-3d',
-          }}
-        >
-          <DeckGL
-            views={new OrthographicView({ id: 'plant' })}
-            initialViewState={INITIAL_VIEW_STATE}
-            controller={true}
-            layers={[
-              zoneLayer,
-              zoneLabelLayer,
-              zoneRiskGlyphLayer,
-              gasLayer,
-              evacuationRouteLayer,
-              workerLayer,
-            ].filter(Boolean)}
-            style={{ position: 'relative', width: '100%', height: '100%' }}
-          />
+      {/* Map body */}
+      <div className="relative min-h-0 flex-1">
+        {viewMode === '3d' ? (
+          <PlantScene3D zoneRisk={zoneRisk} workers={workers} evacuationRoute={evacuationRoute} />
+        ) : (
+          <>
+            <div className="hud-grid pointer-events-none absolute inset-0 opacity-70" aria-hidden="true" />
+            <div
+              className="h-full w-full transition-transform duration-500"
+              style={{
+                transform: viewMode === 'isometric' ? ISOMETRIC_TRANSFORM : 'none',
+                transformStyle: 'preserve-3d',
+              }}
+            >
+              <DeckGL
+                views={new OrthographicView({ id: 'plant' })}
+                initialViewState={INITIAL_VIEW_STATE}
+                controller={true}
+                layers={[
+                  footprintLayer,
+                  zoneLayer,
+                  zoneIdLayer,
+                  zoneNameLayer,
+                  zoneRiskGlyphLayer,
+                  gasLayer,
+                  evacuationRouteLayer,
+                  workerLayer,
+                ].filter(Boolean)}
+                style={{ position: 'relative', width: '100%', height: '100%', background: 'transparent' }}
+              />
+            </div>
+          </>
+        )}
+
+        {/* Risk legend */}
+        <div className="pointer-events-none absolute bottom-3 left-4 flex flex-wrap items-center gap-3">
+          {(['SAFE', 'CAUTION', 'HIGH', 'CRITICAL'] as RiskLevel[]).map((level) => (
+            <span key={level} className="flex items-center gap-1.5 eyebrow">
+              <span
+                className="inline-block h-2 w-2"
+                style={{
+                  backgroundColor:
+                    level === 'SAFE'
+                      ? 'var(--color-text-tertiary)'
+                      : `var(--color-risk-${level.toLowerCase()})`,
+                  clipPath:
+                    level === 'CAUTION'
+                      ? 'polygon(50% 0, 100% 100%, 0 100%)'
+                      : level === 'HIGH'
+                        ? 'polygon(50% 0, 100% 50%, 50% 100%, 0 50%)'
+                        : level === 'CRITICAL'
+                          ? 'none'
+                          : 'circle(50%)',
+                }}
+                aria-hidden="true"
+              />
+              {level}
+            </span>
+          ))}
         </div>
-      )}
+      </div>
     </section>
   )
 }

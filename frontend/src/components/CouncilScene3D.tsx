@@ -1,16 +1,17 @@
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
+import { Line } from '@react-three/drei'
 import { Bloom, EffectComposer } from '@react-three/postprocessing'
 import { Scene3DCanvas } from './Scene3DCanvas'
 import { riskColorHex } from './RiskBadge'
 import { usePrefersReducedMotion } from '../lib/usePrefersReducedMotion'
 import type { CouncilStage, RiskLevel } from '../types'
 
-const ACCENT = new THREE.Color('#00b4d8')
+const ACCENT = new THREE.Color('#2dd4e8')
 const VIOLET = new THREE.Color('#8b5cf6')
-const AMBER = new THREE.Color('#f2c94c')
-const DIM = new THREE.Color('#2a3a4a')
+const AMBER = new THREE.Color('#f5c33b')
+const DIM = new THREE.Color('#24313f')
 
 /** Left to right, matching CouncilPanel's own AGENTS order, so a viewer's
  * eye maps position to role the same way in both the icon legend above
@@ -101,6 +102,31 @@ function ChairNode({ stage, riskLevel }: { stage: CouncilStage; riskLevel?: Risk
   )
 }
 
+/** Persistent thin lines from each agent to the Chair, so the "four
+ * siloed agents fuse into one synthesizing Chair" thesis is legible even
+ * at rest, not only during the convening burst. Dim at idle, brighter
+ * while convening. */
+function ConnectorLines({ stage }: { stage: CouncilStage }) {
+  const active = stage === 'convening' || stage === 'deliberating'
+  return (
+    <>
+      {AGENT_X.map((x, i) => (
+        <Line
+          key={i}
+          points={[
+            [x, 0, 0],
+            CHAIR_POSITION,
+          ]}
+          color={active ? '#2dd4e8' : '#3a5064'}
+          lineWidth={active ? 1.4 : 0.8}
+          transparent
+          opacity={active ? 0.7 : 0.35}
+        />
+      ))}
+    </>
+  )
+}
+
 function SignalBeams({ stage }: { stage: CouncilStage }) {
   const particleRefs = useRef<(THREE.Mesh | null)[]>([])
 
@@ -148,6 +174,7 @@ function SceneContents({ stage, riskLevel }: { stage: CouncilStage; riskLevel?: 
     <group ref={groupRef}>
       <ambientLight intensity={0.4} />
       <pointLight position={[0, 2, 3]} intensity={20} color="#eaf1f7" />
+      <ConnectorLines stage={stage} />
       {AGENT_X.map((x, i) => (
         <AgentNode key={i} x={x} index={i} stage={stage} />
       ))}
