@@ -82,7 +82,7 @@ def render_incident_report_html(verdict: dict, ero_alert: dict | None) -> str:
 <html>
 <head>
 <meta charset="utf-8">
-<title>Corrix Incident Report — Zone {_esc(verdict.get('zoneId'))}</title>
+<title>Corrix Incident Report, Zone {_esc(verdict.get('zoneId'))}</title>
 <style>
   body {{ font-family: -apple-system, "Segoe UI", Arial, sans-serif; color: #1a1a1a; margin: 40px; }}
   h1 {{ font-size: 20px; margin-bottom: 4px; }}
