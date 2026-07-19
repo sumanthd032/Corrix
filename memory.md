@@ -614,3 +614,55 @@ External access: Docker Hub (base image pulls), PyPI and the PyTorch CPU wheel i
 Open questions or blockers: The only remaining Step 10 task is the actual Render deployment itself, which needs the user's Render account, the repository connected, and the real secrets (`GROQ_API_KEY`, `GEMINI_API_KEY`, `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`, optionally the ERO variables) entered through Render's own dashboard, per `render.yaml`'s `sync: false` entries. Everything on this end is ready for that step.
 
 Next action: Once the user has a Render account and has connected this repository, walk through the Blueprint deploy (`render.yaml`), fill in the real environment variables together, and confirm the live public instance is reachable and pre-warmed before it's needed.
+
+---
+
+## 2026-07-19 — Catch-up entry: two prior commits that were never logged here
+
+What was done: this entry retroactively documents two commits from the previous session (`2b91414`, `115655a`, both 2026-07-18) that were committed without a corresponding memory.md entry, a gap caught during this session's full-project audit (see the next entry) rather than at the time. `backend/scripts/setup_neo4j.py` was added: a one-time, idempotent script (`IF NOT EXISTS` schema, `MERGE` ingestion throughout, safe to re-run) that runs the regulatory ingestion (`app/regulatory/loader.py`) and ensures the memory-exemplar schema (`app/memory/exemplar_store.py`) against a freshly-cloned repo's empty Neo4j AuraDB instance, so a teammate cloning the repo has the Regulatory Intelligence features (RAG chat, pattern lookup, compliance checks) working with one command. It deliberately does not populate memory-loop exemplars, since those come only from real, LLM-heavy evaluation runs (`scripts/run_memory_loop_experiment.py`) and are documented in the script's own docstring as a separate, optional, advanced step. Separately, `docs/CORRIX_IMPLEMENTATION.md` was written (a description of the system as actually built, distinct from the three design docs' description of intent) and `README.md` was rewritten as a full onboarding guide for a teammate cloning the repo fresh: an explicit "what is NOT in this repository and how you get it" table (`.env`, the Python venv, `node_modules`, the frontend production build, the trained CV checkpoint, the SWaT dataset), a no-credentials visual-demo path, the full live-backend setup path including the new Neo4j setup step, test instructions, and Docker/Render deployment instructions.
+
+Why: the project was being prepared for handoff to a teammate. Git history shows the prior 97 commits authored under a different git identity (`Shreyas`) than this machine's configured global git user (`Sumanth D`), confirming this machine is a fresh clone taking over the project, not the original build machine — exactly the scenario the setup script and README rewrite exist to support.
+
+Files touched: `backend/scripts/setup_neo4j.py` (new), `docs/CORRIX_IMPLEMENTATION.md` (new), `README.md` (rewritten). No code behavior changed.
+
+External access: None beyond what Step 5 already established; the script runs against the same live Neo4j AuraDB instance.
+
+Open questions or blockers: None. This entry exists solely to close the gap between what was committed and what was logged, per CLAUDE.md §5.
+
+Next action: none from this entry specifically; see the next entry for the audit that found this gap.
+
+---
+
+## 2026-07-19 — Full-project audit against memory.md's own claims across all 10 steps, five real fixes applied
+
+What was done: at the user's request to check whether everything already built actually works, ran an independent, from-scratch verification of memory.md's claims for every one of the 10 build steps, rather than trusting the log at face value. This was the first work session on this machine, a fresh clone of the repository (see the previous entry).
+
+The repo-root `.env` was found completely empty at the start of this session (0 bytes). Asked the user rather than assuming; the user confirmed it should have real values and restored them. Before that fix, `pytest` could not even collect three test files (`test_mcp_corrix_risk.py`, `test_mcp_regulatory_intelligence.py`, `test_mcp_servers.py`): both `app/mcp_servers/regulatory_intelligence.py` and `app/mcp_servers/corrix_risk.py` created their Neo4j driver at module import time, so an empty `NEO4J_URI` crashed the import itself rather than failing gracefully. This was fixed (see below) regardless of the credentials being restored, since the same crash would hit a live deployment if `NEO4J_URI` were ever misconfigured on Render.
+
+With real credentials in place: `tsc -b` and `npm run build` both clean (frontend). The full backend suite initially showed 413 passed, 2 skipped, 2 failed; both failures were `playwright._impl._errors.Error: BrowserType.launch: Executable doesn't exist`, because this fresh clone's venv had never had `playwright install chromium` run against it (a documented setup step, just not yet done here). Ran it; both tests then passed. Three parallel Explore agents independently verified Steps 5-6, Step 8, and Steps 9-10 against the actual code (not just memory.md's description of it), each reading real files and, where practical, independently re-deriving a result (the Step 5 agent re-ran the actual chunking functions against the real PDFs and got the exact same section counts memory.md claims; the Step 8 agent independently ran `find_first_trigger` against all five S5 seeds and confirmed none trip the rule/threshold path). All ten Step 8 items, all six Step 9 items, and all four Step 10 items checked out as genuinely implemented, matching memory.md's descriptions with no fabricated or overstated claims found. Step 5 and Step 6's core mechanisms also checked out real.
+
+Five real, if mostly minor, issues survived this verification and were fixed:
+
+1. **A genuine em dash** in `backend/app/reporting/incident_report.py`'s PDF `<title>` tag ("Corrix Incident Report — Zone..."), a CLAUDE.md §7 violation. This file was built in Step 9, after the project-wide em-dash sweep recorded earlier in this log, so it was never checked against the rule. Fixed to a comma.
+
+2. **The module-level Neo4j driver creation** in both `regulatory_intelligence.py` and `corrix_risk.py` (described above) was converted to lazy initialization: a `_get_driver()` function that creates and caches the driver on first real tool call, not at import time. `tests/test_mcp_corrix_risk.py` imported the module-level `_driver` directly for its own fixture setup; updated it to call `_get_driver()` instead, since the old direct import would now bind to `None` before any tool call had a chance to create the real driver.
+
+3. **A stale docstring** in `backend/app/regulatory/retrieval.py` (and the matching one in the MCP server wrapper) still said "no DGMS content is ingested yet," left over from before DGMS ingestion actually landed later in Step 5. Updated to describe the real, current DGMS handling (the verified circular, the scanned-PDF limitation, `is_supplementary: true`). This was caught by one of the audit agents from static reading alone; a live test run of `test_dgms_scoped_qa_is_honest` confirmed the actual behavior was already correct, only the comment was wrong.
+
+4. This entry and the previous one, closing the memory.md gap CLAUDE.md §5 requires not to exist.
+
+5. Removed a stray, untracked, empty root-level `package-lock.json` (`"packages": {}`), apparently from an `npm install` accidentally run from the repo root instead of `frontend/` at some point. It was never committed and nothing referenced it.
+
+After all fixes, re-ran the specifically affected tests (27 tests across the MCP servers, incident report, and regulatory retrieval, all passing) and confirmed a project-wide grep finds exactly one remaining em dash, the one at `app/regulatory/chunking.py:27` that memory.md already documents as a deliberate exception (it matches a real em dash in the actual Factories Act PDF text).
+
+A real, disclosed limitation, not a bug: the fine-tuned CV checkpoint (`backend/runs/ppe_detector/weights/best.pt`) does not exist on this machine at all. It was trained on a different (Windows) machine per this log's own Step 6 entries and is correctly gitignored; the CV pipeline correctly falls back to zero-shot COCO weights, which only detect generic "person," not PPE violation classes. This is already disclosed in the rewritten README's "what is NOT in this repository" table, so it is expected on a fresh clone, not a defect, but it means a live demo on this machine right now would not show PPE-violation detections until the checkpoint is retrained or copied over.
+
+Why: the user explicitly asked whether everything already claimed as built actually works, rather than assuming memory.md's own account of itself was sufficient. Verifying live (restoring real credentials, actually running the full suite, actually installing the missing Playwright browser and re-running) rather than only reading code is the same discipline this project has held itself to throughout its build, applied here to auditing the project's own account of itself.
+
+Files touched: `backend/app/reporting/incident_report.py`, `backend/app/mcp_servers/{regulatory_intelligence,corrix_risk}.py`, `backend/app/regulatory/retrieval.py`, `backend/tests/test_mcp_corrix_risk.py`, `package-lock.json` (deleted, was untracked).
+
+External access: real Groq, Gemini, and Neo4j AuraDB calls throughout the full backend test suite run (415 passed, 2 skipped, 0 failed after the fixes above and after installing the Playwright Chromium browser).
+
+Open questions or blockers: the CV checkpoint gap above; Render deployment remains the one build-plan task not yet done, unchanged from the previous entry.
+
+Next action: none required by this audit itself. Deploying to Render remains the next real task whenever the user is ready to walk through it.
