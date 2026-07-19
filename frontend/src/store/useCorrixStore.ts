@@ -185,6 +185,9 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
       councilStage: 'idle',
       openChallengeLabel: null,
       eroFired: null,
+      // Drop the leftover mock alerts so the feed reflects this live run
+      // as its own events arrive, rather than showing stale placeholders.
+      alerts: [],
     }),
   applyLiveTick: (zoneRisk, workerZones) => {
     const workers: WorkerMarker[] = Object.entries(workerZones).map(([badgeId, zoneId]) => ({
@@ -198,8 +201,38 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
   applyLiveDeliberating: (evidence) =>
     set({ councilStage: 'deliberating', liveEvidence: evidence, overridePaused: true }),
   applyLiveVerdict: (verdict) =>
-    set({ councilStage: 'verdict_reached', verdict, liveEvidence: null, overridePaused: false }),
-  applyEroFired: (event) => set({ eroFired: event }),
+    set((state) => ({
+      councilStage: 'verdict_reached',
+      verdict,
+      liveEvidence: null,
+      overridePaused: false,
+      alerts: [
+        {
+          id: `alert-verdict-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          zoneId: verdict.zoneId,
+          riskLevel: verdict.riskLevel,
+          summary: verdict.explanation,
+        },
+        ...state.alerts,
+      ].slice(0, 20),
+    })),
+  applyEroFired: (event) =>
+    set((state) => ({
+      eroFired: event,
+      alerts: [
+        {
+          id: `alert-ero-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          zoneId: event.zoneId,
+          riskLevel: 'CRITICAL' as const,
+          summary: event.deliveredOk
+            ? `Emergency Response Orchestrator fired: a real alert was dispatched for Zone ${event.zoneId}.`
+            : `Emergency Response Orchestrator fired for Zone ${event.zoneId}, but delivery failed.`,
+        },
+        ...state.alerts,
+      ].slice(0, 20),
+    })),
   applyCouncilError: (message) =>
     set((state) => ({
       councilStage: 'idle',
