@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import App from './App'
 import { LandingPage } from './components/LandingPage'
+import { OnboardingWizard } from './components/OnboardingWizard'
 
 type View = 'landing' | 'onboarding' | 'demo-console' | 'live-console'
 
@@ -24,7 +25,7 @@ export function Root() {
       />
     )
   }
-  if (view === 'onboarding') return <div>Onboarding coming soon</div>
+  if (view === 'onboarding') return <OnboardingWizard onExit={() => setView('landing')} />
   if (view === 'live-console') return <div>Live console coming soon</div>
   return <App /> // view === 'demo-console'
 }
