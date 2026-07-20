@@ -54,12 +54,22 @@ export function DemoIntro({ onStartTour, onSkip }: { onStartTour: () => void; on
               The AI reasoning, regulatory search, and computer vision are genuinely real. The plant sensor streams are calibrated simulation, validated against a real industrial dataset.
             </p>
           </div>
-          <div className="flex gap-3">
-            <Clock size={16} className="mt-0.5 shrink-0 text-[var(--color-text-tertiary)]" aria-hidden="true" />
-            <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
-              This runs on a small free-tier server, and the first scenario warms up the models, so the first result can take 20 to 30 seconds. Every run after that is quicker. The reasoning is real, not canned, so the wait is genuine work.
-            </p>
-          </div>
+        </div>
+
+        <div
+          className="mt-4 flex gap-3 rounded-[var(--radius-control)] border p-3"
+          style={{
+            borderColor: 'color-mix(in srgb, var(--color-accent) 45%, transparent)',
+            background: 'var(--color-accent-dim)',
+            boxShadow: '0 0 22px -10px color-mix(in srgb, var(--color-accent) 60%, transparent)',
+          }}
+        >
+          <Clock size={17} className="mt-0.5 shrink-0 text-[var(--color-accent)]" aria-hidden="true" />
+          <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
+            <span className="font-semibold text-[var(--color-text-primary)]">First run is slow.</span>{' '}
+            The first scenario warms up the models on this small free-tier server, so the first result can take{' '}
+            <span className="font-semibold text-[var(--color-accent)]">20 to 30 seconds</span>. Every run after that is quicker. The reasoning is real, not canned, so the wait is genuine work.
+          </p>
         </div>
 
         <div className="mt-6 flex items-center gap-3">
