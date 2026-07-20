@@ -16,19 +16,25 @@ from app.api.websocket import scenario_websocket
 
 app = FastAPI(title="Corrix Backend")
 
-# The dev frontend (Vite on 5173) and the deployed frontend (built and
-# served by this same process, see the static mount below) are the only
-# two origins this backend ever needs to answer; CORS only matters for
-# the former; same-origin requests, including the deployed instance,
-# never go through it at all.
-dev_origins = ["http://localhost:5173"]
-extra_origin = os.environ.get("CORRIX_EXTRA_CORS_ORIGIN")
-if extra_origin:
-    dev_origins.append(extra_origin)
+# Allowed browser origins for the REST API.
+#  - Local dev is always allowed (Vite on 5173).
+#  - When the frontend is hosted separately (e.g. on Vercel) and the backend
+#    elsewhere (e.g. an AWS/Cloudflare-Tunnel host), set CORRIX_EXTRA_CORS_ORIGIN
+#    to the frontend origin(s), comma-separated for more than one, e.g.
+#    "https://corrix.vercel.app,https://corrix-staging.vercel.app".
+#  - CORRIX_CORS_ORIGIN_REGEX optionally matches dynamic origins such as
+#    Vercel preview deployments, e.g. "https://.*\\.vercel\\.app".
+# (The single-service deployment serves the frontend same-origin and needs
+# none of this; CORS only applies to cross-origin browser requests.)
+allowed_origins = ["http://localhost:5173"]
+extra_origins = os.environ.get("CORRIX_EXTRA_CORS_ORIGIN", "")
+allowed_origins += [o.strip() for o in extra_origins.split(",") if o.strip()]
+origin_regex = os.environ.get("CORRIX_CORS_ORIGIN_REGEX") or None
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=dev_origins,
+    allow_origins=allowed_origins,
+    allow_origin_regex=origin_regex,
     allow_methods=["*"],
     allow_headers=["*"],
 )
