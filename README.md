@@ -72,11 +72,62 @@ Corrix is the correlation layer that closes that gap. It fuses five normally-sil
 
 ## Architecture
 
-<div align="center">
+```mermaid
+flowchart TB
+    subgraph SRC["1 · Data and Simulation — five siloed streams"]
+        direction LR
+        GAS["Gas and process<br/>sensors"]
+        PER["Permit-to-work"]
+        SHF["Shift schedules"]
+        CVS["Computer vision<br/>(real YOLO)"]
+        LOC["Worker location"]
+    end
 
-![Corrix architecture](docs/assets/architecture_diagram.png)
+    MCP["2 · MCP Tool Layer<br/>one server per data source"]
 
-</div>
+    subgraph DET["3 · Compound-Risk Detection"]
+        direction LR
+        RULE["Rule + threshold"]
+        NOV["Joint-evidence<br/>novelty detector"]
+        MEM["Memory retrieval"]
+    end
+
+    subgraph CNCL["4 · Safety Council — LangGraph, agents siloed by construction"]
+        direction LR
+        A1["Process Safety<br/>Engineer"]
+        A2["Permit Control<br/>Officer"]
+        A3["Shift<br/>Operations"]
+        A4["Site Safety<br/>Observer"]
+        CHAIR{{"Chair<br/>synthesizes the verdict"}}
+    end
+
+    REG[("5 · Regulatory Intelligence<br/>Neo4j GraphRAG<br/>OISD · Factories Act · DGMS")]
+
+    subgraph OUT["6 · Outputs"]
+        direction LR
+        FC["Time-to-critical +<br/>evacuation route +<br/>risk propagation"]
+        ERO["Emergency Response<br/>hashed-evidence email"]
+        RPT["Incident Report<br/>PDF"]
+    end
+
+    UI["Command Center UI<br/>heatmap · 3D plant · Council · alerts"]
+
+    SRC --> MCP --> DET
+    MCP -. "agents query own server" .-> CNCL
+    DET -- "trigger" --> CNCL
+    A1 --> CHAIR
+    A2 --> CHAIR
+    A3 --> CHAIR
+    A4 --> CHAIR
+    CHAIR --> REG
+    CHAIR --> OUT
+    REG --> OUT
+    OUT --> UI
+    DET --> UI
+
+    classDef accent stroke:#2dd4e8,stroke-width:2px;
+    class CHAIR,REG accent;
+```
 
 Corrix is organized in layers, each a distinct part of the codebase:
 
