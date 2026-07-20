@@ -49,11 +49,12 @@ from app.council.graph import apply_safety_officer_override, build_council_graph
 from app.detection.anomaly_scorer import calibrate_baseline
 from app.detection.evacuation_routing import find_evacuation_route
 from app.detection.novelty_training import get_cached_novelty_model
+from app.detection.risk_propagation import predict_risk_propagation
 from app.detection.time_to_critical import forecast_time_to_critical
 from app.emergency.orchestrator import fire_emergency_response
 from app.memory.exemplar_store import get_shared_driver
 from app.regulatory.retrieval import find_regulatory_grounding
-from app.schemas import CouncilVerdict, RegulatoryCitation
+from app.schemas import CouncilVerdict, RegulatoryCitation, RiskPropagationZone
 from app.simulation.open_challenge import CURATED_COMBINATIONS
 from app.simulation.plant_layout import load_plant_layout
 from app.simulation.scenario_engine import DEFAULT_START_TIME
@@ -99,6 +100,11 @@ def _verdict_to_camel(v: CouncilVerdict) -> dict:
                 "isSupplementary": c.is_supplementary,
             }
             for c in (v.regulatory_citations or [])
+        ]
+        or None,
+        "riskPropagation": [
+            {"zoneId": p.zone_id, "hops": p.hops, "score": p.score}
+            for p in (v.risk_propagation or [])
         ]
         or None,
     }
@@ -194,6 +200,13 @@ async def _convene_council(
         route = find_evacuation_route(layout, frame.zone_risk, verdict.zone_id)
         if route is not None:
             verdict.evacuation_route = route.path
+        # Where the compound risk could spread next if it isn't contained.
+        propagation = predict_risk_propagation(layout, verdict.zone_id)
+        if propagation:
+            verdict.risk_propagation = [
+                RiskPropagationZone(zone_id=p.zone_id, hops=p.hops, score=p.score)
+                for p in propagation
+            ]
 
     # Ground the verdict in the regulation most relevant to what the four
     # agents actually reported. Never fatal to a convening: a lookup

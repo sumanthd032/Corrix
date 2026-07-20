@@ -1,4 +1,4 @@
-import { PLANT_ZONES } from './plantLayout'
+import { PLANT_ZONES, PLANT_ADJACENCY } from './plantLayout'
 import type {
   AlertFeedEntry,
   CouncilVerdict,
@@ -26,6 +26,34 @@ const MOCK_CITATIONS: RegulatoryCitation[] = [
     isSupplementary: false,
   },
 ]
+
+/** Mirrors backend/app/detection/risk_propagation.py for the mock: a BFS
+ * over the adjacency graph estimating where a compound risk could spread,
+ * decaying by hop and weighted by each neighbour's hazard class. The live
+ * backend computes this; this keeps mock mode consistent. */
+function mockPropagation(source: string) {
+  const adj: Record<string, string[]> = {}
+  PLANT_ZONES.forEach((z) => (adj[z.id] = []))
+  PLANT_ADJACENCY.forEach(([a, b]) => { adj[a].push(b); adj[b].push(a) })
+  const susceptibility: Record<string, number> = { high: 1.0, medium: 0.65, low: 0.35 }
+  const hazardOf: Record<string, string> = {}
+  PLANT_ZONES.forEach((z) => (hazardOf[z.id] = z.hazardClass))
+  const dist: Record<string, number> = { [source]: 0 }
+  const queue = [source]
+  while (queue.length) {
+    const cur = queue.shift() as string
+    if (dist[cur] >= 2) continue
+    for (const n of adj[cur]) if (!(n in dist)) { dist[n] = dist[cur] + 1; queue.push(n) }
+  }
+  return Object.entries(dist)
+    .filter(([, hops]) => hops > 0)
+    .map(([zoneId, hops]) => ({
+      zoneId,
+      hops,
+      score: Math.round(Math.pow(0.55, hops) * (susceptibility[hazardOf[zoneId]] ?? 0.35) * 1000) / 1000,
+    }))
+    .sort((a, b) => b.score - a.score)
+}
 
 /** Deterministic small jitter so the mock is stable across renders. */
 function jitterFor(seed: number): [number, number] {
@@ -96,6 +124,7 @@ const SCENARIO_MOCKS: Record<string, ScenarioMock> = {
       recommendedAction:
         'Suspend permit P-2291 pending gas verification; notify Zone 1 supervisor before shift handoff.',
       evacuationRoute: ['Z1', 'Z3', 'Z4'],
+      riskPropagation: mockPropagation('Z1'),
       regulatoryCitations: MOCK_CITATIONS,
     },
     alerts: [
@@ -150,6 +179,7 @@ const SCENARIO_MOCKS: Record<string, ScenarioMock> = {
       recommendedAction:
         'Withdraw personnel from Zone 7 pending gas re-verification; do not begin changeover handoff until cleared.',
       evacuationRoute: ['Z7', 'Z8'],
+      riskPropagation: mockPropagation('Z7'),
       regulatoryCitations: MOCK_CITATIONS,
     },
     alerts: [
@@ -196,6 +226,7 @@ const SCENARIO_MOCKS: Record<string, ScenarioMock> = {
       recommendedAction:
         'Suspend the maintenance permit in Zone 2 pending a fresh gas reading; do not extend the work window into changeover.',
       evacuationRoute: ['Z2', 'Z3', 'Z4'],
+      riskPropagation: mockPropagation('Z2'),
       regulatoryCitations: MOCK_CITATIONS,
     },
     alerts: [
@@ -241,6 +272,7 @@ const SCENARIO_MOCKS: Record<string, ScenarioMock> = {
       recommendedAction:
         'Halt hot work under permit P-9102 immediately; re-verify Zone 2 atmosphere before resuming.',
       evacuationRoute: ['Z2', 'Z3', 'Z4'],
+      riskPropagation: mockPropagation('Z2'),
       regulatoryCitations: MOCK_CITATIONS,
     },
     alerts: [
@@ -283,6 +315,7 @@ const SCENARIO_MOCKS: Record<string, ScenarioMock> = {
       recommendedAction:
         'Log for review; no immediate action required, but do not dismiss the pattern match.',
       evacuationRoute: null,
+      riskPropagation: mockPropagation('Z2'),
       regulatoryCitations: MOCK_CITATIONS,
     },
     alerts: [

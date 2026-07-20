@@ -48,6 +48,16 @@ class RegulatoryCitation(BaseModel):
     is_supplementary: bool
 
 
+class RiskPropagationZone(BaseModel):
+    """A zone a compound risk could spread to, and how strongly, per the
+    spatial-propagation estimate over the adjacency graph
+    (app/detection/risk_propagation.py)."""
+
+    zone_id: str
+    hops: int
+    score: float = Field(ge=0.0, le=1.0)
+
+
 class CouncilVerdict(BaseModel):
     """The Safety Council's Chair-synthesized verdict, per
     CORRIX_PROJECT.md §6.2."""
@@ -65,3 +75,4 @@ class CouncilVerdict(BaseModel):
     recommended_action: str
     evacuation_route: list[str] | None = None
     regulatory_citations: list[RegulatoryCitation] | None = None
+    risk_propagation: list[RiskPropagationZone] | None = None

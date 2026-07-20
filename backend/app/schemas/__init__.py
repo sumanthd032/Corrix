@@ -21,6 +21,7 @@ from .verdict import (
     CouncilVerdict,
     RegulatoryCitation,
     RiskLevel,
+    RiskPropagationZone,
     TimeToCriticalForecast,
     TriggerReason,
 )
@@ -51,6 +52,7 @@ __all__ = [
     "CouncilEvidence",
     "CouncilVerdict",
     "RegulatoryCitation",
+    "RiskPropagationZone",
     "RiskLevel",
     "TimeToCriticalForecast",
     "TriggerReason",

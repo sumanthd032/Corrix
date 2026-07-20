@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import DeckGL from '@deck.gl/react'
 import { OrthographicView } from '@deck.gl/core'
-import { PathLayer, PolygonLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers'
+import { LineLayer, PathLayer, PolygonLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers'
 import { Box, Boxes, Radar, Square, Users } from 'lucide-react'
 import { PLANT_ZONES, ZONE_BOUNDS } from '../data/plantLayout'
 import { useCorrixStore } from '../store/useCorrixStore'
@@ -135,6 +135,8 @@ export function PlantHeatmap() {
   const zoneRisk = useCorrixStore((s) => s.zoneRisk)
   const workers = useCorrixStore((s) => s.workers)
   const evacuationRoute = useCorrixStore((s) => s.verdict?.evacuationRoute ?? null)
+  const riskPropagation = useCorrixStore((s) => s.verdict?.riskPropagation ?? null)
+  const propagationSourceId = useCorrixStore((s) => s.verdict?.zoneId ?? null)
   const [viewMode, setViewMode] = useState<ViewMode>('flat')
   const [now, setNow] = useState(() => performance.now())
 
@@ -412,6 +414,53 @@ export function PlantHeatmap() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [evacuationRoute, routeProgress])
 
+  // Spatial risk propagation: where the compound risk could spread next.
+  const propagationData = useMemo(() => {
+    if (!riskPropagation || riskPropagation.length === 0) return []
+    const byId = new Map(PLANT_ZONES.map((z) => [z.id, z]))
+    return riskPropagation
+      .map((p) => {
+        const zone = byId.get(p.zoneId)
+        return zone ? { zone, score: p.score, hops: p.hops } : null
+      })
+      .filter((x): x is { zone: (typeof PLANT_ZONES)[number]; score: number; hops: number } => x !== null)
+  }, [riskPropagation])
+
+  const propagationSource = useMemo(
+    () => PLANT_ZONES.find((z) => z.id === propagationSourceId) ?? null,
+    [propagationSourceId],
+  )
+
+  const propagationLinkLayer = useMemo(() => {
+    if (!propagationSource || propagationData.length === 0) return null
+    return new LineLayer({
+      id: 'risk-propagation-links',
+      data: propagationData,
+      getSourcePosition: () => propagationSource.centroid,
+      getTargetPosition: (d) => d.zone.centroid,
+      getColor: (d) => [255, 150, 70, Math.round(55 + d.score * 150 * (0.4 + 0.6 * pulse))],
+      getWidth: (d) => 1 + d.score * 3,
+      widthUnits: 'pixels',
+      updateTriggers: { getColor: [pulse], getSourcePosition: [propagationSource] },
+    })
+  }, [propagationSource, propagationData, pulse])
+
+  const propagationOutlineLayer = useMemo(() => {
+    if (propagationData.length === 0) return null
+    return new PolygonLayer({
+      id: 'risk-propagation-outline',
+      data: propagationData,
+      getPolygon: (d) => d.zone.polygon,
+      stroked: true,
+      filled: true,
+      getFillColor: (d) => [255, 150, 70, Math.round(12 + d.score * 38 * (0.5 + 0.5 * pulse))],
+      getLineColor: (d) => [255, 170, 90, Math.round(80 + d.score * 150 * (0.4 + 0.6 * pulse))],
+      getLineWidth: (d) => 1 + d.score * 2,
+      lineWidthUnits: 'pixels',
+      updateTriggers: { getFillColor: [pulse], getLineColor: [pulse] },
+    })
+  }, [propagationData, pulse])
+
   return (
     <section className="glass-panel corner-frame relative flex min-h-[320px] flex-1 flex-col overflow-hidden">
       {/* Header rail */}
@@ -438,6 +487,20 @@ export function PlantHeatmap() {
             <span className="flex items-center gap-1.5 tnum text-[11px] text-[var(--color-accent)]">
               <span className="h-1.5 w-4 rounded-full bg-[var(--color-accent)]" aria-hidden="true" />
               Evac: {evacuationRoute!.join(' → ')}
+            </span>
+          )}
+          {propagationData.length > 0 && (
+            <span
+              className="flex items-center gap-1.5 tnum text-[11px]"
+              style={{ color: 'rgb(255, 150, 70)' }}
+              title="Zones the compound risk could spread to if uncontained, over the adjacency graph"
+            >
+              <span
+                className="h-2 w-2"
+                style={{ border: '1px solid rgb(255,170,90)', borderRadius: '2px' }}
+                aria-hidden="true"
+              />
+              Spread risk: {propagationData.slice(0, 3).map((p) => p.zone.id).join(', ')}
             </span>
           )}
         </div>
@@ -491,6 +554,8 @@ export function PlantHeatmap() {
                   zoneNameLayer,
                   zoneRiskGlyphLayer,
                   gasLayer,
+                  propagationLinkLayer,
+                  propagationOutlineLayer,
                   evacuationRouteLayer,
                   workerLayer,
                 ].filter(Boolean)}

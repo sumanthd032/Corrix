@@ -40,6 +40,9 @@ export interface CouncilVerdict {
    * the Regulatory Intelligence substrate for the situation the Council
    * judged. DGMS clauses are flagged supplementary. */
   regulatoryCitations?: RegulatoryCitation[] | null
+  /** Zones a compound risk could spread to if uncontained, estimated over
+   * the adjacency graph (HIGH/CRITICAL verdicts only). */
+  riskPropagation?: RiskPropagationZone[] | null
 }
 
 export interface RegulatoryCitation {
@@ -48,6 +51,12 @@ export interface RegulatoryCitation {
   sectionNumber: string
   sectionTitle: string
   isSupplementary: boolean
+}
+
+export interface RiskPropagationZone {
+  zoneId: string
+  hops: number
+  score: number
 }
 
 export interface WorkerMarker {
