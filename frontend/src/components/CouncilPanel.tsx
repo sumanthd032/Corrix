@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Camera, Clock, FileCheck, FlaskConical, Gauge, Gavel, Scale } from 'lucide-react'
+import { Camera, Clock, FileCheck, FlaskConical, Gauge, Gavel, Mail, Scale } from 'lucide-react'
 import { useCorrixStore } from '../store/useCorrixStore'
 import { RiskBadge } from './RiskBadge'
 import { CouncilScene3D } from './CouncilScene3D'
 import { WhatIfModal } from './WhatIfModal'
+import { SendAlertModal } from './SendAlertModal'
 import type { CouncilAgentKey, TriggerReason } from '../types'
 
 const AGENTS: { key: CouncilAgentKey; label: string; short: string; Icon: typeof Gauge }[] = [
@@ -37,6 +38,7 @@ export function CouncilPanel() {
   const overrideFocusNonce = useCorrixStore((s) => s.overrideFocusNonce)
   const [noteText, setNoteText] = useState('')
   const [whatIfOpen, setWhatIfOpen] = useState(false)
+  const [alertOpen, setAlertOpen] = useState(false)
   const noteRef = useRef<HTMLTextAreaElement>(null)
 
   // When the top-bar Override control is used in live mode, bring the note
@@ -227,14 +229,27 @@ export function CouncilPanel() {
               </div>
             )}
 
-            <button
-              type="button"
-              onClick={() => setWhatIfOpen(true)}
-              className="mt-1 flex items-center justify-center gap-1.5 rounded-[var(--radius-control)] border border-[var(--color-hairline)] bg-[var(--color-surface-2)]/60 px-3 py-2 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:border-[color-mix(in_srgb,var(--color-accent)_45%,transparent)] hover:text-[var(--color-text-primary)]"
-            >
-              <FlaskConical size={14} aria-hidden="true" />
-              Test a mitigation (what-if)
-            </button>
+            <div className="mt-1 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setWhatIfOpen(true)}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-control)] border border-[var(--color-hairline)] bg-[var(--color-surface-2)]/60 px-3 py-2 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:border-[color-mix(in_srgb,var(--color-accent)_45%,transparent)] hover:text-[var(--color-text-primary)]"
+              >
+                <FlaskConical size={14} aria-hidden="true" />
+                Test a mitigation
+              </button>
+              {(verdict.riskLevel === 'HIGH' || verdict.riskLevel === 'CRITICAL') && (
+                <button
+                  type="button"
+                  onClick={() => setAlertOpen(true)}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-control)] border px-3 py-2 text-xs font-medium text-[var(--color-accent)] transition-colors"
+                  style={{ borderColor: 'color-mix(in srgb, var(--color-accent) 40%, transparent)', backgroundColor: 'var(--color-accent-dim)' }}
+                >
+                  <Mail size={14} aria-hidden="true" />
+                  Email alert
+                </button>
+              )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -277,6 +292,7 @@ export function CouncilPanel() {
 
       <AnimatePresence>
         {whatIfOpen && <WhatIfModal onClose={() => setWhatIfOpen(false)} />}
+        {alertOpen && verdict && <SendAlertModal verdict={verdict} onClose={() => setAlertOpen(false)} />}
       </AnimatePresence>
     </section>
   )

@@ -18,6 +18,7 @@ silently and not allowed to crash the WebSocket handler mid-verdict.
 
 import hashlib
 import json
+import logging
 import smtplib
 import uuid
 from dataclasses import dataclass
@@ -29,6 +30,8 @@ from neo4j import Driver
 from app.config import get_settings
 from app.schemas import CouncilVerdict
 from app.state.incident_alerts import ensure_incident_alert_schema, store_incident_alert
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -103,12 +106,13 @@ def _format_email_body(
     )
 
 
-def send_incident_email(subject: str, body: str) -> None:
+def send_incident_email(subject: str, body: str, to_email: str | None = None) -> None:
     settings = get_settings()
     message = EmailMessage()
     message["Subject"] = subject
     message["From"] = settings.ero_alert_from_email
-    message["To"] = settings.ero_alert_to_email
+    # A caller-supplied recipient (from the UI) overrides the backend default.
+    message["To"] = to_email or settings.ero_alert_to_email
     message.set_content(body)
 
     if settings.ero_smtp_port == 465:
@@ -123,17 +127,22 @@ def send_incident_email(subject: str, body: str) -> None:
 
 
 def fire_emergency_response(
-    verdict: CouncilVerdict, worker_badge_ids: list[str], driver: Driver
+    verdict: CouncilVerdict,
+    worker_badge_ids: list[str],
+    driver: Driver,
+    to_email: str | None = None,
 ) -> IncidentAlert:
-    """Fires on a CRITICAL verdict only, per CORRIX_BUILD_PLAN.md Step 9."""
+    """Sends the incident email and records the alert. Fired automatically on
+    a CRITICAL verdict (CORRIX_BUILD_PLAN.md Step 9) and on demand from the UI
+    for a HIGH or CRITICAL verdict, where `to_email` sets the recipient."""
     fired_at = datetime.now(timezone.utc).isoformat()
     evidence_snapshot, evidence_hash = build_evidence_snapshot(verdict, worker_badge_ids)
-    subject = f"[CORRIX] CRITICAL compound risk in Zone {verdict.zone_id}"
+    subject = f"[CORRIX] {verdict.risk_level} compound risk in Zone {verdict.zone_id}"
     body = _format_email_body(verdict, worker_badge_ids, evidence_hash, fired_at)
 
     delivery_error: str | None = None
     try:
-        send_incident_email(subject, body)
+        send_incident_email(subject, body, to_email=to_email)
     except Exception as exc:
         delivery_error = str(exc)
 
@@ -153,23 +162,28 @@ def fire_emergency_response(
         delivery_error=delivery_error,
     )
 
-    ensure_incident_alert_schema(driver)
-    store_incident_alert(
-        driver,
-        alert_id=alert.alert_id,
-        zone_id=alert.zone_id,
-        scenario_id=alert.scenario_id,
-        risk_level=alert.risk_level,
-        trigger_reason=alert.trigger_reason,
-        explanation=alert.explanation,
-        recommended_action=alert.recommended_action,
-        evacuation_route=alert.evacuation_route,
-        worker_badge_ids=alert.worker_badge_ids,
-        fired_at=alert.fired_at,
-        evidence_hash=alert.evidence_hash,
-        evidence_snapshot=evidence_snapshot,
-        delivery_backend=alert.delivery_backend,
-        delivery_error=alert.delivery_error,
-    )
+    # Persistence is best-effort: an email that already went out must not be
+    # lost because Neo4j had a transient hiccup writing the record.
+    try:
+        ensure_incident_alert_schema(driver)
+        store_incident_alert(
+            driver,
+            alert_id=alert.alert_id,
+            zone_id=alert.zone_id,
+            scenario_id=alert.scenario_id,
+            risk_level=alert.risk_level,
+            trigger_reason=alert.trigger_reason,
+            explanation=alert.explanation,
+            recommended_action=alert.recommended_action,
+            evacuation_route=alert.evacuation_route,
+            worker_badge_ids=alert.worker_badge_ids,
+            fired_at=alert.fired_at,
+            evidence_hash=alert.evidence_hash,
+            evidence_snapshot=evidence_snapshot,
+            delivery_backend=alert.delivery_backend,
+            delivery_error=alert.delivery_error,
+        )
+    except Exception:
+        logger.warning("Failed to persist incident alert; email delivery unaffected.")
 
     return alert

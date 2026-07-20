@@ -10,6 +10,7 @@ from app.api.incident_report import router as incident_report_router
 from app.api.assistant import router as assistant_router
 from app.api.regulatory_chat import router as regulatory_chat_router
 from app.api.replay import router as replay_router
+from app.api.send_alert import router as send_alert_router
 from app.api.what_if import router as what_if_router
 from app.api.websocket import scenario_websocket
 
@@ -38,6 +39,7 @@ app.include_router(incident_report_router)
 app.include_router(regulatory_chat_router)
 app.include_router(what_if_router)
 app.include_router(assistant_router)
+app.include_router(send_alert_router)
 
 
 @app.get("/health")
