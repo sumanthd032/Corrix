@@ -6,12 +6,12 @@ import { LandingPage } from './components/LandingPage'
  * Top-level view switch: the marketing landing page, then the dashboard.
  * The dashboard (App) is only mounted once the user launches the demo, so
  * its live WebSocket and boot sequence don't run behind the landing page.
- * `justEntered` tells the dashboard this is a fresh demo entry, which is
- * what kicks off presenter mode the first time.
+ * Because the dashboard mounts only on launch, its own first-mount is the
+ * "fresh demo entry" that kicks off presenter mode.
  */
 export function Root() {
   const [entered, setEntered] = useState(false)
 
   if (!entered) return <LandingPage onLaunch={() => setEntered(true)} />
-  return <App justEntered />
+  return <App />
 }

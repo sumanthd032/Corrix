@@ -12,19 +12,19 @@ import { useScenarioSocket } from './lib/useScenarioSocket'
 
 const TOUR_FLAG = 'corrix_tour_shown'
 
-function App({ justEntered = false }: { justEntered?: boolean }) {
+function App() {
   useScenarioSocket()
   const [booting, setBooting] = useState(shouldShowBootSequence)
   const [tourActive, setTourActive] = useState(false)
 
-  // Kick off the guided tour once, the first time the demo is entered in
-  // this session, after the boot sequence has finished.
+  // Kick off the guided tour once per session, on the first demo entry
+  // (App is only mounted when the demo is launched), after boot finishes.
   useEffect(() => {
-    if (booting || !justEntered) return
+    if (booting) return
     if (sessionStorage.getItem(TOUR_FLAG)) return
-    const t = setTimeout(() => setTourActive(true), 500)
+    const t = setTimeout(() => setTourActive(true), 600)
     return () => clearTimeout(t)
-  }, [booting, justEntered])
+  }, [booting])
 
   const endTour = () => {
     sessionStorage.setItem(TOUR_FLAG, '1')

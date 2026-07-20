@@ -56,6 +56,10 @@
 .corrix-landing .hero-glow { position: absolute; inset: 0; z-index: 1; pointer-events: none; background: radial-gradient(900px 520px at 22% 30%, rgba(45, 212, 232, 0.14), transparent 60%), radial-gradient(760px 520px at 92% 80%, rgba(139, 92, 246, 0.12), transparent 58%); }
 .corrix-landing .hero .container { position: relative; z-index: 2; }
 .corrix-landing .hero-grid { display: grid; grid-template-columns: 1.04fr 0.96fr; gap: 54px; align-items: center; }
+/* Let both columns shrink to their grid track instead of expanding to the
+   ticker's long non-wrapping content (which otherwise shoves the fusion
+   showpiece off-screen). */
+.corrix-landing .hero-grid > * { min-width: 0; }
 
 .corrix-landing .status-pill { display: inline-flex; align-items: center; gap: 8px; font-family: var(--l-mono); font-size: 11px; letter-spacing: 0.14em; color: var(--l-cy); border: 1px solid rgba(45, 212, 232, 0.35); background: rgba(45, 212, 232, 0.06); padding: 6px 12px; border-radius: 99px; margin-bottom: 26px; }
 .corrix-landing .status-pill .d { width: 7px; height: 7px; border-radius: 99px; background: var(--l-cy); box-shadow: 0 0 9px var(--l-cy); animation: l-pulse 1.7s infinite; }
