@@ -5,10 +5,19 @@ import './LandingPage.css'
 /**
  * The Corrix marketing landing page. Renders full-screen before the
  * dashboard; the "Launch live demo" buttons call `onLaunch` to enter the
- * product. Self-contained styles are scoped under `.corrix-landing`
- * (LandingPage.css) so its generic class names don't touch the dashboard.
+ * existing synthetic demo, unchanged. "Get Started" calls `onGetStarted`
+ * to enter the Bring Your Own Factory onboarding wizard instead, a
+ * fully separate flow off the same landing page. Self-contained styles
+ * are scoped under `.corrix-landing` (LandingPage.css) so its generic
+ * class names don't touch the dashboard.
  */
-export function LandingPage({ onLaunch }: { onLaunch: () => void }) {
+export function LandingPage({
+  onLaunch,
+  onGetStarted,
+}: {
+  onLaunch: () => void
+  onGetStarted: () => void
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rootRef = useRef<HTMLDivElement>(null)
   const [howOpen, setHowOpen] = useState(false)
@@ -33,6 +42,10 @@ export function LandingPage({ onLaunch }: { onLaunch: () => void }) {
   const guardHowItWorks = () => {
     if (isMobile) { setNoteOpen(true); return }
     setHowOpen(true)
+  }
+  const guardGetStarted = () => {
+    if (isMobile) { setNoteOpen(true); return }
+    onGetStarted()
   }
 
   useEffect(() => {
@@ -133,6 +146,7 @@ export function LandingPage({ onLaunch }: { onLaunch: () => void }) {
             <a href="#proof">Evidence</a>
           </div>
           <div className="nav-cta">
+            <button type="button" className="btn btn-ghost" onClick={guardGetStarted}>Get Started</button>
             <button type="button" className="btn btn-primary" onClick={guardLaunch}>
               Launch live demo
               <svg className="ar" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
@@ -161,6 +175,7 @@ export function LandingPage({ onLaunch }: { onLaunch: () => void }) {
                   <svg className="ar" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
                 </button>
                 <button type="button" className="btn btn-ghost" onClick={guardHowItWorks}>See how it works</button>
+                <button type="button" className="btn btn-ghost" onClick={guardGetStarted}>Get Started</button>
               </div>
               <div className="ticker">
                 <span className="lbl">LIVE FEED</span>
