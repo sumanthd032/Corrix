@@ -82,7 +82,10 @@ export function ProjectAssistant() {
               position: 'fixed',
               right: 20,
               bottom: 84,
-              zIndex: 80,
+              // Above the Behind-the-Data page (z 90) so it stays available
+              // there, but below the onboarding intro (110) and tour (100)
+              // so it doesn't compete during those.
+              zIndex: 95,
               width: 'min(380px, calc(100vw - 40px))',
               height: 'min(520px, calc(100vh - 130px))',
             }}
@@ -173,7 +176,7 @@ export function ProjectAssistant() {
           position: 'fixed',
           right: 20,
           bottom: 20,
-          zIndex: 81,
+          zIndex: 96,
           height: 54,
           width: 54,
           borderRadius: 999,
