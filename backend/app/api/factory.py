@@ -4,12 +4,19 @@ is `app/storage/factory_store.py`'s `save_factory`/`load_factory`; this
 module only adds request validation and HTTP framing.
 """
 
+from typing import Literal
+
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 from app.schemas.factory import FactoryProfile
 from app.storage.factory_store import load_factory, save_factory
 
 router = APIRouter()
+
+
+class SetDataSourceRequest(BaseModel):
+    data_source: Literal["csv", "mqtt", "opcua"]
 
 
 def _validate_layout(profile: FactoryProfile) -> None:
@@ -41,4 +48,14 @@ async def get_factory(factory_id: str) -> FactoryProfile:
     profile = load_factory(factory_id)
     if profile is None:
         raise HTTPException(status_code=404, detail=f"No factory found for id {factory_id}")
+    return profile
+
+
+@router.patch("/api/factory/{factory_id}/data-source")
+async def set_data_source(factory_id: str, req: SetDataSourceRequest) -> FactoryProfile:
+    profile = load_factory(factory_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail=f"No factory found for id {factory_id}")
+    profile.data_source = req.data_source
+    save_factory(profile)
     return profile

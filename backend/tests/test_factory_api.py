@@ -115,3 +115,25 @@ def test_get_factory_after_create_matches_what_was_posted(factory_id):
     assert [
         {"zone_a": e["zone_a"], "zone_b": e["zone_b"]} for e in body["layout"]["adjacency"]
     ] == [{"zone_a": "AZ1", "zone_b": "AZ2"}]
+
+
+def test_patch_data_source_changes_it_and_get_reflects_it(factory_id):
+    payload = _valid_payload(factory_id)
+    create_response = client.post("/api/factory", json=payload)
+    assert create_response.status_code == 200
+
+    patch_response = client.patch(
+        f"/api/factory/{factory_id}/data-source", json={"data_source": "mqtt"}
+    )
+    assert patch_response.status_code == 200
+    assert patch_response.json()["data_source"] == "mqtt"
+
+    get_response = client.get(f"/api/factory/{factory_id}")
+    assert get_response.json()["data_source"] == "mqtt"
+
+
+def test_patch_data_source_on_unknown_factory_returns_404():
+    response = client.patch(
+        "/api/factory/does-not-exist/data-source", json={"data_source": "mqtt"}
+    )
+    assert response.status_code == 404
