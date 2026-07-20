@@ -8,6 +8,7 @@ import { RegulatoryChatDrawer } from './components/RegulatoryChatDrawer'
 import { BootSequence, shouldShowBootSequence } from './components/BootSequence'
 import { CriticalTakeover } from './components/CriticalTakeover'
 import { PresenterMode } from './components/PresenterMode'
+import { DemoIntro } from './components/DemoIntro'
 import { ActivityBar } from './components/ActivityBar'
 import { useScenarioSocket } from './lib/useScenarioSocket'
 
@@ -16,17 +17,27 @@ const TOUR_FLAG = 'corrix_tour_shown'
 function App() {
   useScenarioSocket()
   const [booting, setBooting] = useState(shouldShowBootSequence)
+  const [introActive, setIntroActive] = useState(false)
   const [tourActive, setTourActive] = useState(false)
 
-  // Kick off the guided tour once per session, on the first demo entry
-  // (App is only mounted when the demo is launched), after boot finishes.
+  // On the first demo entry of a session (App is only mounted when the
+  // demo is launched), after boot finishes, show a short context note,
+  // which then leads into the guided tour.
   useEffect(() => {
     if (booting) return
     if (sessionStorage.getItem(TOUR_FLAG)) return
-    const t = setTimeout(() => setTourActive(true), 600)
+    const t = setTimeout(() => setIntroActive(true), 500)
     return () => clearTimeout(t)
   }, [booting])
 
+  const startTour = () => {
+    setIntroActive(false)
+    setTourActive(true)
+  }
+  const skipIntro = () => {
+    sessionStorage.setItem(TOUR_FLAG, '1')
+    setIntroActive(false)
+  }
   const endTour = () => {
     sessionStorage.setItem(TOUR_FLAG, '1')
     setTourActive(false)
@@ -54,6 +65,7 @@ function App() {
         </div>
       </div>
 
+      {introActive && <DemoIntro onStartTour={startTour} onSkip={skipIntro} />}
       {tourActive && <PresenterMode onClose={endTour} />}
     </div>
   )
