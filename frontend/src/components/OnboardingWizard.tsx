@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowLeft, ArrowRight, Factory, Plus, ShieldCheck, Trash2, Users, X } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, ArrowRight, Loader2, Plus, Rocket, ShieldCheck, Trash2, Users, X } from 'lucide-react'
 import {
   ZoneGraphEditor,
   type WizardZone,
@@ -11,15 +11,17 @@ import {
 /**
  * The Bring Your Own Factory onboarding wizard, per
  * CORRIX_REAL_DATA_BUILD_PLAN.md Steps 11-13: identity, zones (the
- * zone/adjacency graph editor, Step 12), workforce, permits, and review
- * (Step 13, still a placeholder here). Five stops matching CORRIX_
- * REAL_DATA.md §2's product order.
+ * zone/adjacency graph editor), workforce, permits, and review (POSTs
+ * the assembled FactoryProfile to POST /api/factory). Five stops
+ * matching CORRIX_REAL_DATA.md §2's product order.
  *
  * `workerCount`/`badgePrefix` are collected here per CORRIX_REAL_DATA.md
  * §2 Step 3 but have no home in FactoryProfile's persisted schema yet;
  * they inform the Virtual Sensor Panel's badge scaffolding later, not
  * this POST payload.
  */
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
 
 const INDUSTRIES = [
   { value: 'steel', label: 'Steel' },
@@ -316,22 +318,182 @@ function StepPermits({ data, setData }: { data: WizardData; setData: (d: WizardD
   )
 }
 
-function StepReviewPlaceholder() {
+interface FactoryPayload {
+  factory_id: string
+  name: string
+  industry: string
+  location: string | null
+  layout: { zones: WizardZone[]; adjacency: WizardZoneAdjacencyEdge[] }
+  permit_types_in_use: string[]
+  shift_pattern: {
+    shift_id: string
+    start_time: string
+    end_time: string
+    changeover_window_minutes: number
+    zones: string[]
+  }[]
+  data_source: 'csv'
+  created_at: string
+}
+
+function slugify(name: string): string {
+  const base = name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-+|-+$)/g, '')
+  const suffix = Math.random().toString(36).slice(2, 8)
+  return `${base || 'factory'}-${suffix}`
+}
+
+/** Combines a wizard shift's HH:MM fields with today's date into full
+ * ISO datetimes, rolling the end time to the next day for an overnight
+ * shift (end <= start). ShiftRecord models a single dated interval, not
+ * a repeating pattern, so "today" stands in for the recurring shift's
+ * reference day. */
+function shiftToIsoRange(startTime: string, endTime: string): { start: string; end: string } {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const [startHour, startMinute] = startTime.split(':').map(Number)
+  const start = new Date(today)
+  start.setHours(startHour, startMinute, 0, 0)
+
+  const [endHour, endMinute] = endTime.split(':').map(Number)
+  const end = new Date(today)
+  end.setHours(endHour, endMinute, 0, 0)
+  if (end.getTime() <= start.getTime()) end.setDate(end.getDate() + 1)
+
+  return { start: start.toISOString(), end: end.toISOString() }
+}
+
+function buildFactoryPayload(data: WizardData): FactoryPayload {
+  const permit_types_in_use = [
+    ...data.permitTypesInUse,
+    ...(data.otherPermitText.trim() ? ['unmapped_permit_type'] : []),
+  ]
+
+  const shift_pattern = data.shifts.map((s) => {
+    const { start, end } = shiftToIsoRange(s.startTime, s.endTime)
+    return {
+      shift_id: s.shiftId,
+      start_time: start,
+      end_time: end,
+      changeover_window_minutes: s.changeoverWindowMinutes,
+      zones: s.zoneIds
+        .split(',')
+        .map((z) => z.trim())
+        .filter(Boolean),
+    }
+  })
+
+  return {
+    factory_id: slugify(data.name),
+    name: data.name,
+    industry: data.industry,
+    location: data.location.trim() || null,
+    layout: { zones: data.zones, adjacency: data.adjacency },
+    permit_types_in_use,
+    shift_pattern,
+    data_source: 'csv',
+    created_at: new Date().toISOString(),
+  }
+}
+
+type SubmitState =
+  | { status: 'idle' }
+  | { status: 'submitting' }
+  | { status: 'error'; message: string }
+  | { status: 'success'; factoryId: string }
+
+function summaryRow(label: string, value: string) {
   return (
-    <div className="flex flex-col items-center gap-3 py-10 text-center">
-      <Factory size={28} className="text-[var(--color-accent)]" aria-hidden="true" />
-      <p className="text-sm text-[var(--color-text-secondary)]">
-        The review screen and POST /api/factory arrive in the next step of this build.
-      </p>
-      <p className="text-xs text-[var(--color-text-tertiary)]">Review &amp; launch — Step 13</p>
+    <div className="flex items-center justify-between border-b border-[var(--color-hairline)] py-1.5 text-sm last:border-0">
+      <span className="text-[var(--color-text-tertiary)]">{label}</span>
+      <span className="text-[var(--color-text-primary)]">{value}</span>
     </div>
   )
 }
 
-export function OnboardingWizard({ onExit }: { onExit: () => void }) {
+function StepReview({ data, submitState }: { data: WizardData; submitState: SubmitState }) {
+  const industryLabel = INDUSTRIES.find((i) => i.value === data.industry)?.label ?? data.industry
+  const permitLabels = data.permitTypesInUse
+    .map((v) => PERMIT_TYPES.find((p) => p.value === v)?.label ?? v)
+    .concat(data.otherPermitText.trim() ? [data.otherPermitText.trim()] : [])
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <span className="eyebrow">Identity</span>
+        <div className="tactical-tile mt-1.5 p-3">
+          {summaryRow('Name', data.name)}
+          {summaryRow('Industry', industryLabel)}
+          {summaryRow('Location', data.location.trim() || 'Not specified')}
+        </div>
+      </div>
+
+      <div>
+        <span className="eyebrow">Zones &amp; adjacency</span>
+        <div className="tactical-tile mt-1.5 p-3">
+          {summaryRow('Zones', String(data.zones.length))}
+          {summaryRow('Adjacency edges', String(data.adjacency.length))}
+        </div>
+      </div>
+
+      <div>
+        <span className="eyebrow">Workforce</span>
+        <div className="tactical-tile mt-1.5 p-3">
+          {summaryRow('Worker count', data.workerCount || 'Not specified')}
+          {summaryRow('Badge prefix', data.badgePrefix || 'Not specified')}
+          {summaryRow('Shifts', String(data.shifts.length))}
+        </div>
+      </div>
+
+      <div>
+        <span className="eyebrow">Permits in use</span>
+        <div className="tactical-tile mt-1.5 p-3">
+          {permitLabels.length > 0 ? (
+            summaryRow('Types', permitLabels.join(', '))
+          ) : (
+            summaryRow('Types', 'None selected')
+          )}
+        </div>
+      </div>
+
+      {submitState.status === 'error' && (
+        <div
+          className="flex items-start gap-2 rounded-[var(--radius-control)] border px-3 py-2 text-xs"
+          style={{ borderColor: 'color-mix(in srgb, var(--color-risk-critical) 45%, transparent)', color: 'var(--color-risk-critical)' }}
+        >
+          <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
+          <span>{submitState.message}</span>
+        </div>
+      )}
+
+      {submitState.status === 'success' && (
+        <div
+          className="flex items-center gap-2 rounded-[var(--radius-control)] border px-3 py-2 text-xs"
+          style={{ borderColor: 'color-mix(in srgb, var(--color-risk-safe) 45%, transparent)', color: 'var(--color-risk-safe)' }}
+        >
+          <ShieldCheck size={14} aria-hidden="true" />
+          <span>Factory {submitState.factoryId} created. Entering the Live Command Center…</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function OnboardingWizard({
+  onExit,
+  onLaunched,
+}: {
+  onExit: () => void
+  onLaunched: (factoryId: string) => void
+}) {
   const [step, setStep] = useState(1)
   const [data, setData] = useState<WizardData>(initialWizardData)
   const [direction, setDirection] = useState(1)
+  const [submitState, setSubmitState] = useState<SubmitState>({ status: 'idle' })
 
   const goTo = (next: number) => {
     setDirection(next > step ? 1 : -1)
@@ -339,6 +501,33 @@ export function OnboardingWizard({ onExit }: { onExit: () => void }) {
   }
 
   const nextEnabled = canAdvance(step, data)
+
+  const launch = async () => {
+    if (submitState.status === 'submitting') return
+    setSubmitState({ status: 'submitting' })
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/factory`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildFactoryPayload(data)),
+      })
+      const body = await response.json()
+      if (!response.ok) {
+        setSubmitState({
+          status: 'error',
+          message: typeof body.detail === 'string' ? body.detail : 'The factory could not be created.',
+        })
+        return
+      }
+      setSubmitState({ status: 'success', factoryId: body.factoryId })
+      onLaunched(body.factoryId)
+    } catch {
+      setSubmitState({
+        status: 'error',
+        message: 'Could not reach the backend to create the factory. Confirm it is running and reachable.',
+      })
+    }
+  }
 
   return (
     <div className="ambient-backdrop relative flex min-h-screen items-center justify-center p-4">
@@ -405,7 +594,7 @@ export function OnboardingWizard({ onExit }: { onExit: () => void }) {
               )}
               {step === 3 && <StepWorkforce data={data} setData={setData} />}
               {step === 4 && <StepPermits data={data} setData={setData} />}
-              {step === 5 && <StepReviewPlaceholder />}
+              {step === 5 && <StepReview data={data} submitState={submitState} />}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -414,22 +603,39 @@ export function OnboardingWizard({ onExit }: { onExit: () => void }) {
           <button
             type="button"
             onClick={() => goTo(step - 1)}
-            disabled={step === 1}
+            disabled={step === 1 || submitState.status === 'submitting'}
             className="flex items-center gap-1.5 rounded-[var(--radius-control)] px-3 py-2 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] disabled:opacity-30"
           >
             <ArrowLeft size={15} aria-hidden="true" />
             Back
           </button>
-          <button
-            type="button"
-            onClick={() => goTo(step + 1)}
-            disabled={!nextEnabled || step === 5}
-            className="flex items-center gap-1.5 rounded-[var(--radius-control)] border px-4 py-2 text-sm font-medium text-[var(--color-accent)] disabled:opacity-30"
-            style={{ borderColor: 'color-mix(in srgb, var(--color-accent) 45%, transparent)', backgroundColor: 'var(--color-accent-dim)' }}
-          >
-            {step === 5 ? 'Review' : 'Next'}
-            <ArrowRight size={15} aria-hidden="true" />
-          </button>
+          {step === 5 ? (
+            <button
+              type="button"
+              onClick={launch}
+              disabled={submitState.status === 'submitting' || submitState.status === 'success'}
+              className="flex items-center gap-1.5 rounded-[var(--radius-control)] border px-4 py-2 text-sm font-medium text-[var(--color-accent)] disabled:opacity-30"
+              style={{ borderColor: 'color-mix(in srgb, var(--color-accent) 45%, transparent)', backgroundColor: 'var(--color-accent-dim)' }}
+            >
+              {submitState.status === 'submitting' ? (
+                <Loader2 size={15} className="animate-spin" aria-hidden="true" />
+              ) : (
+                <Rocket size={15} aria-hidden="true" />
+              )}
+              {submitState.status === 'submitting' ? 'Launching…' : 'Launch'}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => goTo(step + 1)}
+              disabled={!nextEnabled}
+              className="flex items-center gap-1.5 rounded-[var(--radius-control)] border px-4 py-2 text-sm font-medium text-[var(--color-accent)] disabled:opacity-30"
+              style={{ borderColor: 'color-mix(in srgb, var(--color-accent) 45%, transparent)', backgroundColor: 'var(--color-accent-dim)' }}
+            >
+              Next
+              <ArrowRight size={15} aria-hidden="true" />
+            </button>
+          )}
         </div>
       </div>
     </div>

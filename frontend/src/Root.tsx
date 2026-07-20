@@ -16,6 +16,7 @@ type View = 'landing' | 'onboarding' | 'demo-console' | 'live-console'
  */
 export function Root() {
   const [view, setView] = useState<View>('landing')
+  const [liveFactoryId, setLiveFactoryId] = useState<string | null>(null)
 
   if (view === 'landing') {
     return (
@@ -25,7 +26,17 @@ export function Root() {
       />
     )
   }
-  if (view === 'onboarding') return <OnboardingWizard onExit={() => setView('landing')} />
-  if (view === 'live-console') return <div>Live console coming soon</div>
+  if (view === 'onboarding') {
+    return (
+      <OnboardingWizard
+        onExit={() => setView('landing')}
+        onLaunched={(factoryId) => {
+          setLiveFactoryId(factoryId)
+          setView('live-console')
+        }}
+      />
+    )
+  }
+  if (view === 'live-console') return <div>Live console coming soon (factory {liveFactoryId})</div>
   return <App /> // view === 'demo-console'
 }
