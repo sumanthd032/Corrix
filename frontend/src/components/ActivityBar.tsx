@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Loader2 } from 'lucide-react'
 import { useCorrixStore } from '../store/useCorrixStore'
+import { useOverrideCountdown } from '../lib/useOverrideCountdown'
 
 /**
  * A global, prominent "the system is working" cue for the slow, asynchronous
@@ -16,14 +17,28 @@ import { useCorrixStore } from '../store/useCorrixStore'
 export function ActivityBar() {
   const councilStage = useCorrixStore((s) => s.councilStage)
   const chatPending = useCorrixStore((s) => s.chatPending)
+  const countdown = useOverrideCountdown()
 
   let title = ''
   if (councilStage === 'convening') title = 'Safety Council convening'
   else if (councilStage === 'deliberating') title = 'Council deliberating'
   else if (chatPending) title = 'Searching the regulatory corpus'
 
-  const detail =
-    councilStage === 'deliberating' ? 'Override window open, the agents are reasoning' : chatPending && councilStage ? 'and searching the regulatory corpus' : ''
+  // During the live override window the big number below becomes the veto
+  // countdown itself, so the wait reads as a deliberate step with a clock on
+  // it, not lag. Outside it, the number is the elapsed timer.
+  const inOverrideWindow = councilStage === 'deliberating' && countdown.active && !countdown.chairRuling
+
+  let detail = ''
+  if (councilStage === 'deliberating') {
+    detail = countdown.active
+      ? countdown.chairRuling
+        ? 'Override window closed, the Chair is ruling now'
+        : 'A deliberate pause to veto before the Chair rules'
+      : 'Override window open, the agents are reasoning'
+  } else if (chatPending && councilStage) {
+    detail = 'and searching the regulatory corpus'
+  }
 
   const busy = title.length > 0
 
@@ -47,8 +62,9 @@ export function ActivityBar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [busy])
 
-  const reassurance =
-    elapsed > 12
+  const reassurance = inOverrideWindow
+    ? null
+    : elapsed > 12
       ? 'Still working. The reasoning runs live on a small demo server, so hang tight, this is real, not canned.'
       : elapsed > 4
         ? 'This can take a few seconds on the free-tier demo server. The reasoning is running live.'
@@ -110,23 +126,25 @@ export function ActivityBar() {
                   {title}
                 </span>
                 <span className="tnum ml-auto shrink-0 text-sm font-semibold text-[var(--color-accent)]">
-                  {elapsed.toFixed(0)}s
+                  {inOverrideWindow ? `${countdown.remaining}s to veto` : `${elapsed.toFixed(0)}s`}
                 </span>
               </div>
               {detail && (
                 <div className="mt-0.5 truncate text-xs text-[var(--color-text-secondary)]">{detail}</div>
               )}
               <AnimatePresence mode="wait">
-                <motion.div
-                  key={reassurance}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.25 }}
-                  className="mt-1 text-[11px] leading-snug text-[var(--color-text-tertiary)]"
-                >
-                  {reassurance}
-                </motion.div>
+                {reassurance && (
+                  <motion.div
+                    key={reassurance}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="mt-1 text-[11px] leading-snug text-[var(--color-text-tertiary)]"
+                  >
+                    {reassurance}
+                  </motion.div>
+                )}
               </AnimatePresence>
             </div>
           </motion.div>

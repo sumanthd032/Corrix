@@ -6,6 +6,7 @@ import { RiskBadge } from './RiskBadge'
 import { CouncilScene3D } from './CouncilScene3D'
 import { WhatIfModal } from './WhatIfModal'
 import { SendAlertModal } from './SendAlertModal'
+import { useOverrideCountdown } from '../lib/useOverrideCountdown'
 import type { CouncilAgentKey, TriggerReason } from '../types'
 
 const AGENTS: { key: CouncilAgentKey; label: string; short: string; Icon: typeof Gauge }[] = [
@@ -36,6 +37,7 @@ export function CouncilPanel() {
   const liveEvidence = useCorrixStore((s) => s.liveEvidence)
   const connectionMode = useCorrixStore((s) => s.connectionMode)
   const overrideFocusNonce = useCorrixStore((s) => s.overrideFocusNonce)
+  const countdown = useOverrideCountdown()
   const [noteText, setNoteText] = useState('')
   const [whatIfOpen, setWhatIfOpen] = useState(false)
   const [alertOpen, setAlertOpen] = useState(false)
@@ -262,9 +264,27 @@ export function CouncilPanel() {
           className="flex flex-col gap-2 overflow-hidden rounded-[var(--radius-control)] border p-3"
           style={{ borderColor: 'color-mix(in srgb, var(--color-accent) 40%, transparent)', background: 'var(--color-accent-dim)' }}
         >
+          {connectionMode === 'live' && countdown.active && (
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-baseline justify-between">
+                <span className="eyebrow text-[var(--color-accent)]">
+                  {countdown.chairRuling ? 'Chair ruling' : 'Override window open'}
+                </span>
+                <span className="tnum text-sm font-semibold text-[var(--color-accent)]">
+                  {countdown.chairRuling ? 'closing…' : `${countdown.remaining}s`}
+                </span>
+              </div>
+              <div className="h-1 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--color-accent)_18%,transparent)]">
+                <div
+                  className="h-full rounded-full bg-[var(--color-accent)]"
+                  style={{ width: `${countdown.fraction * 100}%`, transition: 'width 0.2s linear' }}
+                />
+              </div>
+            </div>
+          )}
           <p className="text-xs text-[var(--color-text-secondary)]">
             {connectionMode === 'live'
-              ? 'Council deliberating. Add a note within the window to override, or it resolves automatically.'
+              ? 'This is a deliberate pause so a safety officer can veto before the Chair rules. Add a note to override now, or it resolves on its own when the window closes.'
               : 'Council paused. Add a note for the Chair before resuming.'}
           </p>
           <textarea

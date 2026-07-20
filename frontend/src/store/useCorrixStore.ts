@@ -14,6 +14,13 @@ import { jitterForBadge } from '../lib/jitter'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
 
+/** The Safety Officer Override window, in ms. Matches the backend's
+ * OVERRIDE_WINDOW_SECONDS (app/api/websocket.py): the Council genuinely pauses
+ * for this long between the four agents reporting and the Chair ruling, so a
+ * human can veto. Surfaced as a live countdown so the pause reads as a
+ * deliberate step, not lag. */
+export const OVERRIDE_WINDOW_MS = 8000
+
 type ConnectionMode = 'mock' | 'live'
 
 interface CorrixState {
@@ -27,6 +34,11 @@ interface CorrixState {
   chatPending: boolean
   overridePaused: boolean
   overrideNote: string
+  /** Timestamp (ms) when the live override window closes and the Chair rules,
+   * or null when no window is open. Drives the override countdown. Only set in
+   * live mode, where the pause is real and timed; mock-mode override waits on
+   * the user, so it has no deadline. */
+  deliberationDeadline: number | null
   /** Bumped when the top-bar Override control asks the Council panel to
    * bring its note field into view and focus it (used in live mode,
    * where the note is entered in the panel during the deliberation
@@ -78,6 +90,7 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
   chatPending: false,
   overridePaused: false,
   overrideNote: '',
+  deliberationDeadline: null,
   overrideFocusNonce: 0,
 
   connectionMode: 'mock',
@@ -120,7 +133,7 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
     const sender = get().liveOverrideSender
     if (get().connectionMode === 'live' && sender) {
       sender(note)
-      set({ overridePaused: false, overrideNote: note })
+      set({ overridePaused: false, overrideNote: note, deliberationDeadline: null })
       return
     }
     set((state) => ({
@@ -188,6 +201,7 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
       verdict: null,
       liveEvidence: null,
       overridePaused: false,
+      deliberationDeadline: null,
       councilStage: 'idle',
       openChallengeLabel: null,
       eroFired: null,
@@ -205,13 +219,19 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
   },
   startLiveConvening: () => set({ councilStage: 'convening', liveEvidence: null, verdict: null }),
   applyLiveDeliberating: (evidence) =>
-    set({ councilStage: 'deliberating', liveEvidence: evidence, overridePaused: true }),
+    set({
+      councilStage: 'deliberating',
+      liveEvidence: evidence,
+      overridePaused: true,
+      deliberationDeadline: Date.now() + OVERRIDE_WINDOW_MS,
+    }),
   applyLiveVerdict: (verdict) =>
     set((state) => ({
       councilStage: 'verdict_reached',
       verdict,
       liveEvidence: null,
       overridePaused: false,
+      deliberationDeadline: null,
       alerts: [
         {
           id: `alert-verdict-${Date.now()}`,
@@ -242,6 +262,8 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
   applyCouncilError: (message) =>
     set((state) => ({
       councilStage: 'idle',
+      overridePaused: false,
+      deliberationDeadline: null,
       alerts: [
         {
           id: `alert-error-${Date.now()}`,
