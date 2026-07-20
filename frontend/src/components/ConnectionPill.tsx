@@ -7,20 +7,26 @@ import { Tooltip } from './Tooltip'
 /**
  * The backend connection indicator. Prominent and amber when the backend
  * engine isn't reachable, so it's obvious the dashboard is on demo data;
- * hovering explains what to do. A short grace period after mount avoids
- * flashing the warning during the normal moment before the WebSocket
- * connects on a healthy load.
+ * hovering explains what to do. The initial connect is slow on the free-tier
+ * server (up to ~20s), so before the backend has ever connected the pill
+ * stays "Connecting" for a long grace and does not cry "offline". Once it has
+ * connected at least once, a later drop flips to the offline warning quickly.
  */
-const GRACE_MS = 4000
+const INITIAL_GRACE_MS = 25000
+const RECONNECT_GRACE_MS = 4000
 
 export function ConnectionPill() {
   const mode = useCorrixStore((s) => s.connectionMode)
+  const hasEverConnected = useCorrixStore((s) => s.hasEverConnected)
   const [graceOver, setGraceOver] = useState(false)
 
+  const graceMs = hasEverConnected ? RECONNECT_GRACE_MS : INITIAL_GRACE_MS
+
   useEffect(() => {
-    const t = setTimeout(() => setGraceOver(true), GRACE_MS)
+    setGraceOver(false)
+    const t = setTimeout(() => setGraceOver(true), graceMs)
     return () => clearTimeout(t)
-  }, [])
+  }, [graceMs])
 
   const state: 'live' | 'connecting' | 'offline' =
     mode === 'live' ? 'live' : graceOver ? 'offline' : 'connecting'

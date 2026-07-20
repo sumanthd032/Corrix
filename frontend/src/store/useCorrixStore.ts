@@ -34,6 +34,10 @@ interface CorrixState {
   overrideFocusNonce: number
 
   connectionMode: ConnectionMode
+  /** True once the live backend has connected at least once this session.
+   * Lets the UI tell an initial connect (slow on the free-tier server, not a
+   * failure) apart from a mid-session drop (a real problem worth flagging). */
+  hasEverConnected: boolean
   liveEvidence: CouncilEvidence | null
   liveOverrideSender: ((note: string) => void) | null
   openChallengeSender: (() => void) | null
@@ -77,6 +81,7 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
   overrideFocusNonce: 0,
 
   connectionMode: 'mock',
+  hasEverConnected: false,
   liveEvidence: null,
   liveOverrideSender: null,
   openChallengeSender: null,
@@ -173,7 +178,8 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
     }
   },
 
-  setConnectionMode: (mode) => set({ connectionMode: mode }),
+  setConnectionMode: (mode) =>
+    set(mode === 'live' ? { connectionMode: mode, hasEverConnected: true } : { connectionMode: mode }),
   setLiveOverrideSender: (fn) => set({ liveOverrideSender: fn }),
   setOpenChallengeSender: (fn) => set({ openChallengeSender: fn }),
   setOpenChallengeLabel: (label) => set({ openChallengeLabel: label }),

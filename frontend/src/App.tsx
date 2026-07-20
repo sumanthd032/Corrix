@@ -10,6 +10,7 @@ import { CriticalTakeover } from './components/CriticalTakeover'
 import { PresenterMode } from './components/PresenterMode'
 import { DemoIntro } from './components/DemoIntro'
 import { ActivityBar } from './components/ActivityBar'
+import { ConnectingOverlay } from './components/ConnectingOverlay'
 import { DataInsights } from './components/DataInsights'
 import { ProjectAssistant } from './components/ProjectAssistant'
 import { ScrollColumn } from './components/ScrollColumn'
@@ -53,6 +54,7 @@ function App() {
       {booting && <BootSequence onComplete={() => setBooting(false)} />}
       <CriticalTakeover />
       <ActivityBar />
+      <ConnectingOverlay />
 
       <TopControlBar onStartTour={() => setTourActive(true)} onOpenInsights={() => setInsightsOpen(true)} />
       <TelemetryStrip />
