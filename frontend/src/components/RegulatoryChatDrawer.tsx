@@ -1,22 +1,130 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { BookOpen, ChevronUp, Send } from 'lucide-react'
+import { BookOpen, ChevronUp, MessageCircleQuestion, Send, X } from 'lucide-react'
 import { useCorrixStore } from '../store/useCorrixStore'
+
+const NUDGE_FLAG = 'corrix_reg_nudge_dismissed'
+const TOUR_FLAG = 'corrix_tour_shown'
 
 export function RegulatoryChatDrawer() {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState('')
+  const [showNudge, setShowNudge] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
   const chatHistory = useCorrixStore((s) => s.chatHistory)
   const chatPending = useCorrixStore((s) => s.chatPending)
   const sendChatMessage = useCorrixStore((s) => s.sendChatMessage)
 
+  // A one-time contextual nudge pointing at this feature, shown a few
+  // seconds after onboarding finishes (so it doesn't collide with the
+  // guided tour) and auto-hidden after a while. Dismissed for the session
+  // once seen or acted on.
+  useEffect(() => {
+    if (sessionStorage.getItem(NUDGE_FLAG)) return
+    let hideTimer: ReturnType<typeof setTimeout> | null = null
+    const poll = setInterval(() => {
+      // wait until the guided tour has run (or been skipped) and the drawer
+      // is still closed and untouched
+      if (!sessionStorage.getItem(TOUR_FLAG)) return
+      clearInterval(poll)
+      const showTimer = setTimeout(() => {
+        setShowNudge((prev) => {
+          if (sessionStorage.getItem(NUDGE_FLAG)) return prev
+          return true
+        })
+        hideTimer = setTimeout(() => setShowNudge(false), 13000)
+      }, 2500)
+      // ensure showTimer is cleared if unmounted before it fires
+      hideTimer = showTimer
+    }, 1000)
+    return () => {
+      clearInterval(poll)
+      if (hideTimer) clearTimeout(hideTimer)
+    }
+  }, [])
+
+  const dismissNudge = () => {
+    sessionStorage.setItem(NUDGE_FLAG, '1')
+    setShowNudge(false)
+  }
+
+  // Once the drawer is opened by any means, the user has found the feature;
+  // never nudge them about it again this session.
+  useEffect(() => {
+    if (open) {
+      sessionStorage.setItem(NUDGE_FLAG, '1')
+      setShowNudge(false)
+    }
+  }, [open])
+
+  const openFromNudge = () => {
+    dismissNudge()
+    setOpen(true)
+    setTimeout(() => inputRef.current?.focus(), 350)
+  }
+
   return (
     <motion.div
-      className="glass-panel flex flex-col overflow-hidden"
+      className="glass-panel relative flex flex-col overflow-visible"
       data-tour="regulatory"
       animate={{ height: open ? 320 : 48 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
     >
+      {/* Contextual nudge */}
+      <AnimatePresence>
+        {showNudge && !open && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.97 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 24 }}
+            className="absolute bottom-[54px] left-4 z-30 w-[300px]"
+          >
+            <div
+              className="glass-panel flex items-start gap-3 p-3.5"
+              style={{ boxShadow: '0 0 26px -8px color-mix(in srgb, var(--color-accent) 60%, transparent), var(--shadow-raised)' }}
+            >
+              <div
+                className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-control)]"
+                style={{ background: 'var(--color-accent-dim)' }}
+              >
+                <MessageCircleQuestion size={17} className="text-[var(--color-accent)]" aria-hidden="true" />
+              </div>
+              <div className="flex flex-col gap-2">
+                <div>
+                  <p className="text-sm font-semibold text-[var(--color-text-primary)]">Have a compliance question?</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-[var(--color-text-secondary)]">
+                    Ask the OISD, Factories Act, and DGMS regulations directly and get answers with real clause citations.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={openFromNudge}
+                  className="self-start rounded-[var(--radius-control)] border px-3 py-1.5 text-xs font-medium text-[var(--color-accent)]"
+                  style={{ borderColor: 'color-mix(in srgb, var(--color-accent) 45%, transparent)', backgroundColor: 'var(--color-accent-dim)' }}
+                >
+                  Ask a question
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={dismissNudge}
+                className="ml-auto -mr-1 -mt-1 shrink-0 rounded-[var(--radius-control)] p-1 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]"
+                aria-label="Dismiss"
+              >
+                <X size={14} aria-hidden="true" />
+              </button>
+            </div>
+            {/* pointer */}
+            <div
+              className="absolute -bottom-1 left-6 h-3 w-3 rotate-45 border-b border-r"
+              style={{ background: 'color-mix(in srgb, var(--color-surface-1) 92%, transparent)', borderColor: 'var(--color-hairline)' }}
+              aria-hidden="true"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <motion.button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -97,6 +205,7 @@ export function RegulatoryChatDrawer() {
             className="flex items-center gap-2"
           >
             <input
+              ref={inputRef}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               placeholder="Ask about OISD, Factories Act, or DGMS guidance…"
