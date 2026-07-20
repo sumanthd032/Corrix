@@ -34,3 +34,4 @@ pandas==2.2.3
 playwright==1.61.0
 python-multipart==0.0.20
 paho-mqtt==2.1.0
+asyncua==2.0.1
