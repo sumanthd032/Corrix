@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from app.ingestion.csv_ingest import replay_csv
 from app.ingestion.csv_upload_store import save_uploaded_csv
 from app.schemas.factory import FactoryProfile
+from app.security.text_sanitizer import sanitize_for_prompt
 from app.storage.factory_store import load_factory, save_factory
 
 router = APIRouter()
@@ -21,6 +22,23 @@ router = APIRouter()
 
 class SetDataSourceRequest(BaseModel):
     data_source: Literal["csv", "mqtt", "opcua"]
+
+
+def _sanitize_profile_text_fields(profile: FactoryProfile) -> None:
+    """Backend-enforced character allow-list (Step 26) on every free-text
+    wizard field, since a direct API call bypasses whatever the frontend
+    already checks. Defense in depth: none of these currently reach an
+    LLM prompt (raw_evidence identifies zones by zone_id, an auto-
+    generated "Z<n>" string, never a user-typed name), but a future
+    formatter reading them inherits this protection automatically
+    rather than needing its own sanitization pass."""
+    profile.name = sanitize_for_prompt(profile.name, max_length=120)
+    profile.industry = sanitize_for_prompt(profile.industry, max_length=60)
+    if profile.location:
+        profile.location = sanitize_for_prompt(profile.location, max_length=120)
+    for zone in profile.layout.zones:
+        zone.name = sanitize_for_prompt(zone.name, max_length=120)
+        zone.primary_role = sanitize_for_prompt(zone.primary_role, max_length=80)
 
 
 def _validate_layout(profile: FactoryProfile) -> None:
@@ -42,6 +60,7 @@ def _validate_layout(profile: FactoryProfile) -> None:
 
 @router.post("/api/factory")
 async def create_factory(profile: FactoryProfile) -> dict:
+    _sanitize_profile_text_fields(profile)
     _validate_layout(profile)
     save_factory(profile)
     return {"factoryId": profile.factory_id}

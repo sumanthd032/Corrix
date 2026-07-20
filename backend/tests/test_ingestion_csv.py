@@ -82,3 +82,20 @@ def test_replay_csv_missing_required_key_in_column_map_raises_value_error():
 
     with pytest.raises(ValueError, match="missing required keys"):
         asyncio.run(run())
+
+
+def test_replay_csv_non_numeric_concentration_raises_a_clear_value_error():
+    """Step 26 re-verification: a malformed column *type* (present, but
+    not numeric) must raise a clear error, not silently mis-parse or
+    partially import."""
+    bad_type_csv = b"""ts,zone,conc,gas
+2026-07-20T10:00:00Z,Z1,12.0,LEL
+2026-07-20T10:00:05Z,Z1,not-a-number,LEL
+"""
+
+    async def run():
+        queue: asyncio.Queue = asyncio.Queue()
+        await replay_csv(bad_type_csv, VALID_COLUMN_MAP, speed_multiplier=1_000_000.0, queue=queue)
+
+    with pytest.raises(ValueError, match="non-numeric value"):
+        asyncio.run(run())
