@@ -7,14 +7,15 @@ import { PLANT_ZONES, ZONE_BOUNDS } from '../data/plantLayout'
 import { useCorrixStore } from '../store/useCorrixStore'
 import { riskColorHex, zoneFillHex } from './RiskBadge'
 import { PlantScene3D } from './PlantScene3D'
+import { Tooltip } from './Tooltip'
 import type { RiskLevel } from '../types'
 
 type ViewMode = 'flat' | 'isometric' | '3d'
 
-const VIEW_MODES: { mode: ViewMode; label: string; Icon: typeof Square }[] = [
-  { mode: 'flat', label: 'Flat', Icon: Square },
-  { mode: 'isometric', label: 'Isometric', Icon: Box },
-  { mode: '3d', label: '3D', Icon: Boxes },
+const VIEW_MODES: { mode: ViewMode; label: string; Icon: typeof Square; hint: string }[] = [
+  { mode: 'flat', label: 'Flat', Icon: Square, hint: 'Top-down 2D schematic of the plant.' },
+  { mode: 'isometric', label: 'Isometric', Icon: Box, hint: 'A tilted 2.5D view of the same schematic.' },
+  { mode: '3d', label: '3D', Icon: Boxes, hint: 'A real 3D plant with orbit controls, risk-lit buildings, and grounding shadows.' },
 ]
 
 /**
@@ -510,21 +511,22 @@ export function PlantHeatmap() {
           role="group"
           aria-label="Plant view mode"
         >
-          {VIEW_MODES.map(({ mode, label, Icon }) => (
-            <button
-              key={mode}
-              type="button"
-              onClick={() => setViewMode(mode)}
-              aria-pressed={viewMode === mode}
-              className="flex items-center gap-1.5 rounded-[var(--radius-sharp)] px-2.5 py-1 text-xs font-medium transition-colors"
-              style={{
-                backgroundColor: viewMode === mode ? 'var(--color-accent)' : 'transparent',
-                color: viewMode === mode ? 'var(--color-base)' : 'var(--color-text-secondary)',
-              }}
-            >
-              <Icon size={13} aria-hidden="true" />
-              {label}
-            </button>
+          {VIEW_MODES.map(({ mode, label, Icon, hint }) => (
+            <Tooltip key={mode} label={`${label} view`} hint={hint}>
+              <button
+                type="button"
+                onClick={() => setViewMode(mode)}
+                aria-pressed={viewMode === mode}
+                className="flex items-center gap-1.5 rounded-[var(--radius-sharp)] px-2.5 py-1 text-xs font-medium transition-colors"
+                style={{
+                  backgroundColor: viewMode === mode ? 'var(--color-accent)' : 'transparent',
+                  color: viewMode === mode ? 'var(--color-base)' : 'var(--color-text-secondary)',
+                }}
+              >
+                <Icon size={13} aria-hidden="true" />
+                {label}
+              </button>
+            </Tooltip>
           ))}
         </div>
       </div>

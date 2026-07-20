@@ -8,6 +8,7 @@ import { RegulatoryChatDrawer } from './components/RegulatoryChatDrawer'
 import { BootSequence, shouldShowBootSequence } from './components/BootSequence'
 import { CriticalTakeover } from './components/CriticalTakeover'
 import { PresenterMode } from './components/PresenterMode'
+import { ActivityBar } from './components/ActivityBar'
 import { useScenarioSocket } from './lib/useScenarioSocket'
 
 const TOUR_FLAG = 'corrix_tour_shown'
@@ -36,6 +37,7 @@ function App() {
       <div className="ambient-backdrop pointer-events-none fixed inset-0 -z-10" aria-hidden="true" />
       {booting && <BootSequence onComplete={() => setBooting(false)} />}
       <CriticalTakeover />
+      <ActivityBar />
 
       <TopControlBar onStartTour={() => setTourActive(true)} />
       <TelemetryStrip />

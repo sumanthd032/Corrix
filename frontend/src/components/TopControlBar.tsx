@@ -137,24 +137,29 @@ export function TopControlBar({ onStartTour }: { onStartTour?: () => void }) {
       {/* Scenario selector */}
       <div className="relative flex items-center">
         <span className="eyebrow mr-2 hidden sm:inline">Scenario</span>
-        <div className="relative">
-          <select
-            value={scenarioId}
-            onChange={(e) => setScenario(e.target.value)}
-            className="appearance-none rounded-[var(--radius-control)] border border-[var(--color-hairline)] bg-[var(--color-surface-2)] py-1.5 pl-3 pr-8 font-mono-data text-xs text-[var(--color-text-primary)] outline-none transition-colors hover:border-[color-mix(in_srgb,var(--color-accent)_45%,transparent)]"
-          >
-            {SCENARIOS.map((s) => (
-              <option key={s.id} value={s.id} className="bg-[var(--color-base)] font-mono-data">
-                {s.label}
-              </option>
-            ))}
-          </select>
-          <ChevronDown
-            size={14}
-            className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)]"
-            aria-hidden="true"
-          />
-        </div>
+        <Tooltip
+          label="Scenario"
+          hint="Pick a scenario to run it live: the plant streams, the Council convenes, and a verdict lands. S1-S4 are authored incidents; S5 is a silent near-miss."
+        >
+          <div className="relative">
+            <select
+              value={scenarioId}
+              onChange={(e) => setScenario(e.target.value)}
+              className="appearance-none rounded-[var(--radius-control)] border border-[var(--color-hairline)] bg-[var(--color-surface-2)] py-1.5 pl-3 pr-8 font-mono-data text-xs text-[var(--color-text-primary)] outline-none transition-colors hover:border-[color-mix(in_srgb,var(--color-accent)_45%,transparent)]"
+            >
+              {SCENARIOS.map((s) => (
+                <option key={s.id} value={s.id} className="bg-[var(--color-base)] font-mono-data">
+                  {s.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              size={14}
+              className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)]"
+              aria-hidden="true"
+            />
+          </div>
+        </Tooltip>
       </div>
 
       <Tooltip
