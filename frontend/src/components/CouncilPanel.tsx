@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Camera, Clock, FileCheck, Gauge, Gavel, Scale } from 'lucide-react'
+import { Camera, Clock, FileCheck, FlaskConical, Gauge, Gavel, Scale } from 'lucide-react'
 import { useCorrixStore } from '../store/useCorrixStore'
 import { RiskBadge } from './RiskBadge'
 import { CouncilScene3D } from './CouncilScene3D'
+import { WhatIfModal } from './WhatIfModal'
 import type { CouncilAgentKey, TriggerReason } from '../types'
 
 const AGENTS: { key: CouncilAgentKey; label: string; short: string; Icon: typeof Gauge }[] = [
@@ -35,6 +36,7 @@ export function CouncilPanel() {
   const connectionMode = useCorrixStore((s) => s.connectionMode)
   const overrideFocusNonce = useCorrixStore((s) => s.overrideFocusNonce)
   const [noteText, setNoteText] = useState('')
+  const [whatIfOpen, setWhatIfOpen] = useState(false)
   const noteRef = useRef<HTMLTextAreaElement>(null)
 
   // When the top-bar Override control is used in live mode, bring the note
@@ -224,6 +226,15 @@ export function CouncilPanel() {
                 ))}
               </div>
             )}
+
+            <button
+              type="button"
+              onClick={() => setWhatIfOpen(true)}
+              className="mt-1 flex items-center justify-center gap-1.5 rounded-[var(--radius-control)] border border-[var(--color-hairline)] bg-[var(--color-surface-2)]/60 px-3 py-2 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:border-[color-mix(in_srgb,var(--color-accent)_45%,transparent)] hover:text-[var(--color-text-primary)]"
+            >
+              <FlaskConical size={14} aria-hidden="true" />
+              Test a mitigation (what-if)
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -263,6 +274,10 @@ export function CouncilPanel() {
           </button>
         </motion.div>
       )}
+
+      <AnimatePresence>
+        {whatIfOpen && <WhatIfModal onClose={() => setWhatIfOpen(false)} />}
+      </AnimatePresence>
     </section>
   )
 }
