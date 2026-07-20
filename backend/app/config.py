@@ -41,6 +41,14 @@ class Settings(BaseSettings):
     ero_alert_from_email: str = ""
     ero_alert_to_email: str = ""
 
+    # Bring Your Own Factory, Virtual MQTT path (CORRIX_REAL_DATA_BUILD_
+    # PLAN.md Step 17). Defaults to the public Eclipse test broker for
+    # early development; override via .env with a real broker (a local
+    # Mosquitto, or a hosted one) before the final demo, so the flagship
+    # live moment isn't dependent on a third-party service being up.
+    mqtt_broker_host: str = "test.mosquitto.org"
+    mqtt_broker_port: int = 1883
+
 
 @lru_cache
 def get_settings() -> Settings:
