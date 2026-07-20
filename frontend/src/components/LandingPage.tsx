@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { HowItWorks } from './HowItWorks'
 import './LandingPage.css'
 
 /**
@@ -10,6 +11,7 @@ import './LandingPage.css'
 export function LandingPage({ onLaunch }: { onLaunch: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rootRef = useRef<HTMLDivElement>(null)
+  const [howOpen, setHowOpen] = useState(false)
 
   useEffect(() => {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -104,7 +106,7 @@ export function LandingPage({ onLaunch }: { onLaunch: () => void }) {
           <div className="brand"><span className="m"><i /></span><b>CORRIX</b></div>
           <div className="nav-links">
             <a href="#problem">The problem</a>
-            <a href="#how">How it works</a>
+            <a href="#how" onClick={(e) => { e.preventDefault(); setHowOpen(true) }}>How it works</a>
             <a href="#capabilities">Capabilities</a>
             <a href="#proof">Evidence</a>
           </div>
@@ -136,7 +138,7 @@ export function LandingPage({ onLaunch }: { onLaunch: () => void }) {
                   Launch live demo
                   <svg className="ar" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
                 </button>
-                <a className="btn btn-ghost" href="#how">See how it works</a>
+                <button type="button" className="btn btn-ghost" onClick={() => setHowOpen(true)}>See how it works</button>
               </div>
               <div className="ticker">
                 <span className="lbl">LIVE FEED</span>
@@ -284,6 +286,8 @@ export function LandingPage({ onLaunch }: { onLaunch: () => void }) {
           <span className="muted">Compound Risk Operations · 2026</span>
         </div>
       </footer>
+
+      {howOpen && <HowItWorks onClose={() => setHowOpen(false)} />}
     </div>
   )
 }
