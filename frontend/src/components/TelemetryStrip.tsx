@@ -75,7 +75,7 @@ export function TelemetryStrip() {
   const ttc = verdict?.timeToCritical
 
   return (
-    <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-5">
+    <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-5" data-tour="telemetry">
       {/* Compound risk */}
       <Tile eyebrow="Compound Risk" Icon={ShieldCheck} accent={riskColor} glow={isElevated}>
         <div className="flex items-baseline gap-2">

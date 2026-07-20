@@ -22,7 +22,7 @@ export function AlertFeed() {
   const alerts = useCorrixStore((s) => s.alerts)
 
   return (
-    <section className="glass-panel flex flex-col gap-3 p-4">
+    <section className="glass-panel flex flex-col gap-3 p-4" data-tour="alerts">
       <div className="flex items-center gap-2">
         <Radio size={15} className="text-[var(--color-accent)]" aria-hidden="true" />
         <h2 className="text-sm font-semibold tracking-wide text-[var(--color-text-primary)]">

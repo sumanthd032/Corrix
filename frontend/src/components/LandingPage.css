@@ -1,0 +1,167 @@
+/* Corrix landing page. All selectors scoped under .corrix-landing so the
+   landing's generic class names never collide with the dashboard's global
+   styles (both index.css and Tailwind define .eyebrow/.container etc.). */
+.corrix-landing {
+  --l-base: #05080c;
+  --l-line: rgba(125, 162, 194, 0.13);
+  --l-line2: rgba(125, 162, 194, 0.26);
+  --l-tx: #eaf1f8;
+  --l-tx2: #93a6bb;
+  --l-tx3: #5c6f82;
+  --l-cy: #2dd4e8;
+  --l-cy2: #5ce6f5;
+  --l-vi: #8b5cf6;
+  --l-high: #ff8a3d;
+  --l-safe: #33c98b;
+  --l-caution: #f5c33b;
+  --l-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --l-disp: 'Space Grotesk', ui-sans-serif, system-ui, 'Segoe UI', sans-serif;
+  --l-body: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --l-maxw: 1180px;
+
+  position: relative;
+  min-height: 100vh;
+  font-family: var(--l-body);
+  color: var(--l-tx);
+  background: var(--l-base);
+  overflow-x: hidden;
+}
+.corrix-landing * { box-sizing: border-box; }
+.corrix-landing ::selection { background: rgba(45, 212, 232, 0.3); }
+.corrix-landing a { color: inherit; text-decoration: none; }
+.corrix-landing .eyebrow { font-family: var(--l-mono); font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--l-cy); }
+.corrix-landing .container { max-width: var(--l-maxw); margin: 0 auto; padding: 0 28px; }
+.corrix-landing .tnum { font-family: var(--l-mono); font-variant-numeric: tabular-nums; }
+
+.corrix-landing nav { position: sticky; top: 0; z-index: 30; backdrop-filter: blur(16px); background: linear-gradient(180deg, rgba(5, 8, 12, 0.9), rgba(5, 8, 12, 0.5)); border-bottom: 1px solid var(--l-line); }
+.corrix-landing .nav-in { display: flex; align-items: center; gap: 22px; height: 62px; }
+.corrix-landing .brand { display: flex; align-items: center; gap: 11px; }
+.corrix-landing .brand .m { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: linear-gradient(160deg, rgba(45, 212, 232, 0.24), rgba(45, 212, 232, 0.04)); border: 1px solid rgba(45, 212, 232, 0.42); box-shadow: 0 0 20px -3px rgba(45, 212, 232, 0.6); }
+.corrix-landing .brand .m i { width: 8px; height: 8px; border-radius: 99px; background: var(--l-cy); box-shadow: 0 0 10px 1px var(--l-cy); display: block; }
+.corrix-landing .brand b { font-family: var(--l-disp); font-size: 18px; letter-spacing: 0.16em; font-weight: 600; }
+.corrix-landing .nav-links { display: flex; gap: 26px; margin-left: 8px; }
+.corrix-landing .nav-links a { font-size: 14px; color: var(--l-tx2); }
+.corrix-landing .nav-links a:hover { color: var(--l-tx); }
+.corrix-landing .nav-cta { margin-left: auto; }
+
+.corrix-landing .btn { display: inline-flex; align-items: center; gap: 9px; font-size: 14.5px; font-weight: 600; padding: 11px 20px; border-radius: 9px; cursor: pointer; border: 1px solid transparent; transition: transform 0.15s, box-shadow 0.2s, border-color 0.2s; background: none; font-family: inherit; }
+.corrix-landing .btn-primary { color: var(--l-base); background: linear-gradient(180deg, var(--l-cy2), var(--l-cy)); box-shadow: 0 0 28px -6px rgba(45, 212, 232, 0.85), 0 8px 18px -8px rgba(0, 0, 0, 0.7); }
+.corrix-landing .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 46px -6px rgba(45, 212, 232, 1), 0 10px 22px -8px rgba(0, 0, 0, 0.85); }
+.corrix-landing .btn-ghost { color: var(--l-tx); border-color: var(--l-line2); background: rgba(19, 28, 38, 0.5); }
+.corrix-landing .btn-ghost:hover { border-color: rgba(45, 212, 232, 0.5); transform: translateY(-1px); }
+.corrix-landing .btn .ar { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+.corrix-landing .hero { position: relative; min-height: calc(100vh - 62px); display: flex; flex-direction: column; justify-content: center; padding: 40px 0 30px; overflow: hidden; }
+.corrix-landing #amb { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+.corrix-landing .hero-glow { position: absolute; inset: 0; z-index: 1; pointer-events: none; background: radial-gradient(900px 520px at 22% 30%, rgba(45, 212, 232, 0.14), transparent 60%), radial-gradient(760px 520px at 92% 80%, rgba(139, 92, 246, 0.12), transparent 58%); }
+.corrix-landing .hero .container { position: relative; z-index: 2; }
+.corrix-landing .hero-grid { display: grid; grid-template-columns: 1.04fr 0.96fr; gap: 54px; align-items: center; }
+
+.corrix-landing .status-pill { display: inline-flex; align-items: center; gap: 8px; font-family: var(--l-mono); font-size: 11px; letter-spacing: 0.14em; color: var(--l-cy); border: 1px solid rgba(45, 212, 232, 0.35); background: rgba(45, 212, 232, 0.06); padding: 6px 12px; border-radius: 99px; margin-bottom: 26px; }
+.corrix-landing .status-pill .d { width: 7px; height: 7px; border-radius: 99px; background: var(--l-cy); box-shadow: 0 0 9px var(--l-cy); animation: l-pulse 1.7s infinite; }
+.corrix-landing h1 { font-family: var(--l-disp); font-weight: 600; font-size: clamp(40px, 5.6vw, 68px); line-height: 1; letter-spacing: -0.03em; margin: 0 0 22px; text-wrap: balance; }
+.corrix-landing h1 .grad { background: linear-gradient(110deg, var(--l-cy2) 10%, var(--l-vi)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.corrix-landing .lede { font-size: 18.5px; line-height: 1.6; color: var(--l-tx2); max-width: 52ch; margin: 0 0 32px; }
+.corrix-landing .hero-cta { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+
+.corrix-landing .ticker { margin-top: 30px; border: 1px solid var(--l-line); border-radius: 9px; background: rgba(8, 12, 18, 0.6); overflow: hidden; height: 34px; display: flex; align-items: center; }
+.corrix-landing .ticker .lbl { flex: none; font-family: var(--l-mono); font-size: 10px; letter-spacing: 0.14em; color: var(--l-base); background: var(--l-cy); padding: 0 10px; height: 100%; display: flex; align-items: center; }
+.corrix-landing .ticker .stream { overflow: hidden; white-space: nowrap; flex: 1; }
+.corrix-landing .ticker .stream span { display: inline-block; font-family: var(--l-mono); font-size: 11.5px; color: var(--l-tx2); padding-left: 26px; animation: l-scrollx 26s linear infinite; }
+.corrix-landing .ticker b { color: var(--l-tx); }
+.corrix-landing .ticker .up { color: var(--l-high); }
+.corrix-landing .ticker .ok { color: var(--l-safe); }
+
+.corrix-landing .fusion { position: relative; border: 1px solid var(--l-line2); border-radius: 16px; padding: 18px; background: linear-gradient(180deg, rgba(19, 28, 38, 0.78), rgba(9, 13, 20, 0.9)); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 40px 80px -34px rgba(0, 0, 0, 0.9), 0 0 60px -30px rgba(45, 212, 232, 0.5); }
+.corrix-landing .f-head { display: flex; align-items: center; gap: 8px; font-family: var(--l-mono); font-size: 10.5px; letter-spacing: 0.12em; color: var(--l-tx2); padding: 2px 4px 12px; }
+.corrix-landing .f-head .ld { width: 7px; height: 7px; border-radius: 99px; background: var(--l-high); box-shadow: 0 0 9px var(--l-high); animation: l-pulse 1.3s infinite; }
+.corrix-landing .signals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.corrix-landing .sig { border: 1px solid var(--l-line); border-radius: 10px; padding: 10px; background: rgba(6, 9, 13, 0.5); }
+.corrix-landing .sig .k { font-family: var(--l-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--l-tx3); display: flex; align-items: center; gap: 5px; }
+.corrix-landing .sig .k svg { width: 11px; height: 11px; stroke: var(--l-tx2); fill: none; stroke-width: 1.8; }
+.corrix-landing .sig .v { font-family: var(--l-mono); font-size: 14px; font-weight: 600; margin-top: 6px; color: var(--l-tx); display: flex; align-items: center; gap: 5px; }
+.corrix-landing .sig .v .arw { color: var(--l-high); animation: l-bob 1.4s ease-in-out infinite; }
+.corrix-landing .funnel { width: 100%; height: 104px; display: block; }
+.corrix-landing .verdict-bar { display: flex; align-items: center; gap: 12px; border-radius: 11px; padding: 14px 16px; border: 1px solid rgba(255, 138, 61, 0.5); background: linear-gradient(180deg, rgba(255, 138, 61, 0.16), rgba(255, 138, 61, 0.05)); animation: l-vpulse 2.2s ease-in-out infinite; }
+.corrix-landing .verdict-bar .diamond { width: 16px; height: 16px; background: var(--l-high); transform: rotate(45deg); box-shadow: 0 0 12px var(--l-high); flex: none; }
+.corrix-landing .verdict-bar .txt { font-family: var(--l-disp); font-weight: 600; font-size: 15px; color: var(--l-high); letter-spacing: 0.01em; }
+.corrix-landing .verdict-bar .conf { margin-left: auto; font-family: var(--l-mono); font-size: 12px; color: var(--l-tx2); }
+
+.corrix-landing .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin-top: 20px; border: 1px solid var(--l-line); border-radius: 14px; overflow: hidden; background: var(--l-line); }
+.corrix-landing .metric { background: linear-gradient(180deg, rgba(19, 28, 38, 0.7), rgba(9, 13, 20, 0.85)); padding: 20px; }
+.corrix-landing .metric .n { font-family: var(--l-disp); font-size: 30px; font-weight: 600; letter-spacing: -0.01em; }
+.corrix-landing .metric .l { font-size: 12.5px; color: var(--l-tx2); margin-top: 5px; }
+
+.corrix-landing section.blk { padding: 80px 0; position: relative; z-index: 2; }
+.corrix-landing .sec-head { max-width: 60ch; margin-bottom: 44px; }
+.corrix-landing .sec-head h2 { font-family: var(--l-disp); font-size: clamp(28px, 3.4vw, 38px); font-weight: 600; letter-spacing: -0.02em; margin: 14px 0 14px; text-wrap: balance; }
+.corrix-landing .sec-head p { font-size: 17px; line-height: 1.6; color: var(--l-tx2); }
+
+.corrix-landing .clauses { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.corrix-landing .clause { border: 1px solid var(--l-line); border-radius: 13px; padding: 22px; background: linear-gradient(180deg, rgba(19, 28, 38, 0.55), rgba(9, 13, 20, 0.75)); }
+.corrix-landing .clause.risk { border-color: rgba(255, 138, 61, 0.42); box-shadow: 0 0 40px -14px rgba(255, 138, 61, 0.6); }
+.corrix-landing .clause .tag { font-family: var(--l-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; }
+.corrix-landing .clause.routine .tag { color: var(--l-tx3); }
+.corrix-landing .clause.risk .tag { color: var(--l-high); }
+.corrix-landing .clause h3 { font-size: 17px; margin: 12px 0 8px; font-family: var(--l-disp); font-weight: 600; }
+.corrix-landing .clause p { font-size: 14px; line-height: 1.55; color: var(--l-tx2); margin: 0; }
+
+.corrix-landing .pipe { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.corrix-landing .step { border: 1px solid var(--l-line); border-radius: 12px; padding: 18px; background: rgba(19, 28, 38, 0.5); }
+.corrix-landing .step .k { font-family: var(--l-mono); font-size: 11px; color: var(--l-cy); }
+.corrix-landing .step h4 { font-size: 15px; margin: 9px 0 6px; font-family: var(--l-disp); font-weight: 600; }
+.corrix-landing .step p { font-size: 13px; line-height: 1.5; color: var(--l-tx2); margin: 0; }
+
+.corrix-landing .bento { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.corrix-landing .card { border: 1px solid var(--l-line); border-radius: 14px; padding: 24px; background: linear-gradient(180deg, rgba(19, 28, 38, 0.6), rgba(9, 13, 20, 0.8)); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 18px 40px -22px rgba(0, 0, 0, 0.8); transition: border-color 0.2s, transform 0.2s; }
+.corrix-landing .card:hover { border-color: rgba(45, 212, 232, 0.35); transform: translateY(-3px); }
+.corrix-landing .card.span2 { grid-column: span 2; }
+.corrix-landing .card .ic { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; background: rgba(45, 212, 232, 0.1); border: 1px solid rgba(45, 212, 232, 0.25); margin-bottom: 15px; }
+.corrix-landing .card .ic svg { width: 18px; height: 18px; stroke: var(--l-cy); fill: none; stroke-width: 1.7; }
+.corrix-landing .card h3 { font-family: var(--l-disp); font-size: 18px; font-weight: 600; margin: 0 0 9px; }
+.corrix-landing .card p { font-size: 14px; line-height: 1.58; color: var(--l-tx2); margin: 0; }
+.corrix-landing .card .chip { display: inline-block; font-family: var(--l-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--l-cy); background: rgba(45, 212, 232, 0.1); padding: 3px 8px; border-radius: 5px; margin-top: 14px; }
+
+.corrix-landing .honesty { border: 1px solid var(--l-line); border-radius: 16px; padding: 34px; background: linear-gradient(160deg, rgba(139, 92, 246, 0.1), rgba(9, 13, 20, 0.7)); display: grid; grid-template-columns: 1.1fr 1fr; gap: 30px; align-items: center; }
+.corrix-landing .honesty h2 { font-family: var(--l-disp); font-size: 27px; margin: 12px 0 12px; letter-spacing: -0.01em; }
+.corrix-landing .honesty p { font-size: 15px; line-height: 1.6; color: var(--l-tx2); }
+.corrix-landing .split { display: flex; flex-direction: column; gap: 10px; }
+.corrix-landing .split .row { display: flex; align-items: center; gap: 12px; font-size: 14px; padding: 11px 14px; border: 1px solid var(--l-line); border-radius: 10px; background: rgba(6, 9, 13, 0.4); }
+.corrix-landing .split .row b { font-family: var(--l-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+.corrix-landing .split .real b { color: var(--l-safe); }
+.corrix-landing .split .sim b { color: var(--l-caution); }
+
+.corrix-landing .tech { display: flex; flex-wrap: wrap; gap: 10px; }
+.corrix-landing .tech span { font-family: var(--l-mono); font-size: 12.5px; color: var(--l-tx2); border: 1px solid var(--l-line); border-radius: 8px; padding: 8px 13px; background: rgba(19, 28, 38, 0.5); }
+
+.corrix-landing .cta { text-align: center; border: 1px solid var(--l-line); border-radius: 20px; padding: 60px 30px; position: relative; overflow: hidden; background: radial-gradient(120% 130% at 50% 0%, rgba(45, 212, 232, 0.13), rgba(9, 13, 20, 0.7)); box-shadow: 0 40px 80px -40px rgba(0, 0, 0, 0.9); }
+.corrix-landing .cta h2 { font-family: var(--l-disp); font-size: clamp(30px, 4vw, 42px); letter-spacing: -0.02em; margin: 0 0 16px; text-wrap: balance; }
+.corrix-landing .cta p { font-size: 17px; color: var(--l-tx2); max-width: 52ch; margin: 0 auto 28px; }
+
+.corrix-landing footer { border-top: 1px solid var(--l-line); padding: 36px 0; margin-top: 70px; position: relative; z-index: 2; }
+.corrix-landing .foot-in { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.corrix-landing .foot-in .muted { font-size: 13px; color: var(--l-tx3); }
+.corrix-landing .foot-in .sp { flex: 1; }
+
+.corrix-landing .reveal { opacity: 0; transform: translateY(22px); transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1); }
+.corrix-landing .reveal.in { opacity: 1; transform: none; }
+
+@keyframes l-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@keyframes l-vpulse { 0%, 100% { box-shadow: 0 0 24px -10px rgba(255, 138, 61, 0.5); } 50% { box-shadow: 0 0 44px -8px rgba(255, 138, 61, 0.8); } }
+@keyframes l-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes l-scrollx { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes l-flow { to { stroke-dashoffset: -24; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .corrix-landing * { animation: none !important; }
+  .corrix-landing .reveal { opacity: 1; transform: none; }
+}
+@media (max-width: 960px) {
+  .corrix-landing .hero-grid { grid-template-columns: 1fr; gap: 36px; }
+  .corrix-landing .metrics { grid-template-columns: repeat(2, 1fr); }
+  .corrix-landing .clauses, .corrix-landing .pipe, .corrix-landing .bento { grid-template-columns: 1fr; }
+  .corrix-landing .card.span2 { grid-column: auto; }
+  .corrix-landing .honesty { grid-template-columns: 1fr; }
+  .corrix-landing .nav-links { display: none; }
+  .corrix-landing .hero { min-height: 0; }
+}

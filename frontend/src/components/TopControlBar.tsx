@@ -4,6 +4,7 @@ import {
   BarChart3,
   ChevronDown,
   CircleAlert,
+  Compass,
   Download,
   Loader2,
   PauseCircle,
@@ -37,7 +38,7 @@ type ReportRequestState = 'idle' | 'loading' | 'error'
 const chipClass =
   'flex items-center gap-1.5 rounded-[var(--radius-control)] border border-[var(--color-hairline)] bg-[var(--color-surface-2)]/60 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] transition-colors hover:border-[color-mix(in_srgb,var(--color-accent)_45%,transparent)] hover:text-[var(--color-text-primary)] disabled:opacity-40 disabled:hover:border-[var(--color-hairline)]'
 
-export function TopControlBar() {
+export function TopControlBar({ onStartTour }: { onStartTour?: () => void }) {
   const scenarioId = useCorrixStore((s) => s.scenarioId)
   const setScenario = useCorrixStore((s) => s.setScenario)
   const overridePaused = useCorrixStore((s) => s.overridePaused)
@@ -83,6 +84,7 @@ export function TopControlBar() {
   return (
     <motion.header
       className="glass-panel flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5"
+      data-tour="controls"
       initial={{ opacity: 0, y: -16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
@@ -191,6 +193,13 @@ export function TopControlBar() {
       </Tooltip>
 
       <div className="ml-auto flex flex-wrap items-center gap-2">
+        <Tooltip label="Guided tour" hint="Replay the walkthrough of the command center.">
+          <motion.button {...BUTTON_MOTION} type="button" onClick={onStartTour} className={chipClass}>
+            <Compass size={15} aria-hidden="true" />
+            Tour
+          </motion.button>
+        </Tooltip>
+
         <Tooltip
           label="Evaluation Report"
           hint="Precision, recall, lead time, confidence calibration, and the held-out memory-loop result across the full scenario library."

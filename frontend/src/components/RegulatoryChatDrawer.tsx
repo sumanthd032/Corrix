@@ -13,6 +13,7 @@ export function RegulatoryChatDrawer() {
   return (
     <motion.div
       className="glass-panel flex flex-col overflow-hidden"
+      data-tour="regulatory"
       animate={{ height: open ? 320 : 48 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
     >

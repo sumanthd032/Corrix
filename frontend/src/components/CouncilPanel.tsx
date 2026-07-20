@@ -53,7 +53,7 @@ export function CouncilPanel() {
   const isActive = councilStage === 'convening' || councilStage === 'deliberating'
 
   return (
-    <section className="glass-panel corner-frame flex flex-col gap-4 p-4">
+    <section className="glass-panel corner-frame flex flex-col gap-4 p-4" data-tour="council">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">

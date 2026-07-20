@@ -462,7 +462,7 @@ export function PlantHeatmap() {
   }, [propagationData, pulse])
 
   return (
-    <section className="glass-panel corner-frame relative flex min-h-[320px] flex-1 flex-col overflow-hidden">
+    <section className="glass-panel corner-frame relative flex min-h-[320px] flex-1 flex-col overflow-hidden" data-tour="map">
       {/* Header rail */}
       <div className="relative z-10 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-[var(--color-hairline)] px-4 py-3">
         <div className="flex flex-wrap items-center gap-3">
