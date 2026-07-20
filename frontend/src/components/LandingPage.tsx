@@ -106,7 +106,7 @@ export function LandingPage({ onLaunch }: { onLaunch: () => void }) {
           <div className="brand"><span className="m"><i /></span><b>CORRIX</b></div>
           <div className="nav-links">
             <a href="#problem">The problem</a>
-            <a href="#how" onClick={(e) => { e.preventDefault(); setHowOpen(true) }}>How it works</a>
+            <a href="#capabilities" onClick={(e) => { e.preventDefault(); setHowOpen(true) }}>How it works</a>
             <a href="#capabilities">Capabilities</a>
             <a href="#proof">Evidence</a>
           </div>
@@ -198,23 +198,6 @@ export function LandingPage({ onLaunch }: { onLaunch: () => void }) {
             <div className="clause routine"><span className="tag">Routine</span><h3>A rising gas reading</h3><p>Gas trending up in the collection main. The sensor team sees a curve, not an emergency.</p></div>
             <div className="clause routine"><span className="tag">Routine</span><h3>An active hot-work permit</h3><p>A permit issued for the same zone. The permit office sees valid paperwork.</p></div>
             <div className="clause risk"><span className="tag">Compound risk</span><h3>Both, before a changeover, with a worker present</h3><p>Now it is a compound risk. No existing system holds all four facts at once, so nobody raises the alarm.</p></div>
-          </div>
-        </div>
-      </section>
-
-      <section className="blk" id="how">
-        <div className="container">
-          <div className="sec-head reveal">
-            <span className="eyebrow">How it works</span>
-            <h2>A trigger convenes a five-agent Safety Council.</h2>
-            <p>When the fast detection layer fires, a LangGraph state machine convenes. Each agent sees only its own data source, so the compound pattern only emerges from fusion at the Chair, by construction, not by prompt.</p>
-          </div>
-          <div className="pipe reveal">
-            <div className="step"><div className="k">01 · Detect</div><h4>Fast path</h4><p>Rolling z-score anomaly plus a deterministic permit-conflict rule, and an independent novelty detector.</p></div>
-            <div className="step"><div className="k">02 · Convene</div><h4>Four evidence agents</h4><p>Process Safety, Permit Control, Shift Operations, Site Observer, each siloed to its own MCP data source.</p></div>
-            <div className="step"><div className="k">03 · Synthesize</div><h4>The Chair</h4><p>Only the Chair sees all four reports and names the compound risk, with a confidence and an explanation.</p></div>
-            <div className="step"><div className="k">04 · Forecast</div><h4>Time-to-critical</h4><p>A Monte Carlo rollout over the simulator's own physics returns a median and an interquartile band.</p></div>
-            <div className="step"><div className="k">05 · Respond</div><h4>Route &amp; escalate</h4><p>A risk-aware evacuation route, and a real notification on a CRITICAL verdict with hashed evidence.</p></div>
           </div>
         </div>
       </section>
