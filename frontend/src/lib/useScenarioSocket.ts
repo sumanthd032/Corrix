@@ -48,73 +48,88 @@ export function useScenarioSocket() {
 
   useEffect(() => {
     let cancelled = false
-    const ws = new WebSocket(`${WS_BASE_URL}/ws/scenario`)
-    wsRef.current = ws
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+    let backoffMs = 1500
 
-    ws.onopen = () => {
+    const connect = () => {
       if (cancelled) return
-      const store = useCorrixStore.getState()
-      store.setConnectionMode('live')
-      store.setLiveOverrideSender((note: string) => {
-        ws.send(JSON.stringify({ type: 'override', note }))
-      })
-      store.setOpenChallengeSender(() => {
+      const ws = new WebSocket(`${WS_BASE_URL}/ws/scenario`)
+      wsRef.current = ws
+
+      ws.onopen = () => {
+        if (cancelled) return
+        backoffMs = 1500 // reset backoff on a successful connection
+        const store = useCorrixStore.getState()
+        store.setConnectionMode('live')
+        store.setLiveOverrideSender((note: string) => {
+          ws.send(JSON.stringify({ type: 'override', note }))
+        })
+        store.setOpenChallengeSender(() => {
+          store.beginLivePlayback()
+          ws.send(JSON.stringify({ type: 'open_challenge' }))
+        })
         store.beginLivePlayback()
-        ws.send(JSON.stringify({ type: 'open_challenge' }))
-      })
-      store.beginLivePlayback()
-      ws.send(JSON.stringify({ type: 'start', scenario_id: scenarioIdRef.current }))
-    }
-
-    ws.onmessage = (event) => {
-      const msg = JSON.parse(event.data) as ServerMessage
-      const store = useCorrixStore.getState()
-      switch (msg.type) {
-        case 'tick':
-          store.applyLiveTick(msg.zoneRisk ?? {}, msg.workers ?? {})
-          break
-        case 'open_challenge_drawn':
-          if (msg.label) store.setOpenChallengeLabel(msg.label)
-          break
-        case 'council_convening':
-          store.startLiveConvening()
-          break
-        case 'deliberating':
-          if (msg.council) store.applyLiveDeliberating(msg.council)
-          break
-        case 'verdict':
-          if (msg.verdict) store.applyLiveVerdict(msg.verdict)
-          break
-        case 'ero_fired':
-          if (msg.zoneId && msg.evidenceHash && msg.firedAt) {
-            store.applyEroFired({
-              zoneId: msg.zoneId,
-              deliveredOk: msg.deliveredOk ?? false,
-              evidenceHash: msg.evidenceHash,
-              firedAt: msg.firedAt,
-            })
-          }
-          break
-        case 'council_error':
-          store.applyCouncilError(msg.message ?? 'The Safety Council could not complete its deliberation.')
-          break
-        case 'playback_complete':
-          break
+        ws.send(JSON.stringify({ type: 'start', scenario_id: scenarioIdRef.current }))
       }
+
+      ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data) as ServerMessage
+        const store = useCorrixStore.getState()
+        switch (msg.type) {
+          case 'tick':
+            store.applyLiveTick(msg.zoneRisk ?? {}, msg.workers ?? {})
+            break
+          case 'open_challenge_drawn':
+            if (msg.label) store.setOpenChallengeLabel(msg.label)
+            break
+          case 'council_convening':
+            store.startLiveConvening()
+            break
+          case 'deliberating':
+            if (msg.council) store.applyLiveDeliberating(msg.council)
+            break
+          case 'verdict':
+            if (msg.verdict) store.applyLiveVerdict(msg.verdict)
+            break
+          case 'ero_fired':
+            if (msg.zoneId && msg.evidenceHash && msg.firedAt) {
+              store.applyEroFired({
+                zoneId: msg.zoneId,
+                deliveredOk: msg.deliveredOk ?? false,
+                evidenceHash: msg.evidenceHash,
+                firedAt: msg.firedAt,
+              })
+            }
+            break
+          case 'council_error':
+            store.applyCouncilError(msg.message ?? 'The Safety Council could not complete its deliberation.')
+            break
+          case 'playback_complete':
+            break
+        }
+      }
+
+      ws.onclose = () => {
+        if (cancelled) return
+        const store = useCorrixStore.getState()
+        store.setConnectionMode('mock')
+        store.setLiveOverrideSender(null)
+        store.setOpenChallengeSender(null)
+        // Keep trying: the backend may not be up yet, or may have restarted.
+        // Retry with a capped backoff so the indicator flips to LIVE on its
+        // own once the backend becomes reachable, no page reload needed.
+        reconnectTimer = setTimeout(connect, backoffMs)
+        backoffMs = Math.min(backoffMs * 1.6, 10000)
+      }
+      ws.onerror = () => ws.close()
     }
 
-    const handleDrop = () => {
-      const store = useCorrixStore.getState()
-      store.setConnectionMode('mock')
-      store.setLiveOverrideSender(null)
-      store.setOpenChallengeSender(null)
-    }
-    ws.onclose = handleDrop
-    ws.onerror = () => ws.close()
+    connect()
 
     return () => {
       cancelled = true
-      ws.close()
+      if (reconnectTimer) clearTimeout(reconnectTimer)
+      wsRef.current?.close()
       wsRef.current = null
     }
   }, [])
