@@ -219,11 +219,19 @@ If it shows **Backend offline**:
 cd Corrix
 git pull
 sudo docker build -t corrix .
-sudo docker restart corrix
+sudo docker rm -f corrix
+sudo docker run -d --name corrix --restart unless-stopped \
+  -p 127.0.0.1:8000:8000 --env-file .env corrix
 ```
 
+`docker restart` alone is NOT enough: it re-runs the existing container with
+its old image and old environment. To pick up new code or a changed `.env`
+you must `rm -f` and `run` again, as above. The rebuild is fast when only
+backend code changed (Docker caches the torch/pip/frontend layers); it is only
+slow again if `requirements.txt` or the frontend dependencies changed.
+
 Vercel redeploys the frontend automatically on every push to the connected
-branch.
+branch. Caddy, DNS, and the Elastic IP never need touching.
 
 ## Notes and constraints
 
