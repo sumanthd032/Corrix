@@ -7,7 +7,8 @@
   --l-line2: rgba(125, 162, 194, 0.26);
   --l-tx: #eaf1f8;
   --l-tx2: #93a6bb;
-  --l-tx3: #5c6f82;
+  /* Raised from #5c6f82 for legibility, matching --color-text-tertiary. */
+  --l-tx3: #7e93a8;
   --l-cy: #2dd4e8;
   --l-cy2: #5ce6f5;
   --l-vi: #8b5cf6;

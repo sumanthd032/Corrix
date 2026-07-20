@@ -37,7 +37,11 @@
   /* Text */
   --color-text-primary: #e8eff6;
   --color-text-secondary: #93a6bb;
-  --color-text-tertiary: #5c6f82;
+  /* Raised from #5c6f82: the old value fell around 3.5:1 on the panels,
+     below the legible bar for the small uppercase labels (eyebrows, the
+     tour hint) that use it. This clears ~5.8:1 while staying subordinate
+     to the secondary text. */
+  --color-text-tertiary: #7e93a8;
 
   /* Accent: cold ice-cyan (system chrome, "live", data navigation) */
   --color-accent: #2dd4e8;
