@@ -1,12 +1,13 @@
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
-# Left unpinned deliberately: nothing in this codebase imports websockets
-# directly (confirmed by grep), it only exists here to satisfy
-# uvicorn[standard]. Pinning it to a fixed version already conflicted
-# with google-genai's own <15.0 constraint on a fresh install, a real
-# failure a clean `pip install -r requirements.txt` would hit even though
-# an incrementally-built local venv had already resolved past it.
-websockets
+# Was left unpinned when it only existed here to satisfy
+# uvicorn[standard] (nothing imported it directly, and pinning
+# conflicted with google-genai's own <15.0 constraint on a fresh
+# install). Now pinned: tests/test_live_factory_mqtt_e2e.py (Step 20)
+# imports websockets.sync.client directly, and 14.2 already satisfies
+# google-genai's <15.0 constraint.
+websockets==14.2
+requests==2.34.2
 pydantic==2.10.4
 pydantic-settings==2.7.1
 python-dotenv==1.0.1

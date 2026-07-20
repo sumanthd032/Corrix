@@ -24,6 +24,7 @@ itself.
 import asyncio
 import json
 import logging
+import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from functools import lru_cache
@@ -50,15 +51,40 @@ AMBIENT_BASELINE = {"O2": 20.9, "CO": 0.5, "H2S": 0.0, "LEL": 0.0}
 
 @lru_cache
 def _get_publisher_client() -> mqtt.Client:
+    # client.connect() is a blocking synchronous TCP handshake; every
+    # caller reaches this through asyncio.to_thread (see _publish
+    # below) so the first, connection-triggering call can't stall the
+    # event loop. lru_cache means every call after the first just
+    # returns the already-connected client, so the to_thread hop is a
+    # negligible cost, not a per-publish handshake. Waiting for CONNACK
+    # with an explicit timeout, rather than assuming the connection
+    # succeeded, turns an unresponsive broker into a clear error
+    # instead of a silent, indefinite hang.
     settings = get_settings()
+    connected_event = threading.Event()
+
+    def on_connect(_client: mqtt.Client, _userdata: object, _flags: object, reason_code: object, _properties: object = None) -> None:
+        if reason_code == 0:
+            connected_event.set()
+        else:
+            logger.error("virtual_sensor_publisher: broker rejected connection, reason_code=%s", reason_code)
+
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+    client.on_connect = on_connect
     client.connect(settings.mqtt_broker_host, settings.mqtt_broker_port)
     client.loop_start()
+    if not connected_event.wait(timeout=10.0):
+        client.loop_stop()
+        raise ConnectionError(
+            f"Timed out waiting for the MQTT broker at {settings.mqtt_broker_host}:"
+            f"{settings.mqtt_broker_port} to acknowledge the connection."
+        )
     return client
 
 
-def _publish(topic: str, payload: dict) -> None:
-    _get_publisher_client().publish(topic, json.dumps(payload))
+async def _publish(topic: str, payload: dict) -> None:
+    client = await asyncio.to_thread(_get_publisher_client)
+    client.publish(topic, json.dumps(payload))
 
 
 @dataclass
@@ -89,7 +115,7 @@ async def _run_channel_loop(channel: VirtualGasChannel) -> None:
                 TICK_DT,
                 channel.rng,
             )
-            _publish(
+            await _publish(
                 topic,
                 {
                     "gas_type": channel.gas_type,
@@ -147,7 +173,7 @@ async def publish_badge_event(factory_id: str, zone_id: str, badge_id: str, ente
     """A badge toggle publishes a single BadgePingEvent immediately, no
     background channel: a badge crossing a zone boundary is a discrete
     event, not a continuous process."""
-    _publish(
+    await _publish(
         f"corrix/{factory_id}/{zone_id}/badge",
         {
             "badge_id": badge_id,
@@ -163,7 +189,7 @@ async def publish_permit(factory_id: str, zone_id: str, permit_type: str) -> Non
     """A permit button publishes a single PermitRecord immediately, no
     background channel: a permit being issued is a discrete event."""
     now = datetime.now(timezone.utc)
-    _publish(
+    await _publish(
         f"corrix/{factory_id}/{zone_id}/permit",
         {
             "permit_id": f"P-{now.strftime('%Y%m%d%H%M%S')}-{zone_id}",

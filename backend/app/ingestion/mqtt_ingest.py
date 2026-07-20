@@ -18,6 +18,7 @@ fields.
 import asyncio
 import json
 import logging
+import threading
 from datetime import datetime
 
 import paho.mqtt.client as mqtt
@@ -109,11 +110,42 @@ async def stream_mqtt(
 
         loop.call_soon_threadsafe(queue.put_nowait, reading)
 
+    connected_event = threading.Event()
+
+    def on_connect(client: mqtt.Client, _userdata: object, _flags: object, reason_code: object, _properties: object = None) -> None:
+        # Subscribing only after CONNACK (not immediately after connect()
+        # returns) matters: connect() only guarantees the CONNECT packet
+        # was sent, not that the broker accepted it yet.
+        if reason_code == 0:
+            client.subscribe(f"corrix/{factory_id}/#")
+            connected_event.set()
+        else:
+            logger.error("mqtt_ingest: broker rejected connection, reason_code=%s", reason_code)
+
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+    client.on_connect = on_connect
     client.on_message = on_message
-    client.connect(broker_host, broker_port)
-    client.subscribe(f"corrix/{factory_id}/#")
-    client.loop_start()
+
+    def _connect_and_start() -> None:
+        # client.connect() is a blocking synchronous TCP handshake; run
+        # it off the event loop thread so a slow broker round-trip
+        # can't stall every other concurrent task (an actual bug found
+        # running this against a live FastAPI app, where it starved the
+        # websocket's own request handling for several minutes rather
+        # than just adding a moment of latency). Waiting for CONNACK
+        # with an explicit timeout, rather than assuming the connection
+        # succeeded, turns an unresponsive broker into a clear error
+        # instead of a silent, indefinite hang.
+        client.connect(broker_host, broker_port)
+        client.loop_start()
+        if not connected_event.wait(timeout=10.0):
+            client.loop_stop()
+            raise ConnectionError(
+                f"Timed out waiting for the MQTT broker at {broker_host}:{broker_port} "
+                "to acknowledge the connection."
+            )
+
+    await asyncio.to_thread(_connect_and_start)
 
     try:
         while True:
