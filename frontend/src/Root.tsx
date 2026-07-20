@@ -2,6 +2,7 @@ import { useState } from 'react'
 import App from './App'
 import { LandingPage } from './components/LandingPage'
 import { OnboardingWizard } from './components/OnboardingWizard'
+import { LiveCommandCenter } from './components/LiveCommandCenter'
 
 type View = 'landing' | 'onboarding' | 'demo-console' | 'live-console'
 
@@ -37,6 +38,12 @@ export function Root() {
       />
     )
   }
-  if (view === 'live-console') return <div>Live console coming soon (factory {liveFactoryId})</div>
+  if (view === 'live-console') {
+    // liveFactoryId is always set together with this view in onLaunched
+    // above; the null case is unreachable in practice but keeps this
+    // branch honest rather than silently falling through to <App />.
+    if (!liveFactoryId) return <div>No factory to display.</div>
+    return <LiveCommandCenter factoryId={liveFactoryId} />
+  }
   return <App /> // view === 'demo-console'
 }

@@ -40,7 +40,27 @@ type ReportRequestState = 'idle' | 'loading' | 'error'
 const chipClass =
   'flex items-center gap-1.5 rounded-[var(--radius-control)] border border-[var(--color-hairline)] bg-[var(--color-surface-2)]/60 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] transition-colors hover:border-[color-mix(in_srgb,var(--color-accent)_45%,transparent)] hover:text-[var(--color-text-primary)] disabled:opacity-40 disabled:hover:border-[var(--color-hairline)]'
 
-export function TopControlBar({ onStartTour, onOpenInsights }: { onStartTour?: () => void; onOpenInsights?: () => void }) {
+/** `mode` defaults to `'demo'`, so the existing call site
+ * (`<TopControlBar onStartTour={...} onOpenInsights={...} />`) is
+ * unaffected. In `'live'` mode (the Bring Your Own Factory Live
+ * Command Center), the scenario selector, Open Challenge,
+ * Counterfactual Replay, Evaluation Report, and the demo-specific
+ * "Behind the Data"/Tour controls are hidden: all five explain or
+ * operate on the scripted scenario library, which a real factory
+ * doesn't have, and showing them would be confusing or actively
+ * broken rather than merely unused. ConnectionPill, Incident Report,
+ * the ERO badge, and Override stay: all four read from verdict/eroFired/
+ * councilStage in the store, which is exactly as meaningful for a live
+ * factory's real verdict as for a scenario's. */
+export function TopControlBar({
+  onStartTour,
+  onOpenInsights,
+  mode = 'demo',
+}: {
+  onStartTour?: () => void
+  onOpenInsights?: () => void
+  mode?: 'demo' | 'live'
+}) {
   const scenarioId = useCorrixStore((s) => s.scenarioId)
   const setScenario = useCorrixStore((s) => s.setScenario)
   const overridePaused = useCorrixStore((s) => s.overridePaused)
@@ -116,93 +136,101 @@ export function TopControlBar({ onStartTour, onOpenInsights }: { onStartTour?: (
         <ConnectionPill />
       </div>
 
-      {/* Scenario selector */}
-      <div className="relative flex items-center">
-        <span className="eyebrow mr-2 hidden sm:inline">Scenario</span>
-        <Tooltip
-          label="Scenario"
-          hint="Pick a scenario to run it live: the plant streams, the Council convenes, and a verdict lands. S1-S4 are authored incidents; S5 is a silent near-miss."
-        >
-          <div className="relative">
-            <select
-              value={scenarioId}
-              onChange={(e) => setScenario(e.target.value)}
-              className="appearance-none rounded-[var(--radius-control)] border border-[var(--color-hairline)] bg-[var(--color-surface-2)] py-1.5 pl-3 pr-8 font-mono-data text-xs text-[var(--color-text-primary)] outline-none transition-colors hover:border-[color-mix(in_srgb,var(--color-accent)_45%,transparent)]"
+      {mode === 'demo' && (
+        <>
+          {/* Scenario selector */}
+          <div className="relative flex items-center">
+            <span className="eyebrow mr-2 hidden sm:inline">Scenario</span>
+            <Tooltip
+              label="Scenario"
+              hint="Pick a scenario to run it live: the plant streams, the Council convenes, and a verdict lands. S1-S4 are authored incidents; S5 is a silent near-miss."
             >
-              {SCENARIOS.map((s) => (
-                <option key={s.id} value={s.id} className="bg-[var(--color-base)] font-mono-data">
-                  {s.label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown
-              size={14}
-              className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)]"
-              aria-hidden="true"
-            />
+              <div className="relative">
+                <select
+                  value={scenarioId}
+                  onChange={(e) => setScenario(e.target.value)}
+                  className="appearance-none rounded-[var(--radius-control)] border border-[var(--color-hairline)] bg-[var(--color-surface-2)] py-1.5 pl-3 pr-8 font-mono-data text-xs text-[var(--color-text-primary)] outline-none transition-colors hover:border-[color-mix(in_srgb,var(--color-accent)_45%,transparent)]"
+                >
+                  {SCENARIOS.map((s) => (
+                    <option key={s.id} value={s.id} className="bg-[var(--color-base)] font-mono-data">
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  size={14}
+                  className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)]"
+                  aria-hidden="true"
+                />
+              </div>
+            </Tooltip>
           </div>
-        </Tooltip>
-      </div>
 
-      <Tooltip
-        label="Counterfactual Replay"
-        hint="Scrub a legacy single-signal timeline against Corrix's compound-aware track to see the real lead-time gap."
-      >
-        <motion.button {...BUTTON_MOTION} type="button" onClick={() => setReplayOpen(true)} className={chipClass}>
-          <Radio size={15} aria-hidden="true" />
-          Replay
-        </motion.button>
-      </Tooltip>
+          <Tooltip
+            label="Counterfactual Replay"
+            hint="Scrub a legacy single-signal timeline against Corrix's compound-aware track to see the real lead-time gap."
+          >
+            <motion.button {...BUTTON_MOTION} type="button" onClick={() => setReplayOpen(true)} className={chipClass}>
+              <Radio size={15} aria-hidden="true" />
+              Replay
+            </motion.button>
+          </Tooltip>
 
-      <Tooltip
-        label="Open Challenge"
-        hint={
-          connectionMode !== 'live'
-            ? 'Requires the live backend. Draws an unrehearsed evidence combination and runs it through the joint-evidence novelty detector.'
-            : 'Draws an unrehearsed evidence combination and convenes the Council via the novelty path, not a scripted scenario.'
-        }
-      >
-        <motion.button
-          {...BUTTON_MOTION}
-          type="button"
-          onClick={triggerOpenChallenge}
-          disabled={connectionMode !== 'live'}
-          className={chipClass}
-        >
-          <Sparkles size={15} aria-hidden="true" />
-          Open Challenge
-          {openChallengeLabel && (
-            <span className="ml-1 max-w-[180px] truncate font-mono-data text-[10px] text-[var(--color-accent)]">
-              {openChallengeLabel}
-            </span>
-          )}
-        </motion.button>
-      </Tooltip>
+          <Tooltip
+            label="Open Challenge"
+            hint={
+              connectionMode !== 'live'
+                ? 'Requires the live backend. Draws an unrehearsed evidence combination and runs it through the joint-evidence novelty detector.'
+                : 'Draws an unrehearsed evidence combination and convenes the Council via the novelty path, not a scripted scenario.'
+            }
+          >
+            <motion.button
+              {...BUTTON_MOTION}
+              type="button"
+              onClick={triggerOpenChallenge}
+              disabled={connectionMode !== 'live'}
+              className={chipClass}
+            >
+              <Sparkles size={15} aria-hidden="true" />
+              Open Challenge
+              {openChallengeLabel && (
+                <span className="ml-1 max-w-[180px] truncate font-mono-data text-[10px] text-[var(--color-accent)]">
+                  {openChallengeLabel}
+                </span>
+              )}
+            </motion.button>
+          </Tooltip>
+        </>
+      )}
 
       <div className="ml-auto flex flex-wrap items-center gap-2">
-        <Tooltip label="Behind the data" hint="How every number is produced: the data streams, the gas simulation, and what is real vs. simulated.">
-          <motion.button {...BUTTON_MOTION} type="button" onClick={onOpenInsights} className={chipClass}>
-            <Database size={15} aria-hidden="true" />
-            Behind the Data
-          </motion.button>
-        </Tooltip>
+        {mode === 'demo' && (
+          <>
+            <Tooltip label="Behind the data" hint="How every number is produced: the data streams, the gas simulation, and what is real vs. simulated.">
+              <motion.button {...BUTTON_MOTION} type="button" onClick={onOpenInsights} className={chipClass}>
+                <Database size={15} aria-hidden="true" />
+                Behind the Data
+              </motion.button>
+            </Tooltip>
 
-        <Tooltip label="Guided tour" hint="Replay the walkthrough of the command center.">
-          <motion.button {...BUTTON_MOTION} type="button" onClick={onStartTour} className={chipClass}>
-            <Compass size={15} aria-hidden="true" />
-            Tour
-          </motion.button>
-        </Tooltip>
+            <Tooltip label="Guided tour" hint="Replay the walkthrough of the command center.">
+              <motion.button {...BUTTON_MOTION} type="button" onClick={onStartTour} className={chipClass}>
+                <Compass size={15} aria-hidden="true" />
+                Tour
+              </motion.button>
+            </Tooltip>
 
-        <Tooltip
-          label="Evaluation Report"
-          hint="Precision, recall, lead time, confidence calibration, and the held-out memory-loop result across the full scenario library."
-        >
-          <motion.button {...BUTTON_MOTION} type="button" onClick={() => setReportOpen(true)} className={chipClass}>
-            <BarChart3 size={15} aria-hidden="true" />
-            Evaluation
-          </motion.button>
-        </Tooltip>
+            <Tooltip
+              label="Evaluation Report"
+              hint="Precision, recall, lead time, confidence calibration, and the held-out memory-loop result across the full scenario library."
+            >
+              <motion.button {...BUTTON_MOTION} type="button" onClick={() => setReportOpen(true)} className={chipClass}>
+                <BarChart3 size={15} aria-hidden="true" />
+                Evaluation
+              </motion.button>
+            </Tooltip>
+          </>
+        )}
 
         <Tooltip
           label="Incident Report"
