@@ -6,18 +6,25 @@ import { PlantHeatmap } from './PlantHeatmap'
 import { CouncilPanel } from './CouncilPanel'
 import { AlertFeed } from './AlertFeed'
 import { ScrollColumn } from './ScrollColumn'
+import { VirtualSensorPanel } from './VirtualSensorPanel'
 import { useLiveFactorySocket } from '../lib/useLiveFactorySocket'
 import { layoutFromZones } from '../data/plantLayout'
 import type { HazardClass } from '../data/plantLayout'
 
 /**
  * The Bring Your Own Factory Live Command Center, per
- * CORRIX_REAL_DATA_BUILD_PLAN.md Step 16. Reuses App.tsx's exact panel
- * layout (TopControlBar, TelemetryStrip, PlantHeatmap, CouncilPanel,
- * AlertFeed), fed by Step 15's useLiveFactorySocket and Step 14's
- * layoutFromZones instead of the static demo layout. BootSequence/
- * DemoIntro (which walk through the synthetic demo's own features) are
- * replaced with a short "your factory is now live" confirmation.
+ * CORRIX_REAL_DATA_BUILD_PLAN.md Steps 16 and 21. Reuses App.tsx's
+ * exact panel layout (TopControlBar, TelemetryStrip, PlantHeatmap,
+ * CouncilPanel, AlertFeed), fed by Step 15's useLiveFactorySocket and
+ * Step 14's layoutFromZones instead of the static demo layout.
+ * BootSequence/DemoIntro (which walk through the synthetic demo's own
+ * features) are replaced with a short "your factory is now live"
+ * confirmation.
+ *
+ * For an mqtt-sourced factory, the Virtual Sensor Panel (Step 21)
+ * replaces RegulatoryChatDrawer in the same layout slot App.tsx uses:
+ * this is the actual demo moment, reachable while already watching
+ * the dashboard, not tucked away in the wizard.
  */
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
@@ -25,6 +32,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000
 interface FactoryProfileResponse {
   factory_id: string
   name: string
+  data_source: 'csv' | 'mqtt' | 'opcua'
   layout: {
     zones: {
       zone_id: string
@@ -103,6 +111,12 @@ export function LiveCommandCenter({ factoryId }: { factoryId: string }) {
       <div className="flex min-h-0 flex-1 flex-col gap-2.5 lg:flex-row">
         <div className="flex min-h-0 flex-1 flex-col gap-2.5">
           <PlantHeatmap zones={zones} />
+          {profile.data_source === 'mqtt' && (
+            <VirtualSensorPanel
+              factoryId={factoryId}
+              zones={profile.layout.zones.map((z) => ({ zone_id: z.zone_id, name: z.name }))}
+            />
+          )}
         </div>
 
         <div className="flex w-full shrink-0 flex-col lg:w-[400px]">

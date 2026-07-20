@@ -62,6 +62,7 @@ export interface WizardData {
   shifts: WizardShiftEntry[]
   permitTypesInUse: string[]
   otherPermitText: string
+  dataSource: 'csv' | 'mqtt'
 }
 
 const emptyShift = (): WizardShiftEntry => ({
@@ -84,6 +85,7 @@ const initialWizardData: WizardData = {
   shifts: [emptyShift()],
   permitTypesInUse: [],
   otherPermitText: '',
+  dataSource: 'csv',
 }
 
 function fieldLabelClass() {
@@ -332,7 +334,7 @@ interface FactoryPayload {
     changeover_window_minutes: number
     zones: string[]
   }[]
-  data_source: 'csv'
+  data_source: 'csv' | 'mqtt'
   created_at: string
 }
 
@@ -395,7 +397,7 @@ function buildFactoryPayload(data: WizardData): FactoryPayload {
     layout: { zones: data.zones, adjacency: data.adjacency },
     permit_types_in_use,
     shift_pattern,
-    data_source: 'csv',
+    data_source: data.dataSource,
     created_at: new Date().toISOString(),
   }
 }
@@ -415,7 +417,15 @@ function summaryRow(label: string, value: string) {
   )
 }
 
-function StepReview({ data, submitState }: { data: WizardData; submitState: SubmitState }) {
+function StepReview({
+  data,
+  setData,
+  submitState,
+}: {
+  data: WizardData
+  setData: (d: WizardData) => void
+  submitState: SubmitState
+}) {
   const industryLabel = INDUSTRIES.find((i) => i.value === data.industry)?.label ?? data.industry
   const permitLabels = data.permitTypesInUse
     .map((v) => PERMIT_TYPES.find((p) => p.value === v)?.label ?? v)
@@ -458,6 +468,41 @@ function StepReview({ data, submitState }: { data: WizardData; submitState: Subm
             summaryRow('Types', 'None selected')
           )}
         </div>
+      </div>
+
+      <div>
+        <span className="eyebrow">Data source</span>
+        <div className="mt-1.5 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setData({ ...data, dataSource: 'csv' })}
+            className="rounded-[var(--radius-control)] border px-3 py-2 text-left text-sm transition-colors"
+            style={
+              data.dataSource === 'csv'
+                ? { borderColor: 'color-mix(in srgb, var(--color-accent) 45%, transparent)', backgroundColor: 'var(--color-accent-dim)', color: 'var(--color-accent)' }
+                : { borderColor: 'var(--color-hairline)', color: 'var(--color-text-secondary)' }
+            }
+          >
+            Upload historian CSV
+          </button>
+          <button
+            type="button"
+            onClick={() => setData({ ...data, dataSource: 'mqtt' })}
+            className="rounded-[var(--radius-control)] border px-3 py-2 text-left text-sm transition-colors"
+            style={
+              data.dataSource === 'mqtt'
+                ? { borderColor: 'color-mix(in srgb, var(--color-accent) 45%, transparent)', backgroundColor: 'var(--color-accent-dim)', color: 'var(--color-accent)' }
+                : { borderColor: 'var(--color-hairline)', color: 'var(--color-text-secondary)' }
+            }
+          >
+            Virtual IoT sensors (MQTT)
+          </button>
+        </div>
+        <p className="mt-1.5 text-[11px] text-[var(--color-text-tertiary)]">
+          {data.dataSource === 'mqtt'
+            ? 'The Live Command Center opens with a virtual sensor panel: real MQTT messages over a real broker, from a simulated device.'
+            : 'Historian CSV replay: a file uploaded via the API drives the live feed. No upload screen exists yet.'}
+        </p>
       </div>
 
       {submitState.status === 'error' && (
@@ -594,7 +639,7 @@ export function OnboardingWizard({
               )}
               {step === 3 && <StepWorkforce data={data} setData={setData} />}
               {step === 4 && <StepPermits data={data} setData={setData} />}
-              {step === 5 && <StepReview data={data} submitState={submitState} />}
+              {step === 5 && <StepReview data={data} setData={setData} submitState={submitState} />}
             </motion.div>
           </AnimatePresence>
         </div>
