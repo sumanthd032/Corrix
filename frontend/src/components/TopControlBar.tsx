@@ -5,6 +5,7 @@ import {
   ChevronDown,
   CircleAlert,
   Compass,
+  Database,
   Download,
   Loader2,
   PauseCircle,
@@ -39,7 +40,7 @@ type ReportRequestState = 'idle' | 'loading' | 'error'
 const chipClass =
   'flex items-center gap-1.5 rounded-[var(--radius-control)] border border-[var(--color-hairline)] bg-[var(--color-surface-2)]/60 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] transition-colors hover:border-[color-mix(in_srgb,var(--color-accent)_45%,transparent)] hover:text-[var(--color-text-primary)] disabled:opacity-40 disabled:hover:border-[var(--color-hairline)]'
 
-export function TopControlBar({ onStartTour }: { onStartTour?: () => void }) {
+export function TopControlBar({ onStartTour, onOpenInsights }: { onStartTour?: () => void; onOpenInsights?: () => void }) {
   const scenarioId = useCorrixStore((s) => s.scenarioId)
   const setScenario = useCorrixStore((s) => s.setScenario)
   const overridePaused = useCorrixStore((s) => s.overridePaused)
@@ -179,6 +180,13 @@ export function TopControlBar({ onStartTour }: { onStartTour?: () => void }) {
       </Tooltip>
 
       <div className="ml-auto flex flex-wrap items-center gap-2">
+        <Tooltip label="Behind the data" hint="How every number is produced: the data streams, the gas simulation, and what is real vs. simulated.">
+          <motion.button {...BUTTON_MOTION} type="button" onClick={onOpenInsights} className={chipClass}>
+            <Database size={15} aria-hidden="true" />
+            Behind the Data
+          </motion.button>
+        </Tooltip>
+
         <Tooltip label="Guided tour" hint="Replay the walkthrough of the command center.">
           <motion.button {...BUTTON_MOTION} type="button" onClick={onStartTour} className={chipClass}>
             <Compass size={15} aria-hidden="true" />

@@ -10,6 +10,8 @@ import { CriticalTakeover } from './components/CriticalTakeover'
 import { PresenterMode } from './components/PresenterMode'
 import { DemoIntro } from './components/DemoIntro'
 import { ActivityBar } from './components/ActivityBar'
+import { DataInsights } from './components/DataInsights'
+import { ProjectAssistant } from './components/ProjectAssistant'
 import { useScenarioSocket } from './lib/useScenarioSocket'
 
 const TOUR_FLAG = 'corrix_tour_shown'
@@ -19,6 +21,7 @@ function App() {
   const [booting, setBooting] = useState(shouldShowBootSequence)
   const [introActive, setIntroActive] = useState(false)
   const [tourActive, setTourActive] = useState(false)
+  const [insightsOpen, setInsightsOpen] = useState(false)
 
   // On the first demo entry of a session (App is only mounted when the
   // demo is launched), after boot finishes, show a short context note,
@@ -50,7 +53,7 @@ function App() {
       <CriticalTakeover />
       <ActivityBar />
 
-      <TopControlBar onStartTour={() => setTourActive(true)} />
+      <TopControlBar onStartTour={() => setTourActive(true)} onOpenInsights={() => setInsightsOpen(true)} />
       <TelemetryStrip />
 
       <div className="flex min-h-0 flex-1 flex-col gap-2.5 lg:flex-row">
@@ -67,6 +70,8 @@ function App() {
 
       {introActive && <DemoIntro onStartTour={startTour} onSkip={skipIntro} />}
       {tourActive && <PresenterMode onClose={endTour} />}
+      {insightsOpen && <DataInsights onClose={() => setInsightsOpen(false)} />}
+      <ProjectAssistant />
     </div>
   )
 }
