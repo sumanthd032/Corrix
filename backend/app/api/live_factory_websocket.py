@@ -1,11 +1,20 @@
 """Bring Your Own Factory: the live-factory WebSocket, per
-CORRIX_REAL_DATA_BUILD_PLAN.md Step 8. A sibling to app/api/websocket.py,
-not a rewrite: streams real ingested readings (Step 6's CSV replay for
-now; MQTT/OPC-UA follow in Phase 4/5) instead of a precomputed scenario
-playback, scores them with the same z-score classifier the synthetic
-path uses (app.detection.anomaly_scorer), and calls the exact same
-_run_council (Step 7) when a zone crosses threshold. No Council,
-detection, or regulatory logic is duplicated here.
+CORRIX_REAL_DATA_BUILD_PLAN.md Steps 8 and 18. A sibling to
+app/api/websocket.py, not a rewrite: streams real ingested readings
+(CSV replay or the live MQTT virtual-sensor path; OPC-UA follows in
+Phase 5) instead of a precomputed scenario playback, scores gas
+readings with the same z-score classifier the synthetic path uses
+(app.detection.anomaly_scorer), and calls the exact same _run_council
+(Step 7) when a zone crosses threshold. No Council, detection, or
+regulatory logic is duplicated here.
+
+The reading queue carries a mix of GasSensorReading, BadgePingEvent,
+and PermitRecord for the MQTT path (CSV only ever produces
+GasSensorReading): badge/permit readings update tracked worker
+positions and active permits rather than triggering a convening
+themselves, so a convening triggered by a gas anomaly can still cite
+real permit/worker evidence gathered from the same live stream, not an
+empty placeholder.
 
 Baseline calibration deliberately does not reuse `score_series` as-is:
 that function computes mean/std once from the *whole* series passed to
@@ -49,12 +58,16 @@ from app.api.live_evidence import (
     format_site_safety_text,
 )
 from app.api.websocket import _run_council
+from app.config import get_settings
 from app.detection.anomaly_scorer import AnomalyPoint, calibrate_baseline, classify_z_score
 from app.ingestion.csv_ingest import replay_csv
 from app.ingestion.csv_upload_store import load_uploaded_csv
+from app.ingestion.mqtt_ingest import MqttReading, stream_mqtt
 from app.schemas import (
-    GasSensorReading,
+    BadgeEventType,
+    BadgePingEvent,
     GasSignalConfig,
+    PermitRecord,
     RiskLevel,
     ScenarioConfig,
     ScenarioGroundTruth,
@@ -132,35 +145,40 @@ async def live_factory_websocket(websocket: WebSocket) -> None:
         await websocket.close()
         return
 
-    if profile.data_source != "csv":
+    reading_queue: "asyncio.Queue[MqttReading]" = asyncio.Queue()
+
+    if profile.data_source == "csv":
+        uploaded = load_uploaded_csv(factory_id)
+        if uploaded is None:
+            await websocket.send_json(
+                {"type": "error", "message": "No CSV has been uploaded for this factory yet."}
+            )
+            await websocket.close()
+            return
+        file_bytes, column_map, speed_multiplier = uploaded
+        ingest_task = asyncio.create_task(
+            _run_ingestion_to_completion(file_bytes, column_map, speed_multiplier, reading_queue)
+        )
+    elif profile.data_source == "mqtt":
+        settings = get_settings()
+        ingest_task = asyncio.create_task(
+            stream_mqtt(factory_id, settings.mqtt_broker_host, settings.mqtt_broker_port, reading_queue)
+        )
+    else:
         await websocket.send_json(
             {
                 "type": "error",
                 "message": (
                     f"Data source {profile.data_source!r} is not yet supported over "
-                    "this connection; only csv is implemented."
+                    "this connection; only csv and mqtt are implemented."
                 ),
             }
         )
         await websocket.close()
         return
 
-    uploaded = load_uploaded_csv(factory_id)
-    if uploaded is None:
-        await websocket.send_json(
-            {"type": "error", "message": "No CSV has been uploaded for this factory yet."}
-        )
-        await websocket.close()
-        return
-    file_bytes, column_map, speed_multiplier = uploaded
-
     layout = load_plant_layout(factory_id)
     all_zone_ids = [z.zone_id for z in layout.zones]
-
-    reading_queue: asyncio.Queue = asyncio.Queue()
-    ingest_task = asyncio.create_task(
-        _run_ingestion_to_completion(file_bytes, column_map, speed_multiplier, reading_queue)
-    )
 
     incoming: "asyncio.Queue[dict]" = asyncio.Queue()
 
@@ -175,9 +193,11 @@ async def live_factory_websocket(websocket: WebSocket) -> None:
     receiver_task = asyncio.create_task(receiver())
 
     zone_risk_state: dict[str, RiskLevel] = {zid: "SAFE" for zid in all_zone_ids}
-    readings_by_zone: dict[str, list[GasSensorReading]] = {}
+    readings_by_zone: dict[str, list[float]] = {}
     zone_baselines: dict[str, tuple[float, float]] = {}
     triggered_zones: set[str] = set()
+    worker_positions: dict[str, str] = {}
+    permits_by_id: dict[str, PermitRecord] = {}
 
     try:
         while True:
@@ -194,6 +214,23 @@ async def live_factory_websocket(websocket: WebSocket) -> None:
             except asyncio.QueueEmpty:
                 pass
 
+            if isinstance(reading, BadgePingEvent):
+                if reading.event_type == BadgeEventType.ZONE_EXIT:
+                    worker_positions.pop(reading.badge_id, None)
+                else:
+                    worker_positions[reading.badge_id] = reading.zone_id
+                await websocket.send_json(
+                    {"type": "tick", "zoneRisk": zone_risk_state, "workers": dict(worker_positions)}
+                )
+                continue
+
+            if isinstance(reading, PermitRecord):
+                permits_by_id[reading.permit_id] = reading
+                await websocket.send_json(
+                    {"type": "tick", "zoneRisk": zone_risk_state, "workers": dict(worker_positions)}
+                )
+                continue
+
             zone_id = reading.zone_id
             values = readings_by_zone.setdefault(zone_id, [])
             values.append(reading.concentration)
@@ -201,7 +238,7 @@ async def live_factory_websocket(websocket: WebSocket) -> None:
             if zone_id not in zone_baselines:
                 if len(values) < LIVE_BASELINE_TICKS:
                     await websocket.send_json(
-                        {"type": "tick", "zoneRisk": zone_risk_state, "workers": {}}
+                        {"type": "tick", "zoneRisk": zone_risk_state, "workers": dict(worker_positions)}
                     )
                     continue
                 zone_baselines[zone_id] = calibrate_baseline(
@@ -219,7 +256,9 @@ async def live_factory_websocket(websocket: WebSocket) -> None:
             )
 
             zone_risk_state[zone_id] = risk_level
-            await websocket.send_json({"type": "tick", "zoneRisk": zone_risk_state, "workers": {}})
+            await websocket.send_json(
+                {"type": "tick", "zoneRisk": zone_risk_state, "workers": dict(worker_positions)}
+            )
 
             if zone_id in triggered_zones or risk_level not in ("HIGH", "CRITICAL"):
                 continue
@@ -228,11 +267,13 @@ async def live_factory_websocket(websocket: WebSocket) -> None:
             config = _minimal_scenario_config(zone_id, reading.gas_type.value)
             raw_evidence = {
                 "process_safety_engineer": format_process_safety_text(config, point),
-                "permit_control_officer": format_permit_text(config, [], reading.timestamp),
+                "permit_control_officer": format_permit_text(
+                    config, list(permits_by_id.values()), reading.timestamp
+                ),
                 "shift_operations": format_shift_text(
                     profile.shift_pattern, zone_id, reading.timestamp
                 ),
-                "site_safety_observer": format_site_safety_text({}, zone_id),
+                "site_safety_observer": format_site_safety_text(worker_positions, zone_id),
             }
 
             try:
@@ -246,7 +287,7 @@ async def live_factory_websocket(websocket: WebSocket) -> None:
                     memory_context=None,
                     layout=layout,
                     zone_risk=dict(zone_risk_state),
-                    worker_positions={},
+                    worker_positions=dict(worker_positions),
                 )
             except Exception as exc:
                 logger.error("Live factory Council convening failed unexpectedly: %s", exc)
