@@ -50,21 +50,37 @@ app.include_router(send_alert_router)
 
 @app.on_event("startup")
 def _warm_models() -> None:
-    """Preload the local embedding model in a background thread a moment after
-    startup, so the first regulatory query or Council convening does not pay
-    the one-time model-load cost live in front of a user. Best-effort: any
-    failure is ignored, and it never blocks startup or the request path.
-    Especially worthwhile on the small free-tier deploy, where loading the
-    model on first use is slow."""
+    """Warm the two expensive, process-cached models in a background thread a
+    moment after startup, so the first scenario or regulatory query does not
+    pay their one-time build cost live in front of a viewer:
+
+    - The novelty detector (fit once by re-running every population
+      negative-control scenario, ~15-20s) is by far the biggest offender: on
+      a cold process it is the frozen gap between the WebSocket connecting and
+      the first Council convening. Warming it here moves that cost into the
+      idle moment right after the container boots.
+    - The local sentence-transformers embedding model, for regulatory search.
+
+    Best-effort: any failure is logged and ignored, and this never blocks
+    startup or the request path. Especially worthwhile on the small free-tier
+    deploy, where building these on first use is slowest."""
     import threading
 
+    log = logging.getLogger(__name__)
+
     def _load() -> None:
+        try:
+            from app.detection.novelty_training import get_cached_novelty_model
+
+            get_cached_novelty_model()
+        except Exception:
+            log.warning("Novelty-model warmup skipped.")
         try:
             from app.regulatory.embeddings import get_embedding_model
 
             get_embedding_model()
         except Exception:
-            logging.getLogger(__name__).warning("Embedding-model warmup skipped.")
+            log.warning("Embedding-model warmup skipped.")
 
     threading.Thread(target=_load, daemon=True).start()
 
