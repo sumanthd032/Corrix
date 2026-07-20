@@ -12,3 +12,4 @@ backend/datasets/
 backend/runs/
 backend/*.pt
 data/swat/
+data/factory_uploads/

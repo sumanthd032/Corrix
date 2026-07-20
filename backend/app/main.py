@@ -15,6 +15,7 @@ from app.api.replay import router as replay_router
 from app.api.send_alert import router as send_alert_router
 from app.api.what_if import router as what_if_router
 from app.api.websocket import scenario_websocket
+from app.api.live_factory_websocket import live_factory_websocket
 
 app = FastAPI(title="Corrix Backend")
 
@@ -96,6 +97,11 @@ async def websocket_echo(websocket: WebSocket) -> None:
 @app.websocket("/ws/scenario")
 async def scenario_ws(websocket: WebSocket) -> None:
     await scenario_websocket(websocket)
+
+
+@app.websocket("/ws/live-factory")
+async def live_factory_ws(websocket: WebSocket) -> None:
+    await live_factory_websocket(websocket)
 
 
 # The built frontend (`npm run build` in frontend/, producing
