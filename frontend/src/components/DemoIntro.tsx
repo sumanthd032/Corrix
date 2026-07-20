@@ -57,7 +57,7 @@ export function DemoIntro({ onStartTour, onSkip }: { onStartTour: () => void; on
           <div className="flex gap-3">
             <Clock size={16} className="mt-0.5 shrink-0 text-[var(--color-text-tertiary)]" aria-hidden="true" />
             <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
-              This runs on a small free-tier server, so a live Council convening or the first regulatory query can take a few seconds. The reasoning is real, not canned, so it is worth the short wait.
+              This runs on a small free-tier server, and the first scenario warms up the models, so the first result can take 20 to 30 seconds. Every run after that is quicker. The reasoning is real, not canned, so the wait is genuine work.
             </p>
           </div>
         </div>
