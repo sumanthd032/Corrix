@@ -48,6 +48,27 @@ app.include_router(assistant_router)
 app.include_router(send_alert_router)
 
 
+@app.on_event("startup")
+def _warm_models() -> None:
+    """Preload the local embedding model in a background thread a moment after
+    startup, so the first regulatory query or Council convening does not pay
+    the one-time model-load cost live in front of a user. Best-effort: any
+    failure is ignored, and it never blocks startup or the request path.
+    Especially worthwhile on the small free-tier deploy, where loading the
+    model on first use is slow."""
+    import threading
+
+    def _load() -> None:
+        try:
+            from app.regulatory.embeddings import get_embedding_model
+
+            get_embedding_model()
+        except Exception:
+            logging.getLogger(__name__).warning("Embedding-model warmup skipped.")
+
+    threading.Thread(target=_load, daemon=True).start()
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "service": "corrix-backend"}
