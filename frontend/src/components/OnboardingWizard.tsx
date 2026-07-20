@@ -1,14 +1,19 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowLeft, ArrowRight, Building2, Factory, Plus, ShieldCheck, Trash2, Users, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Factory, Plus, ShieldCheck, Trash2, Users, X } from 'lucide-react'
+import {
+  ZoneGraphEditor,
+  type WizardZone,
+  type WizardZoneAdjacencyEdge,
+  type ZonePosition,
+} from './ZoneGraphEditor'
 
 /**
  * The Bring Your Own Factory onboarding wizard, per
- * CORRIX_REAL_DATA_BUILD_PLAN.md Step 11 (steps 1/3/4; the graph editor
- * in step 2 is a placeholder here, built in Step 12) and Step 12/13
- * (zone editor, review, POST /api/factory). Five stops matching
- * CORRIX_REAL_DATA.md §2's product order: identity, zones, workforce,
- * permits, review/launch.
+ * CORRIX_REAL_DATA_BUILD_PLAN.md Steps 11-13: identity, zones (the
+ * zone/adjacency graph editor, Step 12), workforce, permits, and review
+ * (Step 13, still a placeholder here). Five stops matching CORRIX_
+ * REAL_DATA.md §2's product order.
  *
  * `workerCount`/`badgePrefix` are collected here per CORRIX_REAL_DATA.md
  * §2 Step 3 but have no home in FactoryProfile's persisted schema yet;
@@ -47,6 +52,9 @@ export interface WizardData {
   name: string
   industry: string
   location: string
+  zones: WizardZone[]
+  adjacency: WizardZoneAdjacencyEdge[]
+  zonePositions: Record<string, ZonePosition>
   workerCount: string
   badgePrefix: string
   shifts: WizardShiftEntry[]
@@ -66,6 +74,9 @@ const initialWizardData: WizardData = {
   name: '',
   industry: '',
   location: '',
+  zones: [],
+  adjacency: [],
+  zonePositions: {},
   workerCount: '',
   badgePrefix: '',
   shifts: [emptyShift()],
@@ -83,7 +94,7 @@ function inputClass() {
 
 function canAdvance(step: number, data: WizardData): boolean {
   if (step === 1) return data.name.trim().length > 0 && data.industry.length > 0
-  if (step === 2) return true // zone editor placeholder, Step 12
+  if (step === 2) return data.zones.length > 0
   if (step === 3) {
     const workerCountValid = Number(data.workerCount) > 0
     const shiftsValid = data.shifts.every((s) => s.startTime && s.endTime && s.changeoverWindowMinutes > 0)
@@ -139,18 +150,6 @@ function StepIdentity({ data, setData }: { data: WizardData; setData: (d: Wizard
           className={inputClass()}
         />
       </label>
-    </div>
-  )
-}
-
-function StepZonesPlaceholder() {
-  return (
-    <div className="flex flex-col items-center gap-3 py-10 text-center">
-      <Building2 size={28} className="text-[var(--color-accent)]" aria-hidden="true" />
-      <p className="text-sm text-[var(--color-text-secondary)]">
-        The zone &amp; adjacency graph editor arrives in the next step of this build.
-      </p>
-      <p className="text-xs text-[var(--color-text-tertiary)]">Zone editor — Step 12</p>
     </div>
   )
 }
@@ -343,7 +342,7 @@ export function OnboardingWizard({ onExit }: { onExit: () => void }) {
 
   return (
     <div className="ambient-backdrop relative flex min-h-screen items-center justify-center p-4">
-      <div className="glass-panel corner-frame w-full max-w-2xl p-6">
+      <div className="glass-panel corner-frame w-full max-w-4xl p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Users size={16} className="text-[var(--color-accent)]" aria-hidden="true" />
@@ -383,7 +382,7 @@ export function OnboardingWizard({ onExit }: { onExit: () => void }) {
           })}
         </div>
 
-        <div className="mt-5 min-h-[280px] overflow-hidden">
+        <div className="mt-5 min-h-[340px] overflow-hidden">
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
               key={step}
@@ -394,7 +393,16 @@ export function OnboardingWizard({ onExit }: { onExit: () => void }) {
               transition={{ duration: 0.22, ease: 'easeOut' }}
             >
               {step === 1 && <StepIdentity data={data} setData={setData} />}
-              {step === 2 && <StepZonesPlaceholder />}
+              {step === 2 && (
+                <ZoneGraphEditor
+                  zones={data.zones}
+                  adjacency={data.adjacency}
+                  positions={data.zonePositions}
+                  onChange={({ zones, adjacency, positions }) =>
+                    setData({ ...data, zones, adjacency, zonePositions: positions })
+                  }
+                />
+              )}
               {step === 3 && <StepWorkforce data={data} setData={setData} />}
               {step === 4 && <StepPermits data={data} setData={setData} />}
               {step === 5 && <StepReviewPlaceholder />}
