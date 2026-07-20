@@ -28,6 +28,7 @@ Server -> client:
 import asyncio
 import logging
 import time
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
 from fastapi import WebSocket, WebSocketDisconnect
@@ -54,7 +55,14 @@ from app.detection.time_to_critical import forecast_time_to_critical
 from app.emergency.orchestrator import fire_emergency_response
 from app.memory.exemplar_store import get_shared_driver
 from app.regulatory.retrieval import find_regulatory_grounding
-from app.schemas import CouncilVerdict, RegulatoryCitation, RiskPropagationZone
+from app.schemas import (
+    CouncilVerdict,
+    GasSignalConfig,
+    PlantLayout,
+    RegulatoryCitation,
+    RiskLevel,
+    RiskPropagationZone,
+)
 from app.simulation.open_challenge import CURATED_COMBINATIONS
 from app.simulation.plant_layout import load_plant_layout
 from app.simulation.scenario_engine import DEFAULT_START_TIME
@@ -110,34 +118,51 @@ def _verdict_to_camel(v: CouncilVerdict) -> dict:
     }
 
 
-async def _convene_council(
+@dataclass
+class TimeToCriticalInputs:
+    """The Monte Carlo forecaster's inputs (Step 8 of CORRIX_BUILD_PLAN.md),
+    bundled so `_run_council` can stay source-agnostic: whoever assembles
+    this (today, only `_convene_council`) already has the full signal
+    series needed to calibrate `baseline_mean`/`baseline_std` itself."""
+
+    gas_config: GasSignalConfig
+    current_value: float
+    elapsed_minutes: float
+    baseline_mean: float
+    baseline_std: float
+    seed: int
+
+
+async def _run_council(
     websocket: WebSocket,
     incoming: "asyncio.Queue[dict]",
-    playback: ScenarioPlayback,
+    zone_id: str,
+    trigger_reason: str,
+    raw_evidence: dict[str, str],
+    scenario_id: str | None,
+    memory_context: str | None,
+    *,
+    layout: PlantLayout | None = None,
+    zone_risk: dict[str, RiskLevel] | None = None,
+    worker_positions: dict[str, str] | None = None,
+    time_to_critical: TimeToCriticalInputs | None = None,
 ) -> None:
+    """Runs the Safety Council to a verdict and streams every stage over
+    `websocket`. Per CORRIX_REAL_DATA_BUILD_PLAN.md Step 7, this is the
+    single function both the synthetic scenario path (`_convene_council`,
+    below) and the live-factory path
+    (`app/api/live_factory_websocket.py`, Step 8) call, so no Council/
+    detection/regulatory logic is ever duplicated between them.
+
+    `layout`, `zone_risk`, `worker_positions`, and `time_to_critical` are
+    all optional: they drive the evacuation route, risk propagation, the
+    Monte Carlo forecast, and the ERO's worker-badge list, none of which
+    a caller without scenario-shaped data can necessarily supply yet.
+    Omitting one just skips that additive feature for this convening,
+    rather than forcing a caller to fabricate scenario-only inputs.
+    `layout` defaults to the static demo layout, matching every existing
+    call site's behavior unchanged."""
     await websocket.send_json({"type": "council_convening"})
-
-    config = playback.config
-    out = playback.output
-    point = playback.points[playback.trigger_tick_index]
-    frame = playback.frames[playback.trigger_frame_index]
-    at_time = DEFAULT_START_TIME + timedelta(minutes=frame.minute)
-    trigger_reason = playback.trigger_reason or "rule_threshold"
-
-    raw_evidence = {
-        "process_safety_engineer": format_process_safety_text(config, point),
-        "permit_control_officer": format_permit_text(config, out.permits, at_time),
-        "shift_operations": format_shift_text(out.shifts, config.zone, at_time),
-        "site_safety_observer": format_site_safety_text(frame.worker_positions, config.zone),
-    }
-
-    memory_context = None
-    if trigger_reason == "memory_retrieval" and playback.matched_exemplar is not None:
-        exemplar = playback.matched_exemplar
-        memory_context = (
-            f"Historical case: {exemplar.evidence_text} The correct verdict was "
-            f"{exemplar.correct_risk_level}. {exemplar.why}"
-        )
 
     graph = build_council_graph()
     graph_config = {"configurable": {"thread_id": f"live-{id(websocket)}-{time.time()}"}}
@@ -145,10 +170,10 @@ async def _convene_council(
     state_after_pause = await asyncio.to_thread(
         graph.invoke,
         {
-            "zone_id": config.zone,
+            "zone_id": zone_id,
             "trigger_reason": trigger_reason,
             "raw_evidence": raw_evidence,
-            "scenario_id": config.scenario_id,
+            "scenario_id": scenario_id,
             "memory_context": memory_context,
         },
         graph_config,
@@ -182,26 +207,25 @@ async def _convene_council(
     final_state = await asyncio.to_thread(graph.invoke, None, graph_config)
     verdict: CouncilVerdict = final_state["verdict"]
 
-    if config.signals.gas is not None:
-        signal_values = [r.concentration for r in out.gas_readings]
-        baseline_mean, baseline_std = calibrate_baseline(signal_values)
+    if time_to_critical is not None:
         verdict.time_to_critical = await asyncio.to_thread(
             forecast_time_to_critical,
-            current_value=point.value,
-            elapsed_minutes=frame.minute,
-            gas_config=config.signals.gas,
-            baseline_mean=baseline_mean,
-            baseline_std=baseline_std,
-            seed=config.seed,
+            current_value=time_to_critical.current_value,
+            elapsed_minutes=time_to_critical.elapsed_minutes,
+            gas_config=time_to_critical.gas_config,
+            baseline_mean=time_to_critical.baseline_mean,
+            baseline_std=time_to_critical.baseline_std,
+            seed=time_to_critical.seed,
         )
 
     if verdict.risk_level in ("HIGH", "CRITICAL"):
-        layout = load_plant_layout()
-        route = find_evacuation_route(layout, frame.zone_risk, verdict.zone_id)
-        if route is not None:
-            verdict.evacuation_route = route.path
+        resolved_layout = layout or load_plant_layout()
+        if zone_risk is not None:
+            route = find_evacuation_route(resolved_layout, zone_risk, verdict.zone_id)
+            if route is not None:
+                verdict.evacuation_route = route.path
         # Where the compound risk could spread next if it isn't contained.
-        propagation = predict_risk_propagation(layout, verdict.zone_id)
+        propagation = predict_risk_propagation(resolved_layout, verdict.zone_id)
         if propagation:
             verdict.risk_propagation = [
                 RiskPropagationZone(zone_id=p.zone_id, hops=p.hops, score=p.score)
@@ -247,8 +271,8 @@ async def _convene_council(
 
     if verdict.risk_level == "CRITICAL":
         worker_badge_ids = [
-            badge_id for badge_id, zone_id in frame.worker_positions.items()
-            if zone_id == verdict.zone_id
+            badge_id for badge_id, badge_zone_id in (worker_positions or {}).items()
+            if badge_zone_id == verdict.zone_id
         ]
         try:
             alert = await asyncio.to_thread(
@@ -278,6 +302,64 @@ async def _convene_council(
                     "firedAt": datetime.now(timezone.utc).isoformat(),
                 }
             )
+
+
+async def _convene_council(
+    websocket: WebSocket,
+    incoming: "asyncio.Queue[dict]",
+    playback: ScenarioPlayback,
+) -> None:
+    """Unpacks a scenario `ScenarioPlayback` into the values `_run_council`
+    needs, then delegates to it. This is the only place scenario-specific
+    shapes (`ScenarioConfig`, `ScenarioOutput`, `PlaybackFrame`) get
+    unpacked; `_run_council` itself never sees them."""
+    config = playback.config
+    out = playback.output
+    point = playback.points[playback.trigger_tick_index]
+    frame = playback.frames[playback.trigger_frame_index]
+    at_time = DEFAULT_START_TIME + timedelta(minutes=frame.minute)
+    trigger_reason = playback.trigger_reason or "rule_threshold"
+
+    raw_evidence = {
+        "process_safety_engineer": format_process_safety_text(config, point),
+        "permit_control_officer": format_permit_text(config, out.permits, at_time),
+        "shift_operations": format_shift_text(out.shifts, config.zone, at_time),
+        "site_safety_observer": format_site_safety_text(frame.worker_positions, config.zone),
+    }
+
+    memory_context = None
+    if trigger_reason == "memory_retrieval" and playback.matched_exemplar is not None:
+        exemplar = playback.matched_exemplar
+        memory_context = (
+            f"Historical case: {exemplar.evidence_text} The correct verdict was "
+            f"{exemplar.correct_risk_level}. {exemplar.why}"
+        )
+
+    time_to_critical_inputs = None
+    if config.signals.gas is not None:
+        signal_values = [r.concentration for r in out.gas_readings]
+        baseline_mean, baseline_std = calibrate_baseline(signal_values)
+        time_to_critical_inputs = TimeToCriticalInputs(
+            gas_config=config.signals.gas,
+            current_value=point.value,
+            elapsed_minutes=frame.minute,
+            baseline_mean=baseline_mean,
+            baseline_std=baseline_std,
+            seed=config.seed,
+        )
+
+    await _run_council(
+        websocket,
+        incoming,
+        zone_id=config.zone,
+        trigger_reason=trigger_reason,
+        raw_evidence=raw_evidence,
+        scenario_id=config.scenario_id,
+        memory_context=memory_context,
+        zone_risk=frame.zone_risk,
+        worker_positions=frame.worker_positions,
+        time_to_critical=time_to_critical_inputs,
+    )
 
 
 async def _stream_playback(
