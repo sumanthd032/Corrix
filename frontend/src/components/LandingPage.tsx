@@ -12,6 +12,28 @@ export function LandingPage({ onLaunch }: { onLaunch: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rootRef = useRef<HTMLDivElement>(null)
   const [howOpen, setHowOpen] = useState(false)
+  const [noteOpen, setNoteOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  // Mobile guard: the interactive demo and the walkthrough modal both need
+  // more room than a phone screen gives them, so on mobile the CTAs open a
+  // blocking note instead of the real action.
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)')
+    setIsMobile(mq.matches)
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+
+  const guardLaunch = () => {
+    if (isMobile) { setNoteOpen(true); return }
+    onLaunch()
+  }
+  const guardHowItWorks = () => {
+    if (isMobile) { setNoteOpen(true); return }
+    setHowOpen(true)
+  }
 
   useEffect(() => {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -106,12 +128,12 @@ export function LandingPage({ onLaunch }: { onLaunch: () => void }) {
           <div className="brand"><span className="m"><i /></span><b>CORRIX</b></div>
           <div className="nav-links">
             <a href="#problem">The problem</a>
-            <a href="#capabilities" onClick={(e) => { e.preventDefault(); setHowOpen(true) }}>How it works</a>
+            <a href="#capabilities" onClick={(e) => { e.preventDefault(); guardHowItWorks() }}>How it works</a>
             <a href="#capabilities">Capabilities</a>
             <a href="#proof">Evidence</a>
           </div>
           <div className="nav-cta">
-            <button type="button" className="btn btn-primary" onClick={onLaunch}>
+            <button type="button" className="btn btn-primary" onClick={guardLaunch}>
               Launch live demo
               <svg className="ar" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
             </button>
@@ -134,11 +156,11 @@ export function LandingPage({ onLaunch }: { onLaunch: () => void }) {
                 explainable reasoning.
               </p>
               <div className="hero-cta">
-                <button type="button" className="btn btn-primary" onClick={onLaunch}>
+                <button type="button" className="btn btn-primary" onClick={guardLaunch}>
                   Launch live demo
                   <svg className="ar" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
                 </button>
-                <button type="button" className="btn btn-ghost" onClick={() => setHowOpen(true)}>See how it works</button>
+                <button type="button" className="btn btn-ghost" onClick={guardHowItWorks}>See how it works</button>
               </div>
               <div className="ticker">
                 <span className="lbl">LIVE FEED</span>
@@ -253,7 +275,7 @@ export function LandingPage({ onLaunch }: { onLaunch: () => void }) {
             <span className="eyebrow">See it live</span>
             <h2>Watch a compound risk get caught.</h2>
             <p>Run a real scenario end to end: the Council convenes, reaches an explained verdict, forecasts time-to-critical, and routes an evacuation, in under thirty seconds.</p>
-            <button type="button" className="btn btn-primary" onClick={onLaunch} style={{ fontSize: 16, padding: '14px 26px' }}>
+            <button type="button" className="btn btn-primary" onClick={guardLaunch} style={{ fontSize: 16, padding: '14px 26px' }}>
               Launch live demo
               <svg className="ar" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
             </button>
@@ -271,6 +293,16 @@ export function LandingPage({ onLaunch }: { onLaunch: () => void }) {
       </footer>
 
       {howOpen && <HowItWorks onClose={() => setHowOpen(false)} />}
+
+      {noteOpen && (
+        <div className="desktop-note-overlay" role="dialog" aria-modal="true" aria-label="Desktop recommended">
+          <div className="desktop-note">
+            <span className="d" />
+            <p>The live demo and the walkthrough are built for a larger screen. Recommended: use a desktop for the best experience.</p>
+            <button type="button" className="btn btn-primary" onClick={() => setNoteOpen(false)}>Understood</button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
