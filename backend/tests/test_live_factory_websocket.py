@@ -112,3 +112,69 @@ def test_live_factory_websocket_unknown_factory_returns_error():
         websocket.send_json({"type": "connect", "factory_id": "does-not-exist"})
         msg = websocket.receive_json()
         assert msg["type"] == "error"
+
+
+def test_websocket_streams_from_a_real_http_uploaded_csv():
+    """Step 9's actual upload endpoint, not save_uploaded_csv called
+    directly, feeding Step 8's websocket end to end."""
+    import json
+
+    factory_id = "factory-live-ws-upload-test"
+    client = TestClient(app)
+    profile = FactoryProfile(
+        factory_id=factory_id,
+        name="Upload-Fed Steelworks",
+        industry="steel",
+        location=None,
+        layout=PlantLayout(
+            zones=[
+                Zone(
+                    zone_id=ZONE_ID,
+                    name="Test Zone",
+                    hazard_class=HazardClass.HIGH,
+                    primary_role="casting",
+                    is_confined_space=False,
+                    is_assembly_point=False,
+                )
+            ],
+            adjacency=[],
+        ),
+        permit_types_in_use=["hot_work"],
+        shift_pattern=[],
+        data_source="csv",
+        created_at=datetime(2026, 7, 20, 0, 0, tzinfo=timezone.utc),
+    )
+    try:
+        save_factory(profile)
+        upload_response = client.post(
+            f"/api/factory/{factory_id}/csv-upload",
+            files={"file": ("readings.csv", _build_csv(), "text/csv")},
+            data={
+                "column_map": json.dumps(
+                    {
+                        "timestamp": "ts",
+                        "zone": "zone",
+                        "gas_concentration": "conc",
+                        "gas_type": "gas",
+                    }
+                ),
+                "speed_multiplier": "1000000",
+            },
+        )
+        assert upload_response.status_code == 200
+        assert upload_response.json()["rowsIngested"] == len(CALM_VALUES) + 1
+
+        seen_values = []
+        with client.websocket_connect("/ws/live-factory") as websocket:
+            websocket.send_json({"type": "connect", "factory_id": factory_id})
+            for _ in range(200):
+                msg = websocket.receive_json()
+                if msg["type"] == "tick":
+                    seen_values.append(msg["zoneRisk"][ZONE_ID])
+                if msg["type"] in ("verdict", "replay_complete", "error"):
+                    break
+
+        # The spike is the last row; it should have pushed the zone out of SAFE.
+        assert seen_values[-1] in ("HIGH", "CRITICAL")
+    finally:
+        _delete_factory(factory_id)
