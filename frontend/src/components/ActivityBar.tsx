@@ -4,24 +4,28 @@ import { Loader2 } from 'lucide-react'
 import { useCorrixStore } from '../store/useCorrixStore'
 
 /**
- * A global "the system is working" cue for the slow, asynchronous
+ * A global, prominent "the system is working" cue for the slow, asynchronous
  * operations, so the user is never left wondering whether something is
- * happening. A thin indeterminate bar at the very top plus a labeled chip
- * with a live elapsed timer and, once an operation runs long, a reassuring
- * message (the demo backend is a small free-tier server, so a real Council
- * convening can take a few seconds). Reads the store-level async states; the
- * shorter local actions (incident PDF, what-if) carry their own spinners.
+ * happening. A thin indeterminate bar at the very top plus a large labeled
+ * card, centered, with a spinning accent ring, a live elapsed timer, and a
+ * reassuring line (the demo backend is a small free-tier server, so a real
+ * Council convening can take a few seconds). Reads the store-level async
+ * states; the shorter local actions (incident PDF, what-if) carry their own
+ * spinners.
  */
 export function ActivityBar() {
   const councilStage = useCorrixStore((s) => s.councilStage)
   const chatPending = useCorrixStore((s) => s.chatPending)
 
-  const messages: string[] = []
-  if (councilStage === 'convening') messages.push('Safety Council convening')
-  else if (councilStage === 'deliberating') messages.push('Council deliberating, override window open')
-  if (chatPending) messages.push('Searching the regulatory corpus')
+  let title = ''
+  if (councilStage === 'convening') title = 'Safety Council convening'
+  else if (councilStage === 'deliberating') title = 'Council deliberating'
+  else if (chatPending) title = 'Searching the regulatory corpus'
 
-  const busy = messages.length > 0
+  const detail =
+    councilStage === 'deliberating' ? 'Override window open, the agents are reasoning' : chatPending && councilStage ? 'and searching the regulatory corpus' : ''
+
+  const busy = title.length > 0
 
   // Elapsed timer, reset whenever a new busy period starts.
   const [elapsed, setElapsed] = useState(0)
@@ -36,19 +40,19 @@ export function ActivityBar() {
     setElapsed(0)
     const id = setInterval(() => {
       if (startRef.current != null) setElapsed((performance.now() - startRef.current) / 1000)
-    }, 250)
+    }, 200)
     return () => clearInterval(id)
     // Restart the timer only when the busy period toggles on, not on every
-    // message change within one operation.
+    // title change within one operation.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [busy])
 
   const reassurance =
     elapsed > 12
-      ? 'Still working. The reasoning runs live on a small demo server, hang tight.'
-      : elapsed > 5
-        ? 'This can take a few seconds on the demo server.'
-        : null
+      ? 'Still working. The reasoning runs live on a small demo server, so hang tight, this is real, not canned.'
+      : elapsed > 4
+        ? 'This can take a few seconds on the free-tier demo server. The reasoning is running live.'
+        : 'Working, this is live reasoning, not a canned response.'
 
   return (
     <AnimatePresence>
@@ -56,7 +60,7 @@ export function ActivityBar() {
         <>
           <motion.div
             key="bar"
-            className="pointer-events-none fixed inset-x-0 top-0 z-[60] h-[3px] overflow-hidden"
+            className="pointer-events-none fixed inset-x-0 top-0 z-[70] h-[3px] overflow-hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -71,34 +75,60 @@ export function ActivityBar() {
           </motion.div>
 
           <motion.div
-            key="chip"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            transition={{ duration: 0.2 }}
-            className="pointer-events-none fixed bottom-4 left-1/2 z-[60] flex max-w-[92vw] -translate-x-1/2 flex-col items-center gap-1 rounded-2xl border border-[var(--color-hairline)] px-4 py-2.5 text-center backdrop-blur"
-            style={{ background: 'color-mix(in srgb, var(--color-surface-1) 92%, transparent)', boxShadow: 'var(--shadow-raised)' }}
+            key="card"
+            initial={{ opacity: 0, y: 14, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 14, scale: 0.96 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className="pointer-events-none fixed bottom-8 left-1/2 z-[70] flex w-full max-w-[440px] -translate-x-1/2 items-center gap-4 rounded-2xl border px-5 py-4 backdrop-blur-md"
+            style={{
+              background: 'color-mix(in srgb, var(--color-surface-1) 94%, transparent)',
+              borderColor: 'color-mix(in srgb, var(--color-accent) 45%, transparent)',
+              boxShadow: '0 0 0 1px color-mix(in srgb, var(--color-accent) 20%, transparent), 0 18px 48px -12px color-mix(in srgb, var(--color-accent) 35%, transparent), var(--shadow-raised)',
+            }}
             role="status"
             aria-live="polite"
           >
-            <span className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
-              <Loader2 size={13} className="animate-spin text-[var(--color-accent)]" aria-hidden="true" />
-              {messages.join(' · ')}…
-              <span className="tnum text-[var(--color-text-tertiary)]">{elapsed.toFixed(0)}s</span>
-            </span>
-            <AnimatePresence>
-              {reassurance && (
-                <motion.span
+            {/* Spinning accent ring around a steady core, reads as active from across the room. */}
+            <div className="relative grid h-11 w-11 shrink-0 place-items-center">
+              <span
+                className="absolute inset-0 rounded-full"
+                style={{
+                  background: 'conic-gradient(from 0deg, transparent, var(--color-accent))',
+                  animation: 'spin 1.1s linear infinite',
+                  WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px))',
+                  mask: 'radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px))',
+                }}
+                aria-hidden="true"
+              />
+              <Loader2 size={18} className="animate-spin text-[var(--color-accent)]" aria-hidden="true" />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline gap-2">
+                <span className="truncate font-display text-[15px] font-semibold text-[var(--color-text-primary)]">
+                  {title}
+                </span>
+                <span className="tnum ml-auto shrink-0 text-sm font-semibold text-[var(--color-accent)]">
+                  {elapsed.toFixed(0)}s
+                </span>
+              </div>
+              {detail && (
+                <div className="mt-0.5 truncate text-xs text-[var(--color-text-secondary)]">{detail}</div>
+              )}
+              <AnimatePresence mode="wait">
+                <motion.div
                   key={reassurance}
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="text-[11px] text-[var(--color-text-tertiary)]"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className="mt-1 text-[11px] leading-snug text-[var(--color-text-tertiary)]"
                 >
                   {reassurance}
-                </motion.span>
-              )}
-            </AnimatePresence>
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </motion.div>
         </>
       )}
