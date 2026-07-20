@@ -745,3 +745,29 @@ External access: real Groq/Neo4j calls during the live lit-state verification (o
 Open questions or blockers: none. At 768px tablet-portrait the map body is compact (one zone row visible without scrolling); not broken and not overflowing, but a known trade-off of the desktop-first command-center layout. The CV checkpoint gap and the pending Render deployment are unchanged.
 
 Next action: await the user's reaction to the redesign. Render deployment remains the one outstanding build-plan task.
+
+---
+
+## 2026-07-20 — Landing page, demo entry, presenter mode, hints, activity indicators
+
+What was done: the user asked for a professional landing page with a Demo button into the dashboard, presenter mode on first demo entry, hover hints on all buttons, and clear "it's working" indicators for slow operations. All five delivered.
+
+**Landing page.** Following the preview-first workflow the user prefers, two landing directions were built as standalone Artifacts (dark, cohesive with the app; and light corporate). The user chose dark but called it "generic, not crazy," so the hero was rebuilt into a live showpiece: three routine signal cards (Gas 13.8% LEL, Permit P-2291, Shift 00:09) with animated streams converging into a pulsing "COMPOUND RISK · HIGH" verdict bar, over an animated `<canvas>` command-center backdrop (perspective grid + drifting gas particles) with a live telemetry ticker and scroll-reveals. Ported into the app as `LandingPage.tsx` with styles scoped under `.corrix-landing` (LandingPage.css) so its generic class names never collide with the dashboard's global styles (both index.css and Tailwind define `.eyebrow`/`.container`). A real bug was found and fixed during live verification: the hero's fusion showpiece was rendering off-screen at x=3166, because the left grid column expanded to fit the ticker's long non-wrapping text (grid items default to `min-width:auto`); `min-width:0` on the hero columns fixed it. This same bug was in the published preview, and is the likely reason the user saw the hero as "generic" — the whole showpiece was pushed off-screen. The mockup Artifact was fixed and republished too.
+
+**Demo routing.** A new `Root.tsx` shows the landing page first and only mounts the dashboard (`App`) once "Launch live demo" is clicked, so the dashboard's live WebSocket and boot sequence don't run behind the landing. `main.tsx` renders `<Root/>`.
+
+**Presenter mode.** `PresenterMode.tsx`: a guided walkthrough that spotlights each key panel in turn (panels carry `data-tour` anchors: telemetry, map, council, alerts, regulatory, controls), with a caption card and Back/Skip/Next plus keyboard nav, portaled over a dimmer with a spotlight cutout. It auto-starts once per session on the first demo entry (after the boot sequence), gated by a `sessionStorage` flag, and is replayable from a new "Tour" button in the top bar. A debugging note worth keeping: verifying the auto-start via Playwright's `inner_text("body")` gave false negatives on the portaled/fixed dialog; checking for the dialog element directly (`[aria-label="Guided tour"]`) confirmed it works. The auto-start was also simplified to not depend on a prop, since the dashboard only mounts on demo entry, so its first mount is the entry.
+
+**Hints.** The top-bar controls already had the styled portal Tooltip from earlier; extended it to the plant view toggles (Flat/Isometric/3D) and the scenario selector.
+
+**Activity indicators.** `ActivityBar.tsx`: a global "the system is working" cue, a thin indeterminate top bar plus a labeled status chip, shown whenever a store-level slow op runs (a live Council convening, deliberating, or a regulatory lookup). The shorter local actions (incident PDF, what-if, chat) already carry their own inline spinners.
+
+Why: these were direct user requests to make the product feel like a finished, presentable business product and to remove any "is it doing anything?" ambiguity during slow LLM operations. The landing page is accepted as the direction with the user noting they will polish it further later.
+
+Files touched: `frontend/src/main.tsx`, `frontend/src/Root.tsx` (new), `frontend/src/App.tsx`, `frontend/src/components/{LandingPage.tsx,LandingPage.css,PresenterMode.tsx,ActivityBar.tsx}` (new), and `data-tour` anchors + tooltip/Tour-button wiring in `TopControlBar,TelemetryStrip,PlantHeatmap,CouncilPanel,AlertFeed,RegulatoryChatDrawer`. Commits `0a617ef`, `30e344f`, `ffdfed4`.
+
+External access: real Groq/Neo4j during live verification (landing, demo entry, presenter auto-start, all confirmed in a real browser); no new services. tsc + build clean throughout.
+
+Open questions or blockers: the user considers the landing page acceptable-for-now and wants to polish it later ([[feedback_ui_change_workflow]] applies: match a concrete reference rather than guessing). No functional blockers.
+
+Next action: none pending. The landing/demo/presenter/hints/activity work is committed. Remaining optional items: the landing-page polish the user deferred, and the earlier feature backlog ([[corrix-feature-backlog]]).
