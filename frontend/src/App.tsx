@@ -12,6 +12,7 @@ import { DemoIntro } from './components/DemoIntro'
 import { ActivityBar } from './components/ActivityBar'
 import { DataInsights } from './components/DataInsights'
 import { ProjectAssistant } from './components/ProjectAssistant'
+import { ScrollColumn } from './components/ScrollColumn'
 import { useScenarioSocket } from './lib/useScenarioSocket'
 
 const TOUR_FLAG = 'corrix_tour_shown'
@@ -62,9 +63,11 @@ function App() {
           <RegulatoryChatDrawer />
         </div>
 
-        <div className="thin-scroll flex w-full shrink-0 flex-col gap-2.5 overflow-y-auto lg:w-[400px]">
-          <CouncilPanel />
-          <AlertFeed />
+        <div className="flex w-full shrink-0 flex-col lg:w-[400px]">
+          <ScrollColumn className="thin-scroll min-h-0 flex-1 overflow-y-auto">
+            <CouncilPanel />
+            <AlertFeed />
+          </ScrollColumn>
         </div>
       </div>
 
