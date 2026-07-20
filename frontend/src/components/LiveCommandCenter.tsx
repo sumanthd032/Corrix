@@ -7,6 +7,7 @@ import { CouncilPanel } from './CouncilPanel'
 import { AlertFeed } from './AlertFeed'
 import { ScrollColumn } from './ScrollColumn'
 import { VirtualSensorPanel } from './VirtualSensorPanel'
+import { DataSourcePill } from './DataSourcePill'
 import { useLiveFactorySocket } from '../lib/useLiveFactorySocket'
 import { layoutFromZones } from '../data/plantLayout'
 import type { HazardClass } from '../data/plantLayout'
@@ -106,6 +107,9 @@ export function LiveCommandCenter({ factoryId }: { factoryId: string }) {
       <div className="ambient-backdrop pointer-events-none fixed inset-0 -z-10" aria-hidden="true" />
 
       <TopControlBar mode="live" />
+      <div className="flex items-center px-1">
+        <DataSourcePill dataSource={profile.data_source} />
+      </div>
       <TelemetryStrip zones={zones} />
 
       <div className="flex min-h-0 flex-1 flex-col gap-2.5 lg:flex-row">
@@ -137,6 +141,7 @@ export function LiveCommandCenter({ factoryId }: { factoryId: string }) {
             <p className="max-w-xs text-sm text-[var(--color-text-secondary)]">
               {profile.name} is streaming into the Safety Council. Real data in, real reasoning out.
             </p>
+            <DataSourcePill dataSource={profile.data_source} />
           </div>
         </div>
       )}
