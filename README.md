@@ -1,50 +1,103 @@
 <div align="center">
 
-# Corrix
+<h1>CORRIX</h1>
 
-### The Correlation Layer Industrial Safety Never Had
+### The correlation layer industrial safety never had
 
-AI-powered industrial safety intelligence that detects **compound risk**: dangerous combinations of ordinary-looking conditions that no single sensor, system, or team would flag alone.
+**AI-powered industrial safety intelligence that detects _compound risk_: dangerous combinations of ordinary-looking conditions that no single sensor, system, or team would flag alone.**
+
+<br>
+
+[![Tests](https://img.shields.io/badge/tests-400%2B%20passing-2ea44f?style=flat-square)](#testing)
+[![Python](https://img.shields.io/badge/Python-3.13-3776AB?style=flat-square&logo=python&logoColor=white)](#technology)
+[![Node](https://img.shields.io/badge/Node-22-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white)](#technology)
+[![License](https://img.shields.io/badge/license-proprietary-8a97a8?style=flat-square)](#license)
+[![Status](https://img.shields.io/badge/status-active%20prototype-2dd4e8?style=flat-square)](#)
+
+<br>
+
+**Backend**&nbsp;
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)
+![LangGraph](https://img.shields.io/badge/LangGraph-1C3C3C?style=flat-square)
+![Neo4j](https://img.shields.io/badge/Neo4j-008CC1?style=flat-square&logo=neo4j&logoColor=white)
+![Groq](https://img.shields.io/badge/Groq-F55036?style=flat-square)
+![Gemini](https://img.shields.io/badge/Gemini-8E75B2?style=flat-square&logo=googlegemini&logoColor=white)
+![MCP](https://img.shields.io/badge/MCP-000000?style=flat-square)
+![YOLO](https://img.shields.io/badge/YOLO11-111F68?style=flat-square)
+
+**Frontend**&nbsp;
+![React](https://img.shields.io/badge/React_19-20232A?style=flat-square&logo=react&logoColor=61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white)
+![Tailwind](https://img.shields.io/badge/Tailwind_v4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
+![deck.gl](https://img.shields.io/badge/deck.gl-000000?style=flat-square)
+![Three.js](https://img.shields.io/badge/Three.js-000000?style=flat-square&logo=threedotjs&logoColor=white)
+
+<br>
+
+[Overview](#overview) · [Capabilities](#capabilities) · [Architecture](#architecture) · [Quick start](#quick-start) · [What is real vs. simulated](#what-is-real-vs-simulated) · [Documentation](#documentation)
 
 </div>
 
 ---
 
-## What Corrix does
+## Overview
 
-Indian heavy industry runs five or more safety systems that are each individually competent and collectively blind to each other. A rising gas reading is routine. A hot-work permit is routine. A hot-work permit in a zone where gas is trending up, right before a shift changeover, is a compound risk that no single system is built to catch. Corrix fuses gas and process sensors, permit-to-work records, shift schedules, computer-vision site observation, and worker location into one reasoning layer that catches these combinations before they become incidents, with full explainable reasoning and minutes of lead time.
+Indian heavy industry runs five or more safety systems that are each individually competent and collectively blind to each other. A rising gas reading is routine. A hot-work permit is routine. A hot-work permit in a zone where gas is trending up, right before a shift changeover, with a worker present, is a **compound risk** that no single system is built to catch, because no single system holds all four facts at once.
 
-## Key features
+Corrix is the correlation layer that closes that gap. It fuses five normally-siloed data streams, gas and process sensors, permit-to-work records, shift schedules, computer-vision site observation, and worker location, into one reasoning layer that catches these combinations before they become incidents, with full explainable reasoning and minutes of lead time. It is grounded in the real, verifiable June 8, 2025 Visakhapatnam Steel Plant incident.
 
-- **The Safety Council**: five specialized AI agents (Process Safety Engineer, Permit Control Officer, Shift Operations, Site Safety Observer, and a synthesizing Chair), orchestrated as a LangGraph state machine. Each agent can only query the data source its real-world counterpart would have, so the compound-risk thesis is enforced by the architecture, not just claimed.
-- **Joint-Evidence Novelty Detector**: catches compound risks that match no scripted pattern, proven live via the **Open Challenge**, which draws an unrehearsed evidence combination and runs it in front of the audience.
-- **Self-improving memory loop**: learns from its own past misses, with the improvement measured only on a held-out set it never trained on (a generalization result, not memorization).
-- **Live Time-to-Critical forecasting**: a per-zone probability band via Monte Carlo rollout, not a bare countdown.
-- **Geospatial command center**: a live deck.gl heatmap with a toggleable real 3D plant view, live worker-location markers, and risk-aware evacuation routing that avoids other unsafe zones.
-- **Counterfactual Replay**: a synchronized split-screen showing what a legacy single-signal system would have seen versus what Corrix catches, with real lead time.
-- **Regulatory Intelligence**: a Neo4j GraphRAG layer over real OISD, Factories Act 1948, and DGMS source text, answering "what does the regulation say," "has this pattern happened before," and compliance checks through one interface.
-- **Emergency Response Orchestrator**: fires a real notification with a timestamped, hashed evidence snapshot on a CRITICAL verdict, and a one-click PDF Incident Report.
-- **Safety Officer Override**: a real human-in-the-loop interrupt: the Council pauses mid-reasoning for a human note before the Chair decides.
-- **Corrix as an MCP provider**: the compound-risk state is exposed back out over MCP, so any external agent can query it directly.
+> **See it live.** The app opens on a landing page; select **Launch live demo** to enter the command center. A short context note and a guided tour introduce the interface, and a floating **Ask about Corrix** assistant answers questions about the system at any time.
 
-For the full picture of how everything is built and how a run flows end to end, see **[`docs/CORRIX_IMPLEMENTATION.md`](docs/CORRIX_IMPLEMENTATION.md)**.
+---
 
-## Documentation map
+## Capabilities
 
-| Document | What it covers |
+| Capability | What it does |
 |---|---|
-| [`docs/CORRIX_IMPLEMENTATION.md`](docs/CORRIX_IMPLEMENTATION.md) | What is built, every component, and the end-to-end runtime workflow |
-| [`docs/CORRIX_PROJECT.md`](docs/CORRIX_PROJECT.md) | Product vision, architecture, and the reasoning behind every decision |
-| [`docs/CORRIX_DATA_METHODOLOGY.md`](docs/CORRIX_DATA_METHODOLOGY.md) | Exact data and simulation formulas |
-| [`docs/CORRIX_BUILD_PLAN.md`](docs/CORRIX_BUILD_PLAN.md) | The ten-step build sequence |
-| [`docs/demo_script.md`](docs/demo_script.md) | A timed, rehearsed live-demo script |
-| [`docs/pitch_deck.html`](docs/pitch_deck.html) | The pitch deck (open in a browser) |
+| **The Safety Council** | Five specialized AI agents (Process Safety Engineer, Permit Control Officer, Shift Operations, Site Safety Observer, and a synthesizing Chair) orchestrated as a LangGraph state machine. Each agent can only query the data source its real-world counterpart would have, so the compound-risk thesis is enforced by the architecture, not just claimed. |
+| **Joint-Evidence Novelty Detector** | Catches compound risks that match no scripted pattern, proven live via the **Open Challenge**, which draws an unrehearsed evidence combination and runs it in front of the audience. |
+| **Grounded regulatory citations** | Every verdict cites the specific OISD, Factories Act 1948, or DGMS clause it is grounded in, retrieved from a live Neo4j GraphRAG substrate. |
+| **Time-to-Critical forecasting** | A per-zone probability band via Monte Carlo rollout over the simulator's own physics, not a bare countdown. |
+| **Spatial risk propagation** | Predicts where a compound risk could spread across the plant's adjacency graph if it is not contained. |
+| **Interactive what-if mitigation** | Test an intervention (isolate the source, add ventilation, suspend the permit) and see the predicted change in time-to-critical before acting. Physics interventions re-run the real forecaster. |
+| **Self-improving memory loop** | Learns from its own past misses, with the improvement measured only on a held-out set it never trained on, a generalization result, not memorization. |
+| **Geospatial command center** | A live deck.gl heatmap with a toggleable real 3D plant view, live worker-location markers, and risk-aware evacuation routing that avoids other unsafe zones. |
+| **Counterfactual Replay** | A synchronized split-screen showing what a legacy single-signal system would have seen versus what Corrix catches, with real lead time. |
+| **Emergency Response Orchestrator** | Fires a real notification with a timestamped, SHA-256-hashed evidence snapshot on a CRITICAL verdict, plus a one-click PDF Incident Report. |
+| **Safety Officer Override** | A real human-in-the-loop interrupt: the Council pauses mid-reasoning for a human note before the Chair decides. |
+| **Corrix as an MCP provider** | The compound-risk state is exposed back out over the Model Context Protocol, so any external agent can query it directly. |
 
-## Technology stack
+---
 
-**Backend:** Python 3.13, FastAPI, LangGraph, the official MCP SDK, Groq (primary inference) with Gemini (fallback and multimodal), Neo4j AuraDB with native vector search (GraphRAG), sentence-transformers (local embeddings), Ultralytics YOLO11n (computer vision), Playwright/Chromium (PDF generation).
+## Architecture
 
-**Frontend:** React 19, TypeScript, Vite, Tailwind CSS v4, deck.gl (2D geospatial), React Three Fiber (3D), Framer Motion (animation), Zustand (state).
+<div align="center">
+
+![Corrix architecture](docs/assets/architecture_diagram.png)
+
+</div>
+
+Corrix is organized in layers, each a distinct part of the codebase:
+
+1. **Data & simulation** produces physics-informed synthetic sensor, permit, shift, and worker-location data per scenario, plus a real computer-vision inference path.
+2. **MCP tool layer** exposes each data subsystem as a Model Context Protocol server. Each Council agent is scoped to only its own server, enforcing the compound-risk thesis at the architecture level.
+3. **Compound-risk detection engine** runs the fast statistical and rule-based path, an independent joint-evidence novelty detector, a Monte Carlo forecaster, and risk-aware evacuation routing.
+4. **The Safety Council** is a LangGraph state machine: four evidence agents plus a synthesizing Chair, human-interruptible mid-reasoning.
+5. **Regulatory Intelligence** is a Neo4j GraphRAG substrate over real OISD, Factories Act 1948, and DGMS source text.
+6. **Specialized outputs**: the geospatial command center, the alert feed, the PDF Incident Report generator, and the Emergency Response Orchestrator.
+
+For the full component-by-component build and the end-to-end runtime workflow, see **[`docs/CORRIX_IMPLEMENTATION.md`](docs/CORRIX_IMPLEMENTATION.md)**.
+
+---
+
+## Technology
+
+**Backend** &nbsp;·&nbsp; Python 3.13 · FastAPI · LangGraph · the official MCP SDK · Groq (primary inference) with Gemini (fallback and multimodal) · Neo4j AuraDB with native vector search (GraphRAG) · sentence-transformers (local embeddings) · Ultralytics YOLO11n (computer vision) · Playwright/Chromium (PDF generation) · NumPy and pandas.
+
+**Frontend** &nbsp;·&nbsp; React 19 · TypeScript · Vite · Tailwind CSS v4 · deck.gl (2D geospatial) · React Three Fiber with drei and postprocessing (3D) · Framer Motion (animation) · Zustand (state) · lucide-react (icons).
+
+**Deployment** &nbsp;·&nbsp; a multi-stage Docker image serving both the API and the built frontend from one process, deployable to Render via `render.yaml`.
 
 ---
 
@@ -59,17 +112,17 @@ For the full picture of how everything is built and how a run flows end to end, 
   - A **Neo4j AuraDB Free** instance ([free tier](https://neo4j.com/cloud/aura-free/)): connection URI, username, password
   - Optionally, SMTP credentials for the Emergency Response Orchestrator's email alerts
 
-## What is NOT in this repository
+### What is not in this repository
 
-Several folders are intentionally excluded from git (see `.gitignore`). After cloning, you will not have these, and the steps below tell you how each is regenerated or supplied:
+Several folders are intentionally excluded from git (see `.gitignore`). After cloning you will not have these; the steps below tell you how each is regenerated or supplied.
 
 | Not in git | What it is | How you get it |
 |---|---|---|
 | `.env` | Your real API keys and credentials | Copy `.env.example` to `.env` and fill it in (step 2) |
 | `backend/.venv/` | Python virtual environment | Recreated by the setup steps |
 | `frontend/node_modules/` | Frontend dependencies | Recreated by `npm install` |
-| `frontend/dist/` | Production frontend build | Recreated by `npm run build` (only needed for the single-service/Docker path) |
-| `backend/runs/`, `backend/*.pt`, `backend/datasets/` | Trained CV model weights and training data | The CV pipeline automatically falls back to a base YOLO11n model (auto-downloaded on first use). Retraining is optional and documented in `backend/scripts/train_ppe_model.py` |
+| `frontend/dist/` | Production frontend build | Recreated by `npm run build` (only for the single-service/Docker path) |
+| `backend/runs/`, `backend/*.pt`, `backend/datasets/` | Trained CV weights and training data | The CV pipeline falls back to a base YOLO11n model (auto-downloaded on first use). Retraining is optional, see `backend/scripts/train_ppe_model.py` |
 | `data/swat/` | The access-restricted real SWaT industrial dataset | Not needed to run Corrix. It was used once, offline, to generate `data/evaluation/swat_validation.json`, which **is** committed |
 
 Everything else the app needs at runtime **is** committed: the scenario library (`data/scenarios/`), the plant layout (`data/layout/`), the regulatory source PDFs and corpus (`data/regulatory/`), and the precomputed evaluation results (`data/evaluation/`).
@@ -78,16 +131,14 @@ Everything else the app needs at runtime **is** committed: the scenario library 
 
 ## Quick start
 
-### Clone
-
 ```bash
-git clone <your-repo-url> Corrix
+git clone https://github.com/sumanthd032/Corrix.git
 cd Corrix
 ```
 
 ### Option A: Visual demo, no credentials needed (fastest)
 
-The frontend runs as a complete visual demo on built-in mock data, with no backend and no API keys. This is the quickest way to see the full UI, including the 3D plant view, the Council convening, and every scenario.
+The frontend runs as a complete visual demo on built-in data, with no backend and no API keys. This is the quickest way to see the full UI: the landing page, the 3D plant view, the Council convening, and every scenario.
 
 ```bash
 cd frontend
@@ -95,7 +146,7 @@ npm install
 npm run dev
 ```
 
-Open the URL Vite prints (default `http://localhost:5173`). The indicator in the bottom-left will read "mock data", which is expected without a backend.
+Open the URL Vite prints (default `http://localhost:5173`) and select **Launch live demo**. The connection indicator in the top bar will read **Backend offline**, which is expected without a backend, and the dashboard runs on representative data.
 
 ### Option B: Full live system
 
@@ -158,24 +209,24 @@ npm install     # if not already done
 npm run dev
 ```
 
-Open `http://localhost:5173`. It must be port **5173**, the only origin the backend's CORS policy allows in development. If Vite picks a different port because 5173 is busy, free up 5173, or set `CORRIX_EXTRA_CORS_ORIGIN` in `.env` to the origin Vite actually used. The bottom-left indicator should now read "backend live".
+Open `http://localhost:5173`. It must be port **5173**, the only origin the backend's CORS policy allows in development. If Vite picks a different port because 5173 is busy, free up 5173 or set `CORRIX_EXTRA_CORS_ORIGIN` in `.env` to the origin Vite actually used. After launching the demo, the top-bar indicator should read **LIVE**.
 
 ---
 
-## Running the tests
+## Testing
 
 ```bash
 cd backend
 pytest
 ```
 
-There are 382 tests. Some make real Groq/Gemini calls and real Neo4j reads; they skip cleanly on a genuine rate limit rather than failing.
+A comprehensive suite of **400+ tests** covers schemas, simulation, every detection path, the Council graph and its silos, the cached-fallback path, regulatory ingestion and retrieval, the MCP servers (including a real external-client round trip), the evaluation harness, calibration, the memory loop, evacuation routing, the ERO, and the Incident Report generator. Tests that make real Groq/Gemini calls or real Neo4j reads skip cleanly on a genuine rate limit rather than failing.
 
-## Production build and deployment
+---
+
+## Deployment
 
 The deployed instance is a **single service**: the backend serves both the API/WebSocket and the built frontend from one FastAPI process, so there is no CORS to configure and nothing to run separately. This is exactly what the `Dockerfile` builds.
-
-Build and run the production image locally:
 
 ```bash
 # from the repo root
@@ -185,7 +236,21 @@ docker run -p 8000:8000 --env-file .env corrix
 
 Then open `http://localhost:8000`.
 
-To deploy to Render: push to GitHub, choose **New > Blueprint** in Render and point it at the repo (it reads `render.yaml`), and enter the real secrets (`GROQ_API_KEY`, `GEMINI_API_KEY`, `NEO4J_*`, and the ERO variables if wanted) through Render's dashboard when prompted. Remember to run `python scripts/setup_neo4j.py` once against the Neo4j instance the deployed app will use. The free plan cold-starts after inactivity, so visit the URL once a minute or two before any demo.
+To deploy to **Render**: push to GitHub, choose **New → Blueprint** and point it at the repo (it reads `render.yaml`), and enter the real secrets (`GROQ_API_KEY`, `GEMINI_API_KEY`, `NEO4J_*`, and the ERO variables if wanted) through Render's dashboard when prompted. Run `python scripts/setup_neo4j.py` once against the Neo4j instance the deployed app will use. The free plan cold-starts after inactivity, so visit the URL a minute or two before any demo.
+
+---
+
+## What is real vs. simulated
+
+Corrix is deliberate about this, and it is part of the strategy.
+
+**Genuinely real** &nbsp;·&nbsp; the LLM reasoning (Groq/Gemini), the Neo4j GraphRAG substrate and its retrieval, the regulatory source text, the computer-vision inference (a real YOLO forward pass), the MCP integration in both directions, the Monte Carlo forecaster, the evaluation methodology, and the SWaT external validation.
+
+**Calibrated simulation** &nbsp;·&nbsp; the gas, permit, shift, and worker-location streams, because no public real Indian plant SCADA dataset exists. The gas simulator uses an Ornstein-Uhlenbeck process, and its noise-to-signal ratio (0.043–0.055) was validated to fall inside the real SWaT industrial dataset's observed range (0.012–0.117).
+
+The in-app **Behind the Data** page (top bar) explains all of this visually, including how the gas process is formed and how the simulation is validated.
+
+---
 
 ## Project structure
 
@@ -193,10 +258,10 @@ To deploy to Render: push to GitHub, choose **New > Blueprint** in Render and po
 Corrix/
 ├── backend/
 │   ├── app/
-│   │   ├── api/           FastAPI routes and the scenario WebSocket
+│   │   ├── api/           FastAPI routes, the scenario WebSocket, what-if, assistant
 │   │   ├── council/       The Safety Council (LangGraph, agents, Chair, LLM client)
 │   │   ├── cv/            Computer-vision inference (YOLO)
-│   │   ├── detection/     Anomaly scoring, novelty, forecasting, evacuation routing
+│   │   ├── detection/     Anomaly scoring, novelty, forecasting, evacuation, propagation
 │   │   ├── emergency/     Emergency Response Orchestrator
 │   │   ├── evaluation/    Evaluation harness, calibration, SWaT validation
 │   │   ├── mcp_servers/   The five inward + one outward MCP servers
@@ -207,10 +272,10 @@ Corrix/
 │   │   ├── simulation/    Physics-informed data generators and scenario engine
 │   │   └── state/         Live risk state and incident alert state
 │   ├── scripts/           Setup, evaluation, training, and diagnostic scripts
-│   └── tests/             382 tests
+│   └── tests/             400+ tests
 ├── frontend/
 │   └── src/
-│       ├── components/    Heatmap, 3D plant scene, Council, modals, chat, boot sequence
+│       ├── components/    Landing, command center, heatmap, 3D scenes, Council, modals
 │       ├── store/         Zustand state
 │       ├── lib/           WebSocket hook and helpers
 │       └── data/          Mock data and the plant layout
@@ -220,9 +285,30 @@ Corrix/
 └── render.yaml            Render deployment blueprint
 ```
 
+---
+
+## Documentation
+
+| Document | What it covers |
+|---|---|
+| [`docs/CORRIX_IMPLEMENTATION.md`](docs/CORRIX_IMPLEMENTATION.md) | What is built, every component, and the end-to-end runtime workflow |
+| [`docs/CORRIX_PROJECT.md`](docs/CORRIX_PROJECT.md) | Product vision, architecture, and the reasoning behind every decision |
+| [`docs/CORRIX_DATA_METHODOLOGY.md`](docs/CORRIX_DATA_METHODOLOGY.md) | Exact data and simulation formulas |
+| [`docs/CORRIX_BUILD_PLAN.md`](docs/CORRIX_BUILD_PLAN.md) | The ten-step build sequence |
+| [`docs/demo_script.md`](docs/demo_script.md) | A timed, rehearsed live-demo script |
+| [`docs/pitch_deck.html`](docs/pitch_deck.html) | The pitch deck (open in a browser) |
+
+---
+
 ## Troubleshooting
 
-- **Frontend shows "mock data" instead of "backend live"**: the backend is not reachable. Confirm it is running on port 8000 and that the frontend is on port 5173.
+- **The top bar shows "Backend offline"**: the backend is not reachable. Confirm it is running on port 8000 and that the frontend is on port 5173. The dashboard runs on representative data until it reconnects.
 - **`ImportError: libGL.so.1` (Linux/Docker)**: the OpenCV headless step was skipped; re-run the `--force-reinstall --no-deps opencv-python-headless` line.
 - **Regulatory chat or pattern lookup returns nothing on the live backend**: Neo4j was not populated; run `python scripts/setup_neo4j.py`.
 - **A Council convening returns a low-confidence "fallback" verdict**: both LLM providers were rate-limited or unreachable; this is the intended graceful degradation, not a crash. Check your Groq/Gemini quota.
+
+---
+
+## License
+
+Proprietary. All rights reserved. Not licensed for reuse or redistribution without permission.
