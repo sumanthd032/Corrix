@@ -1,8 +1,8 @@
 """Bring Your Own Factory: the live-factory WebSocket, per
-CORRIX_REAL_DATA_BUILD_PLAN.md Steps 8 and 18. A sibling to
+CORRIX_REAL_DATA_BUILD_PLAN.md Steps 8, 18, and 25. A sibling to
 app/api/websocket.py, not a rewrite: streams real ingested readings
-(CSV replay or the live MQTT virtual-sensor path; OPC-UA follows in
-Phase 5) instead of a precomputed scenario playback, scores gas
+(CSV replay, the live MQTT virtual-sensor path, or the OPC-UA virtual
+SCADA path) instead of a precomputed scenario playback, scores gas
 readings with the same z-score classifier the synthetic path uses
 (app.detection.anomaly_scorer), and calls the exact same _run_council
 (Step 7) when a zone crosses threshold. No Council, detection, or
@@ -63,6 +63,7 @@ from app.detection.anomaly_scorer import AnomalyPoint, calibrate_baseline, class
 from app.ingestion.csv_ingest import replay_csv
 from app.ingestion.csv_upload_store import load_uploaded_csv
 from app.ingestion.mqtt_ingest import MqttReading, stream_mqtt
+from app.ingestion.opcua_ingest import stream_opcua
 from app.schemas import (
     BadgeEventType,
     BadgePingEvent,
@@ -164,13 +165,16 @@ async def live_factory_websocket(websocket: WebSocket) -> None:
         ingest_task = asyncio.create_task(
             stream_mqtt(factory_id, settings.mqtt_broker_host, settings.mqtt_broker_port, reading_queue)
         )
+    elif profile.data_source == "opcua":
+        settings = get_settings()
+        ingest_task = asyncio.create_task(stream_opcua(settings.opcua_endpoint_url, reading_queue))
     else:
         await websocket.send_json(
             {
                 "type": "error",
                 "message": (
                     f"Data source {profile.data_source!r} is not yet supported over "
-                    "this connection; only csv and mqtt are implemented."
+                    "this connection; only csv, mqtt, and opcua are implemented."
                 ),
             }
         )
