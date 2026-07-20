@@ -1,13 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Loader2, MessageCircleQuestion, Send, Sparkles, X } from 'lucide-react'
 
 /**
- * A floating "Ask about Corrix" assistant. A pill button in the bottom-right
- * opens a small chat that answers questions about the project (what it is,
- * how it works, what's real vs. simulated) via /api/assistant. Distinct from
- * the in-dashboard Regulatory Intelligence chat, which answers questions
- * about the regulations, not the product.
+ * A floating "Ask about Corrix" assistant. A round action button in the
+ * bottom-right opens a small chat that answers questions about the project
+ * (what it is, how it works, what's real vs. simulated) via /api/assistant.
+ *
+ * Rendered through a portal to document.body with inline fixed positioning
+ * and a fixed pixel width, so no ancestor's layout, overflow, or
+ * backdrop-filter containing block can constrain or clip it. (An earlier
+ * version set its width with a Tailwind arbitrary class containing an
+ * invalid calc(), which silently stretched the panel full width.)
  */
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
 
@@ -62,27 +67,9 @@ export function ProjectAssistant() {
     }
   }
 
-  return (
+  return createPortal(
     <>
-      {/* Launcher */}
-      <motion.button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-5 right-5 z-[70] flex items-center gap-2 rounded-full border px-4 py-3 text-sm font-medium shadow-lg"
-        style={{
-          borderColor: 'color-mix(in srgb, var(--color-accent) 50%, transparent)',
-          background: 'linear-gradient(180deg, color-mix(in srgb, var(--color-accent) 22%, var(--color-surface-1)), var(--color-surface-1))',
-          color: 'var(--color-accent)',
-          boxShadow: '0 0 24px -6px color-mix(in srgb, var(--color-accent) 60%, transparent), var(--shadow-raised)',
-        }}
-        whileHover={{ y: -2 }}
-        whileTap={{ scale: 0.96 }}
-        aria-label="Ask about Corrix"
-      >
-        {open ? <X size={17} aria-hidden="true" /> : <MessageCircleQuestion size={17} aria-hidden="true" />}
-        <span className="hidden sm:inline">{open ? 'Close' : 'Ask about Corrix'}</span>
-      </motion.button>
-
+      {/* Chat panel */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -90,19 +77,34 @@ export function ProjectAssistant() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.97 }}
             transition={{ duration: 0.22, ease: 'easeOut' }}
-            className="glass-panel corner-frame fixed bottom-20 right-5 z-[70] flex w-[min(380px,calc(100vw-2.5rem))] flex-col overflow-hidden"
-            style={{ height: 'min(520px, calc(100vh - 8rem))' }}
+            className="glass-panel corner-frame flex flex-col overflow-hidden"
+            style={{
+              position: 'fixed',
+              right: 20,
+              bottom: 84,
+              zIndex: 80,
+              width: 'min(380px, calc(100vw - 40px))',
+              height: 'min(520px, calc(100vh - 130px))',
+            }}
+            role="dialog"
+            aria-label="Ask about Corrix"
           >
-            {/* Header */}
             <div className="flex items-center gap-2 border-b border-[var(--color-hairline)] px-4 py-3">
               <Sparkles size={15} className="text-[var(--color-accent)]" aria-hidden="true" />
               <div className="flex flex-col leading-tight">
                 <span className="font-display text-sm font-semibold text-[var(--color-text-primary)]">Ask about Corrix</span>
                 <span className="eyebrow">Project assistant</span>
               </div>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="ml-auto rounded-[var(--radius-control)] p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                aria-label="Close"
+              >
+                <X size={16} aria-hidden="true" />
+              </button>
             </div>
 
-            {/* Messages */}
             <div ref={scrollRef} className="thin-scroll flex flex-1 flex-col gap-3 overflow-y-auto p-4">
               {messages.map((m) => (
                 <div
@@ -138,7 +140,6 @@ export function ProjectAssistant() {
               )}
             </div>
 
-            {/* Input */}
             <form
               onSubmit={(e) => { e.preventDefault(); send(draft) }}
               className="flex items-center gap-2 border-t border-[var(--color-hairline)] p-3"
@@ -163,6 +164,45 @@ export function ProjectAssistant() {
           </motion.div>
         )}
       </AnimatePresence>
-    </>
+
+      {/* Floating action button */}
+      <motion.button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          position: 'fixed',
+          right: 20,
+          bottom: 20,
+          zIndex: 81,
+          height: 54,
+          width: 54,
+          borderRadius: 999,
+          border: '1px solid color-mix(in srgb, var(--color-accent) 55%, transparent)',
+          background: 'linear-gradient(180deg, color-mix(in srgb, var(--color-accent) 26%, var(--color-surface-1)), var(--color-surface-1))',
+          color: 'var(--color-accent)',
+          boxShadow: '0 0 26px -4px color-mix(in srgb, var(--color-accent) 65%, transparent), 0 12px 28px -10px rgba(0,0,0,0.8)',
+          display: 'grid',
+          placeItems: 'center',
+        }}
+        whileHover={{ y: -3, scale: 1.05 }}
+        whileTap={{ scale: 0.94 }}
+        aria-label={open ? 'Close assistant' : 'Ask about Corrix'}
+        title="Ask about Corrix"
+      >
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.span
+            key={open ? 'x' : 'q'}
+            initial={{ opacity: 0, rotate: -30 }}
+            animate={{ opacity: 1, rotate: 0 }}
+            exit={{ opacity: 0, rotate: 30 }}
+            transition={{ duration: 0.15 }}
+            style={{ display: 'grid', placeItems: 'center' }}
+          >
+            {open ? <X size={22} aria-hidden="true" /> : <MessageCircleQuestion size={23} aria-hidden="true" />}
+          </motion.span>
+        </AnimatePresence>
+      </motion.button>
+    </>,
+    document.body,
   )
 }
