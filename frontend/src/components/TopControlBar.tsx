@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { useCorrixStore } from '../store/useCorrixStore'
 import { Tooltip } from './Tooltip'
+import { ConnectionPill } from './ConnectionPill'
 import { CounterfactualReplayModal } from './CounterfactualReplayModal'
 import { EvaluationReportModal } from './EvaluationReportModal'
 
@@ -111,27 +112,7 @@ export function TopControlBar({ onStartTour }: { onStartTour?: () => void }) {
             <span className="eyebrow mt-0.5">Compound Risk Ops</span>
           </div>
         </div>
-        <span
-          className="flex items-center gap-1.5 rounded-[var(--radius-sharp)] border px-2 py-1 eyebrow"
-          style={{
-            borderColor:
-              connectionMode === 'live'
-                ? 'color-mix(in srgb, var(--color-accent) 45%, transparent)'
-                : 'var(--color-hairline)',
-            color: connectionMode === 'live' ? 'var(--color-accent)' : 'var(--color-text-tertiary)',
-          }}
-          title={
-            connectionMode === 'live'
-              ? 'Connected to the live backend: real scenario stream and Safety Council'
-              : 'Backend unreachable, showing mock data'
-          }
-        >
-          <span
-            className="h-1.5 w-1.5 rounded-full"
-            style={{ backgroundColor: connectionMode === 'live' ? 'var(--color-accent)' : 'var(--color-text-tertiary)' }}
-          />
-          {connectionMode === 'live' ? 'LIVE' : 'MOCK'}
-        </span>
+        <ConnectionPill />
       </div>
 
       {/* Scenario selector */}
