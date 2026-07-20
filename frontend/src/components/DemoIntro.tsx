@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom'
 import { motion } from 'framer-motion'
-import { Database, Play, Wifi, WifiOff } from 'lucide-react'
+import { Clock, Database, Play, Wifi, WifiOff } from 'lucide-react'
 import { useCorrixStore } from '../store/useCorrixStore'
 
 /**
@@ -52,6 +52,12 @@ export function DemoIntro({ onStartTour, onSkip }: { onStartTour: () => void; on
             <Database size={16} className="mt-0.5 shrink-0 text-[var(--color-accent)]" aria-hidden="true" />
             <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
               The AI reasoning, regulatory search, and computer vision are genuinely real. The plant sensor streams are calibrated simulation, validated against a real industrial dataset.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <Clock size={16} className="mt-0.5 shrink-0 text-[var(--color-text-tertiary)]" aria-hidden="true" />
+            <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
+              This runs on a small free-tier server, so a live Council convening or the first regulatory query can take a few seconds. The reasoning is real, not canned, so it is worth the short wait.
             </p>
           </div>
         </div>
