@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.api.evaluation import router as evaluation_router
+from app.api.factory import router as factory_router
 from app.api.incident_report import router as incident_report_router
 from app.api.assistant import router as assistant_router
 from app.api.regulatory_chat import router as regulatory_chat_router
@@ -41,6 +42,7 @@ app.add_middleware(
 )
 
 app.include_router(evaluation_router)
+app.include_router(factory_router)
 app.include_router(replay_router)
 app.include_router(incident_report_router)
 app.include_router(regulatory_chat_router)
