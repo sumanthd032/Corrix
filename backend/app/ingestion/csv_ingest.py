@@ -85,10 +85,18 @@ async def replay_csv(
                 f"row has an unrecognized gas_type {row[gas_type_column]!r}: {exc}"
             ) from exc
 
+        try:
+            concentration = float(row[gas_concentration_column])
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"column_map['gas_concentration'] column {gas_concentration_column!r} has a "
+                f"non-numeric value {row[gas_concentration_column]!r}: {exc}"
+            ) from exc
+
         reading = GasSensorReading(
             zone_id=str(row[zone_column]),
             gas_type=gas_type,
-            concentration=float(row[gas_concentration_column]),
+            concentration=concentration,
             unit=str(row[unit_column]) if unit_column else DEFAULT_UNIT,
             timestamp=timestamp,
         )

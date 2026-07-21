@@ -49,6 +49,13 @@ class Settings(BaseSettings):
     mqtt_broker_host: str = "test.mosquitto.org"
     mqtt_broker_port: int = 1883
 
+    # Bring Your Own Factory, Virtual OPC-UA path (CORRIX_REAL_DATA_
+    # BUILD_PLAN.md Step 25). Points at scripts/virtual_scada_server.py
+    # running locally by default; that script must be started manually
+    # (a separate process) before a factory with data_source="opcua"
+    # can produce any real ticks.
+    opcua_endpoint_url: str = "opc.tcp://localhost:4840/freeopcua/server/"
+
 
 @lru_cache
 def get_settings() -> Settings:

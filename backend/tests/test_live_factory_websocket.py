@@ -114,6 +114,128 @@ def test_live_factory_websocket_unknown_factory_returns_error():
         assert msg["type"] == "error"
 
 
+def test_websocket_reflects_real_uploaded_permits_and_badges_alongside_gas():
+    """Confirms the CSV data source is no longer gas-only: uploading a
+    permit log and a badge log alongside the gas historian populates
+    the same worker_positions/permits_by_id state the MQTT path
+    already relies on, instead of Council convenings on a CSV factory
+    always citing "no active permits"/"no workers detected"."""
+    import json
+
+    factory_id = "factory-live-ws-fusion-test"
+    client = TestClient(app)
+    profile = FactoryProfile(
+        factory_id=factory_id,
+        name="Fusion Test Steelworks",
+        industry="steel",
+        location=None,
+        layout=PlantLayout(
+            zones=[
+                Zone(
+                    zone_id=ZONE_ID,
+                    name="Test Zone",
+                    hazard_class=HazardClass.HIGH,
+                    primary_role="casting",
+                    is_confined_space=False,
+                    is_assembly_point=False,
+                )
+            ],
+            adjacency=[],
+        ),
+        permit_types_in_use=["hot_work"],
+        shift_pattern=[],
+        data_source="csv",
+        created_at=datetime(2026, 7, 20, 0, 0, tzinfo=timezone.utc),
+    )
+    permit_csv = (
+        "id,ptype,zone,issuer,start,end,st\n"
+        f"P-9001,hot_work,{ZONE_ID},J. Rao,2026-07-20T09:55:00Z,2026-07-20T10:20:00Z,active\n"
+    ).encode("utf-8")
+    badge_csv = (
+        "ts,badge,z,ev\n"
+        f"2026-07-20T10:00:00Z,W-BG-777,{ZONE_ID},zone_entry\n"
+    ).encode("utf-8")
+
+    try:
+        save_factory(profile)
+        gas_response = client.post(
+            f"/api/factory/{factory_id}/csv-upload",
+            files={"file": ("readings.csv", _build_csv(), "text/csv")},
+            data={
+                "column_map": json.dumps(
+                    {
+                        "timestamp": "ts",
+                        "zone": "zone",
+                        "gas_concentration": "conc",
+                        "gas_type": "gas",
+                    }
+                ),
+                "speed_multiplier": "1000000",
+            },
+        )
+        assert gas_response.status_code == 200
+
+        permit_response = client.post(
+            f"/api/factory/{factory_id}/permit-upload",
+            files={"file": ("permits.csv", permit_csv, "text/csv")},
+            data={
+                "column_map": json.dumps(
+                    {
+                        "permit_id": "id",
+                        "type": "ptype",
+                        "zone": "zone",
+                        "issued_by": "issuer",
+                        "start_time": "start",
+                        "end_time": "end",
+                        "status": "st",
+                    }
+                ),
+                "speed_multiplier": "1000000",
+            },
+        )
+        assert permit_response.status_code == 200
+        assert permit_response.json()["rowsIngested"] == 1
+
+        badge_response = client.post(
+            f"/api/factory/{factory_id}/badge-upload",
+            files={"file": ("badges.csv", badge_csv, "text/csv")},
+            data={
+                "column_map": json.dumps(
+                    {
+                        "timestamp": "ts",
+                        "badge_id": "badge",
+                        "zone": "z",
+                        "event_type": "ev",
+                    }
+                ),
+                "speed_multiplier": "1000000",
+            },
+        )
+        assert badge_response.status_code == 200
+        assert badge_response.json()["rowsIngested"] == 1
+
+        seen_worker_dicts: list[dict] = []
+        verdict_seen = False
+        with client.websocket_connect("/ws/live-factory") as websocket:
+            websocket.send_json({"type": "connect", "factory_id": factory_id})
+            for _ in range(200):
+                msg = websocket.receive_json()
+                if msg["type"] == "tick":
+                    seen_worker_dicts.append(msg["workers"])
+                if msg["type"] == "verdict":
+                    verdict_seen = True
+                    break
+                if msg["type"] in ("replay_complete", "error"):
+                    break
+
+        assert verdict_seen
+        assert any(workers == {"W-BG-777": ZONE_ID} for workers in seen_worker_dicts), (
+            f"badge W-BG-777 never appeared in Zone {ZONE_ID} on any tick: {seen_worker_dicts}"
+        )
+    finally:
+        _delete_factory(factory_id)
+
+
 def test_websocket_streams_from_a_real_http_uploaded_csv():
     """Step 9's actual upload endpoint, not save_uploaded_csv called
     directly, feeding Step 8's websocket end to end."""

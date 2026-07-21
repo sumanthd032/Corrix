@@ -146,7 +146,7 @@ export function LandingPage({
             <a href="#proof">Evidence</a>
           </div>
           <div className="nav-cta">
-            <button type="button" className="btn btn-ghost" onClick={guardGetStarted}>Get Started</button>
+            <button type="button" className="btn btn-ghost" onClick={guardGetStarted}>Bring Your Own Factory</button>
             <button type="button" className="btn btn-primary" onClick={guardLaunch}>
               Launch live demo
               <svg className="ar" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
@@ -175,7 +175,7 @@ export function LandingPage({
                   <svg className="ar" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
                 </button>
                 <button type="button" className="btn btn-ghost" onClick={guardHowItWorks}>See how it works</button>
-                <button type="button" className="btn btn-ghost" onClick={guardGetStarted}>Get Started</button>
+                <button type="button" className="btn btn-ghost" onClick={guardGetStarted}>Bring Your Own Factory</button>
               </div>
               <div className="ticker">
                 <span className="lbl">LIVE FEED</span>

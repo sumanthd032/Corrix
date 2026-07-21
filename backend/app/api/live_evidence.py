@@ -11,6 +11,7 @@ from datetime import datetime
 from app.detection.anomaly_scorer import AnomalyPoint
 from app.detection.permit_conflict import active_permits_at
 from app.schemas import PermitRecord, ScenarioConfig, ShiftRecord
+from app.security.text_sanitizer import sanitize_for_prompt
 
 
 def format_process_safety_text(config: ScenarioConfig, point: AnomalyPoint) -> str:
@@ -33,9 +34,9 @@ def format_permit_text(config: ScenarioConfig, permits: list[PermitRecord], at_t
         return f"No active permits currently on file for Zone {config.zone}."
     parts = []
     for p in active:
-        text = f"{p.type.value} permit {p.permit_id}"
+        text = f"{p.type.value} permit {sanitize_for_prompt(p.permit_id)}"
         if p.linked_checklist_id:
-            text += f", linked to checklist {p.linked_checklist_id}"
+            text += f", linked to checklist {sanitize_for_prompt(p.linked_checklist_id)}"
         parts.append(text)
     return "; ".join(parts) + " active."
 
@@ -52,7 +53,9 @@ def format_shift_text(shifts: list[ShiftRecord], zone_id: str, at_time: datetime
 
 
 def format_site_safety_text(worker_positions: dict[str, str], zone_id: str) -> str:
-    present = sorted(badge for badge, z in worker_positions.items() if z == zone_id)
+    present = sorted(
+        sanitize_for_prompt(badge) for badge, z in worker_positions.items() if z == zone_id
+    )
     if not present:
         return f"No workers currently detected in Zone {zone_id}."
     named = ", ".join(present[:3])
