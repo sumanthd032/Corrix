@@ -24,9 +24,10 @@ export function LandingPage({
   const [noteOpen, setNoteOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
 
-  // Mobile guard: the interactive demo and the walkthrough modal both need
-  // more room than a phone screen gives them, so on mobile the CTAs open a
-  // blocking note instead of the real action.
+  // Mobile guard: the interactive demo, the walkthrough modal, and the
+  // Bring Your Own Factory wizard all need more room than a phone screen
+  // gives them, so on mobile the CTAs open a blocking note instead of the
+  // real action.
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 768px)')
     setIsMobile(mq.matches)
@@ -313,7 +314,7 @@ export function LandingPage({
         <div className="desktop-note-overlay" role="dialog" aria-modal="true" aria-label="Desktop recommended">
           <div className="desktop-note">
             <span className="d" />
-            <p>The live demo and the walkthrough are built for a larger screen. Recommended: use a desktop for the best experience.</p>
+            <p>The live demo, the walkthrough, and Bring Your Own Factory are built for a larger screen. Recommended: use a desktop for the best experience.</p>
             <button type="button" className="btn btn-primary" onClick={() => setNoteOpen(false)}>Understood</button>
           </div>
         </div>

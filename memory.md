@@ -877,3 +877,19 @@ External access: none.
 Open questions or blockers: `CLAUDE.md` still references `docs/CORRIX_BUILD_PLAN.md` as one of its three governing documents; the build is complete and the file is now deleted, so those references are stale. Raised with the user rather than edited silently. The `presentation/` folder is untracked by design; whether it should ever be committed is the user's call.
 
 Next action: none required. Recording the demo video (script in `presentation/`) is the user's own next step.
+
+---
+
+## 2026-07-21 — Regulatory Intelligence chat added to the BYOF live console, plus desktop-note copy fix, on branch `feature/bring-your-own-factory`
+
+What was done: two small frontend changes, each its own commit, both on `feature/bring-your-own-factory` only (`main` untouched, per explicit instruction).
+
+1. `LiveCommandCenter.tsx` now renders `RegulatoryChatDrawer` under `PlantHeatmap`, the same layout slot `App.tsx` gives it in the synthetic demo console. The drawer needed no changes: it is self-contained, reads chat state from `useCorrixStore`, and calls the global `POST /api/regulatory-chat` endpoint, which is not factory-scoped. For an mqtt-sourced factory the `VirtualSensorPanel` now stacks above the drawer instead of occupying the slot alone; the component doc comment was updated to say so. One consequence traced but accepted: the drawer's one-time contextual nudge waits for the demo tour's `corrix_tour_shown` session flag, which never gets set in the BYOF flow, so the nudge simply never fires there. Harmless, and the feature itself is fully reachable via its header button.
+
+2. The landing page's desktop-only note already guarded the Bring Your Own Factory button (`guardGetStarted`, from `main`'s cbabbe10, already an ancestor of this branch), but its copy only named "the live demo and the walkthrough". The copy and the mobile-guard code comment now name Bring Your Own Factory as well.
+
+Verification: `tsc --noEmit` clean and a full production `vite build` succeeded. Same caveat as the last entry: no browser-automation tool available, so the drawer rendering inside the live console was verified by code tracing and build, not by clicking through it.
+
+Commits: `feat(frontend): add the Regulatory Intelligence chat to the BYOF live console` and `fix(frontend): include Bring Your Own Factory in the desktop-only note copy`.
+
+Next action: push the branch to `origin/feature/bring-your-own-factory` (done immediately after this entry). A quick manual check in a browser, opening a launched BYOF factory and asking one question in the drawer, is still worth doing.
