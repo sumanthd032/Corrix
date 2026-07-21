@@ -21,7 +21,7 @@ The system is organized in layers, each a distinct part of the codebase:
 7. **Evaluation Harness** (`backend/app/evaluation/`) scores the whole pipeline against a labeled scenario library, including a held-out split for the self-improving memory loop and confidence-calibration reporting.
 8. **Frontend** (`frontend/`) is a React command-center UI: a live deck.gl heatmap with a toggleable 3D plant view, the Council convening as a 3D scene, and full motion design.
 
-An exported diagram of this architecture lives at `docs/assets/architecture_diagram.png` (and `.svg`).
+An exported diagram of this architecture lives at `docs/assets/architecture_diagram.png` (print version: `docs/corrix_architecture.pdf`, source: `docs/corrix_architecture.html`).
 
 ## 3. Backend components
 

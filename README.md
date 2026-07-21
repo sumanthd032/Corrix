@@ -74,13 +74,19 @@ Corrix is the correlation layer that closes that gap. It fuses five normally-sil
 
 ```mermaid
 flowchart TB
-    subgraph SRC["1 · Data and Simulation — five siloed streams"]
+    subgraph SRC["1a · Scripted demo — simulated streams"]
         direction LR
         GAS["Gas and process<br/>sensors"]
         PER["Permit-to-work"]
         SHF["Shift schedules"]
         CVS["Computer vision<br/>(real YOLO)"]
         LOC["Worker location"]
+    end
+
+    subgraph BYO["1b · Bring your own factory — live"]
+        direction LR
+        WIZ["Onboarding wizard<br/>zones + adjacency graph"]
+        MQT["MQTT broker · CSV replay ·<br/>virtual sensors"]
     end
 
     MCP["2 · MCP Tool Layer<br/>one server per data source"]
@@ -98,21 +104,25 @@ flowchart TB
         A2["Permit Control<br/>Officer"]
         A3["Shift<br/>Operations"]
         A4["Site Safety<br/>Observer"]
-        CHAIR{{"Chair<br/>synthesizes the verdict"}}
+        CHAIR{{"Chair<br/>synthesizes · 8 s human override"}}
     end
 
     REG[("5 · Regulatory Intelligence<br/>Neo4j GraphRAG<br/>OISD · Factories Act · DGMS")]
 
-    subgraph OUT["6 · Outputs"]
+    subgraph OUT["6 · Verdict enrichment + response"]
         direction LR
-        FC["Time-to-critical +<br/>evacuation route +<br/>risk propagation"]
+        FC["Time-to-critical ·<br/>evacuation route ·<br/>risk propagation · what-if"]
+        CIT["Grounded regulatory<br/>citations"]
         ERO["Emergency Response<br/>hashed-evidence email"]
         RPT["Incident Report<br/>PDF"]
     end
 
-    UI["Command Center UI<br/>heatmap · 3D plant · Council · alerts"]
+    UI["Command Center UI + Live Command Center<br/>heatmap · 3D plant · Council · alerts"]
+    EXT["Corrix as MCP provider<br/>external clients query live risk"]
 
-    SRC --> MCP --> DET
+    SRC --> MCP
+    BYO --> MCP
+    MCP --> DET
     MCP -. "agents query own server" .-> CNCL
     DET -- "trigger" --> CNCL
     A1 --> CHAIR
@@ -121,9 +131,10 @@ flowchart TB
     A4 --> CHAIR
     CHAIR --> REG
     CHAIR --> OUT
-    REG --> OUT
+    REG --> CIT
     OUT --> UI
     DET --> UI
+    CHAIR --> EXT
 
     classDef accent stroke:#2dd4e8,stroke-width:2px;
     class CHAIR,REG accent;
@@ -131,12 +142,14 @@ flowchart TB
 
 Corrix is organized in layers, each a distinct part of the codebase:
 
-1. **Data & simulation** produces physics-informed synthetic sensor, permit, shift, and worker-location data per scenario, plus a real computer-vision inference path.
+1. **Ingestion, two front doors**: the scripted scenario engine (physics-informed synthetic sensor, permit, shift, and worker-location data plus a real computer-vision inference path), and the live "bring your own factory" path (onboarding wizard, MQTT broker ingest, CSV historian replay, virtual sensor publisher).
 2. **MCP tool layer** exposes each data subsystem as a Model Context Protocol server. Each Council agent is scoped to only its own server, enforcing the compound-risk thesis at the architecture level.
-3. **Compound-risk detection engine** runs the fast statistical and rule-based path, an independent joint-evidence novelty detector, a Monte Carlo forecaster, and risk-aware evacuation routing.
+3. **Compound-risk detection engine** runs three independent triggers: the fast statistical and rule-based path, a joint-evidence novelty detector, and memory retrieval against stored past misses.
 4. **The Safety Council** is a LangGraph state machine: four evidence agents plus a synthesizing Chair, human-interruptible mid-reasoning.
-5. **Regulatory Intelligence** is a Neo4j GraphRAG substrate over real OISD, Factories Act 1948, and DGMS source text.
-6. **Specialized outputs**: the geospatial command center, the alert feed, the PDF Incident Report generator, and the Emergency Response Orchestrator.
+5. **Regulatory Intelligence** is a Neo4j GraphRAG substrate over real OISD, Factories Act 1948, and DGMS source text, grounding every verdict in real citations.
+6. **Verdict enrichment and response**: time-to-critical forecasting, risk-aware evacuation routing, spatial risk propagation, what-if mitigation, the geospatial command center (plus the BYOF Live Command Center), the PDF Incident Report generator, the Emergency Response Orchestrator, and an outward-facing MCP server exposing live risk.
+
+A print-ready one-page version of this diagram lives at [`docs/corrix_architecture.pdf`](docs/corrix_architecture.pdf) (exported image: [`docs/assets/architecture_diagram.png`](docs/assets/architecture_diagram.png)).
 
 For the full component-by-component build and the end-to-end runtime workflow, see **[`docs/CORRIX_IMPLEMENTATION.md`](docs/CORRIX_IMPLEMENTATION.md)**.
 
