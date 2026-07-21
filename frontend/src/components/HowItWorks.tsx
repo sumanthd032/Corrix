@@ -4,10 +4,10 @@ import { ArrowLeft, ArrowRight, X } from 'lucide-react'
 
 /**
  * A completely visual "how it works" walkthrough for the landing page.
- * Five stages, sensors to answer, each with a diagram and a plain-language
- * caption anyone can follow. A Simple / In-depth toggle swaps the caption
- * between everyday wording and the real technical detail. Rendered inside
- * the landing (`.corrix-landing`) so it inherits the landing's tokens.
+ * Five stages, sensors to answer, each with a diagram and one caption
+ * that pairs plain-language framing with the real technical detail.
+ * Rendered inside the landing (`.corrix-landing`) so it inherits the
+ * landing's tokens.
  */
 
 const CY = '#2dd4e8'
@@ -184,8 +184,7 @@ function VerdictVisual() {
 interface Stage {
   no: string
   title: string
-  simple: string
-  deep: string
+  copy: string
   Visual: () => ReactElement
 }
 
@@ -193,53 +192,42 @@ const STAGES: Stage[] = [
   {
     no: 'Step 1 of 5',
     title: 'The plant is full of sensors',
-    simple:
-      'A sensor is just a device that constantly measures something. Across the plant, Corrix reads five of them: how much gas is in the air, who has permission to work where, when shifts change over, what the cameras see, and where each worker is.',
-    deep:
-      'Five live data streams feed the platform: Ornstein-Uhlenbeck gas concentration in percent-LEL, permit-to-work records, shift rosters and changeover timing, YOLO computer-vision PPE detection, and RFID badge worker-location pings. Each is exposed as its own Model Context Protocol server.',
+    copy:
+      'Across the plant, Corrix reads five live data streams: gas concentration (an Ornstein-Uhlenbeck process in percent-LEL), permit-to-work records, shift rosters and changeover timing, YOLO computer-vision PPE detection, and RFID badge worker-location pings. Each is exposed as its own Model Context Protocol server.',
     Visual: SensorsVisual,
   },
   {
     no: 'Step 2 of 5',
     title: 'All the data flows into one place',
-    simple:
-      'Normally each of these systems has its own screen and its own team, and they never talk to each other. Corrix pulls all five streams together, live, so nothing is looked at in isolation.',
-    deep:
-      'The five MCP servers stream continuously into the platform over a WebSocket. This is the correlation layer: the five signals that are physically siloed in a real plant are brought into one shared reasoning context.',
+    copy:
+      'Normally each of these systems has its own screen and its own team, and they never talk to each other. Corrix pulls all five MCP servers together over a live WebSocket, so the signals that are physically siloed in a real plant are brought into one shared reasoning context.',
     Visual: FlowVisual,
   },
   {
     no: 'Step 3 of 5',
     title: 'It watches for dangerous combinations',
-    simple:
-      'Any single reading might be completely normal. The danger is in the combination, like gas creeping up while hot-work is happening, right before a shift change. Corrix is built to spot exactly those combinations.',
-    deep:
-      'A fast rule-and-threshold path (rolling z-score plus a deterministic permit-conflict rule) runs alongside an independent joint-evidence novelty detector (Mahalanobis distance over the fused evidence vector), so it also catches compound patterns nobody scripted in advance.',
+    copy:
+      'Any single reading might be completely normal. The danger is in the combination, like gas creeping up while hot-work is happening, right before a shift change. A fast rule-and-threshold path (rolling z-score plus a deterministic permit-conflict rule) runs alongside an independent joint-evidence novelty detector (Mahalanobis distance over the fused evidence vector), so it also catches compound patterns nobody scripted in advance.',
     Visual: CompoundVisual,
   },
   {
     no: 'Step 4 of 5',
     title: 'A team of AI experts reviews it',
-    simple:
-      'When something looks risky, five AI specialists weigh in. Four each study their own piece of the picture, then a chair combines their views into one decision. A human safety officer can step in before it is finalized.',
-    deep:
-      'A LangGraph state machine convenes four evidence agents, each scoped to only its own data source so no single agent can see the whole picture, feeding a synthesizing Chair. A real interrupt lets a safety officer inject a note before the Chair produces the verdict.',
+    copy:
+      'When something looks risky, a LangGraph state machine convenes four evidence agents, each scoped to only its own data source so no single agent can see the whole picture, feeding a synthesizing Chair. A real interrupt lets a safety officer inject a note before the Chair produces the final verdict.',
     Visual: CouncilVisual,
   },
   {
     no: 'Step 5 of 5',
     title: 'You get a clear answer and what to do',
-    simple:
-      'The result is plain: how risky it is and how sure Corrix is, how long until it becomes critical, the safest route out, and an automatic alert if it is an emergency, all with the reasoning shown.',
-    deep:
-      'The verdict carries a risk level, confidence, and compound flag, a Monte Carlo time-to-critical band, a risk-aware Dijkstra evacuation route, the regulation clause it is grounded in, and an SMTP emergency notification with a hashed evidence snapshot on a CRITICAL verdict.',
+    copy:
+      'The verdict carries a risk level, confidence, and compound flag, a Monte Carlo time-to-critical band, a risk-aware Dijkstra evacuation route, the regulation clause it is grounded in, and an SMTP emergency notification with a hashed evidence snapshot on a CRITICAL verdict, all with the reasoning shown.',
     Visual: VerdictVisual,
   },
 ]
 
 export function HowItWorks({ onClose }: { onClose: () => void }) {
   const [step, setStep] = useState(0)
-  const [depth, setDepth] = useState<'simple' | 'deep'>('simple')
   const stage = STAGES[step]
   const isLast = step === STAGES.length - 1
 
@@ -248,10 +236,6 @@ export function HowItWorks({ onClose }: { onClose: () => void }) {
       <div className="hiw-modal" onClick={(e) => e.stopPropagation()}>
         <div className="hiw-head">
           <h2>How Corrix works</h2>
-          <div className="hiw-toggle" role="group" aria-label="Explanation depth">
-            <button type="button" className={depth === 'simple' ? 'on' : ''} onClick={() => setDepth('simple')}>Simple</button>
-            <button type="button" className={depth === 'deep' ? 'on' : ''} onClick={() => setDepth('deep')}>In-depth</button>
-          </div>
           <button type="button" className="hiw-x" onClick={onClose} aria-label="Close">
             <X size={18} />
           </button>
@@ -277,13 +261,13 @@ export function HowItWorks({ onClose }: { onClose: () => void }) {
             <h3>{stage.title}</h3>
             <AnimatePresence mode="wait">
               <motion.p
-                key={`${step}-${depth}`}
+                key={step}
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
               >
-                {depth === 'simple' ? stage.simple : stage.deep}
+                {stage.copy}
               </motion.p>
             </AnimatePresence>
           </div>
