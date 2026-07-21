@@ -17,3 +17,8 @@ data/factory_uploads/
 
 # Local keys, never commit
 *.pem
+
+# Internal working notes, not part of the repository
+CLAUDE.md
+memory.md
+.claude/
