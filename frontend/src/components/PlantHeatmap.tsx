@@ -3,7 +3,7 @@ import DeckGL from '@deck.gl/react'
 import { OrthographicView } from '@deck.gl/core'
 import { LineLayer, PathLayer, PolygonLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers'
 import { Box, Boxes, Radar, Square, Users } from 'lucide-react'
-import { PLANT_ZONES, ZONE_BOUNDS } from '../data/plantLayout'
+import { PLANT_ZONES, ZONE_BOUNDS, type PlantZone } from '../data/plantLayout'
 import { useCorrixStore } from '../store/useCorrixStore'
 import { riskColorHex, zoneFillHex } from './RiskBadge'
 import { PlantScene3D } from './PlantScene3D'
@@ -132,7 +132,17 @@ function interpolatePath(
 
 const RISK_ORDER: Record<RiskLevel, number> = { SAFE: 0, CAUTION: 1, HIGH: 2, CRITICAL: 3 }
 
-export function PlantHeatmap() {
+/**
+ * `zones` defaults to the static demo's `PLANT_ZONES`, so every
+ * existing caller (`<PlantHeatmap />`, no props) is byte-for-byte
+ * unaffected; the Live Command Center (Step 16) passes a factory's own
+ * zones from `layoutFromZones` instead. `ZONE_BOUNDS`-derived layout
+ * (the facility footprint, the initial camera framing) stays a
+ * module-level constant either way: `layoutFromZones` deliberately
+ * lays a factory's zones out within these same bounds, so it's valid
+ * for both cases without needing to become dynamic too.
+ */
+export function PlantHeatmap({ zones = PLANT_ZONES }: { zones?: PlantZone[] } = {}) {
   const zoneRisk = useCorrixStore((s) => s.zoneRisk)
   const workers = useCorrixStore((s) => s.workers)
   const evacuationRoute = useCorrixStore((s) => s.verdict?.evacuationRoute ?? null)
@@ -142,13 +152,13 @@ export function PlantHeatmap() {
   const [now, setNow] = useState(() => performance.now())
 
   const elevatedCount = useMemo(
-    () => PLANT_ZONES.filter((z) => RISK_ORDER[zoneRisk[z.id] ?? 'SAFE'] >= 2).length,
-    [zoneRisk],
+    () => zones.filter((z) => RISK_ORDER[zoneRisk[z.id] ?? 'SAFE'] >= 2).length,
+    [zones, zoneRisk],
   )
 
   const activeRiskZones = useMemo(
-    () => PLANT_ZONES.filter((z) => DISPERSION_RISK_LEVELS.includes(zoneRisk[z.id] ?? 'SAFE')),
-    [zoneRisk],
+    () => zones.filter((z) => DISPERSION_RISK_LEVELS.includes(zoneRisk[z.id] ?? 'SAFE')),
+    [zones, zoneRisk],
   )
   const activeRiskZoneIds = useMemo(
     () => new Set(activeRiskZones.map((z) => z.id)),
@@ -218,7 +228,7 @@ export function PlantHeatmap() {
     () =>
       new PolygonLayer({
         id: 'zones',
-        data: PLANT_ZONES,
+        data: zones,
         getPolygon: (z) => z.polygon,
         getFillColor: (z) => zoneFillHex(zoneRisk[z.id] ?? 'SAFE'),
         getLineColor: (z) => {
@@ -248,7 +258,7 @@ export function PlantHeatmap() {
           getFillColor: { duration: 600, easing: (t: number) => t * (2 - t) },
         },
       }),
-    [zoneRisk, activeRiskZoneIds, pulse],
+    [zones, zoneRisk, activeRiskZoneIds, pulse],
   )
 
   const gasLayer = useMemo(() => {
@@ -288,7 +298,7 @@ export function PlantHeatmap() {
     () =>
       new TextLayer({
         id: 'zone-ids',
-        data: PLANT_ZONES,
+        data: zones,
         getPosition: (z) => [z.polygon[0][0] + 4, z.polygon[0][1] + 5] as [number, number],
         getText: (z) => z.id,
         getSize: 12,
@@ -303,7 +313,7 @@ export function PlantHeatmap() {
         getAlignmentBaseline: 'top',
         updateTriggers: { getColor: [zoneRisk] },
       }),
-    [zoneRisk],
+    [zones, zoneRisk],
   )
 
   // Short zone name, small and dim, just under the ID, so the schematic
@@ -312,7 +322,7 @@ export function PlantHeatmap() {
     () =>
       new TextLayer({
         id: 'zone-names',
-        data: PLANT_ZONES,
+        data: zones,
         getPosition: (z) => [z.polygon[0][0] + 4, z.polygon[0][1] + 16] as [number, number],
         getText: (z) => (ZONE_SHORT_NAME[z.id] ?? z.name).toUpperCase(),
         getSize: 9,
@@ -322,14 +332,14 @@ export function PlantHeatmap() {
         getTextAnchor: 'start',
         getAlignmentBaseline: 'top',
       }),
-    [],
+    [zones],
   )
 
   const zoneRiskGlyphLayer = useMemo(
     () =>
       new TextLayer({
         id: 'zone-risk-glyphs',
-        data: PLANT_ZONES,
+        data: zones,
         getPosition: (z) => [z.centroid[0], z.centroid[1] + 6] as [number, number],
         getText: (z) => RISK_GLYPH[zoneRisk[z.id] ?? 'SAFE'],
         getSize: 22,
@@ -347,11 +357,11 @@ export function PlantHeatmap() {
           getColor: [zoneRisk],
         },
       }),
-    [zoneRisk],
+    [zones, zoneRisk],
   )
 
   const workerLayer = useMemo(() => {
-    const zoneById = new Map(PLANT_ZONES.map((z) => [z.id, z]))
+    const zoneById = new Map(zones.map((z) => [z.id, z]))
     const positioned = workers
       .map((w) => {
         const zone = zoneById.get(w.zoneId)
@@ -385,7 +395,7 @@ export function PlantHeatmap() {
         getPosition: { duration: 800, easing: (t: number) => t * (2 - t) },
       },
     })
-  }, [workers])
+  }, [zones, workers])
 
   const routeProgress = (() => {
     if (routeStartRef.current == null) return 1
@@ -394,7 +404,7 @@ export function PlantHeatmap() {
 
   const evacuationRouteLayer = useMemo(() => {
     if (!evacuationRoute || evacuationRoute.length < 2) return null
-    const zoneById = new Map(PLANT_ZONES.map((z) => [z.id, z]))
+    const zoneById = new Map(zones.map((z) => [z.id, z]))
     const fullPath = evacuationRoute
       .map((zoneId) => zoneById.get(zoneId)?.centroid)
       .filter((c): c is [number, number] => c !== undefined)
@@ -413,23 +423,23 @@ export function PlantHeatmap() {
       jointRounded: true,
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [evacuationRoute, routeProgress])
+  }, [zones, evacuationRoute, routeProgress])
 
   // Spatial risk propagation: where the compound risk could spread next.
   const propagationData = useMemo(() => {
     if (!riskPropagation || riskPropagation.length === 0) return []
-    const byId = new Map(PLANT_ZONES.map((z) => [z.id, z]))
+    const byId = new Map(zones.map((z) => [z.id, z]))
     return riskPropagation
       .map((p) => {
         const zone = byId.get(p.zoneId)
         return zone ? { zone, score: p.score, hops: p.hops } : null
       })
-      .filter((x): x is { zone: (typeof PLANT_ZONES)[number]; score: number; hops: number } => x !== null)
-  }, [riskPropagation])
+      .filter((x): x is { zone: (typeof zones)[number]; score: number; hops: number } => x !== null)
+  }, [zones, riskPropagation])
 
   const propagationSource = useMemo(
-    () => PLANT_ZONES.find((z) => z.id === propagationSourceId) ?? null,
-    [propagationSourceId],
+    () => zones.find((z) => z.id === propagationSourceId) ?? null,
+    [zones, propagationSourceId],
   )
 
   const propagationLinkLayer = useMemo(() => {

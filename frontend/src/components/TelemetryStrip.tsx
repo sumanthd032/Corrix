@@ -2,7 +2,7 @@ import { useMemo, type ReactNode } from 'react'
 import { motion } from 'framer-motion'
 import { Activity, Clock3, Gauge, ShieldCheck, Users } from 'lucide-react'
 import { useCorrixStore } from '../store/useCorrixStore'
-import { PLANT_ZONES } from '../data/plantLayout'
+import { PLANT_ZONES, type PlantZone } from '../data/plantLayout'
 import type { RiskLevel } from '../types'
 
 /**
@@ -43,7 +43,11 @@ function Tile({
   )
 }
 
-export function TelemetryStrip() {
+/** `zones` defaults to `PLANT_ZONES`, so the existing `<TelemetryStrip />`
+ * call site is unaffected; the Live Command Center passes a factory's
+ * own zones instead, so the "N elevated" denominator and distribution
+ * reflect that factory's actual zone count, not the static demo's eight. */
+export function TelemetryStrip({ zones = PLANT_ZONES }: { zones?: PlantZone[] } = {}) {
   const verdict = useCorrixStore((s) => s.verdict)
   const zoneRisk = useCorrixStore((s) => s.zoneRisk)
   const workers = useCorrixStore((s) => s.workers)
@@ -52,21 +56,21 @@ export function TelemetryStrip() {
 
   const distribution = useMemo(() => {
     const counts: Record<RiskLevel, number> = { SAFE: 0, CAUTION: 0, HIGH: 0, CRITICAL: 0 }
-    for (const z of PLANT_ZONES) counts[zoneRisk[z.id] ?? 'SAFE']++
+    for (const z of zones) counts[zoneRisk[z.id] ?? 'SAFE']++
     return counts
-  }, [zoneRisk])
+  }, [zones, zoneRisk])
 
   const elevated = distribution.HIGH + distribution.CRITICAL
   const occupiedZones = useMemo(() => new Set(workers.map((w) => w.zoneId)).size, [workers])
 
   const topRisk: RiskLevel = useMemo(() => {
     let top: RiskLevel = 'SAFE'
-    for (const z of PLANT_ZONES) {
+    for (const z of zones) {
       const lvl = zoneRisk[z.id] ?? 'SAFE'
       if (RISK_ORDER[lvl] > RISK_ORDER[top]) top = lvl
     }
     return top
-  }, [zoneRisk])
+  }, [zones, zoneRisk])
 
   const riskLevel = verdict?.riskLevel ?? topRisk
   const riskColor = `var(--color-risk-${riskLevel.toLowerCase()})`
@@ -172,7 +176,7 @@ export function TelemetryStrip() {
           >
             {elevated}
           </span>
-          <span className="eyebrow">/ {PLANT_ZONES.length} elevated</span>
+          <span className="eyebrow">/ {zones.length} elevated</span>
         </div>
         <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-[var(--color-surface-3)]">
           {RISK_LEVELS.map((lvl) => {
@@ -184,7 +188,7 @@ export function TelemetryStrip() {
                 layout
                 className="h-full"
                 style={{
-                  width: `${(count / PLANT_ZONES.length) * 100}%`,
+                  width: `${(count / zones.length) * 100}%`,
                   backgroundColor:
                     lvl === 'SAFE' ? 'var(--color-text-tertiary)' : `var(--color-risk-${lvl.toLowerCase()})`,
                   opacity: lvl === 'SAFE' ? 0.5 : 1,

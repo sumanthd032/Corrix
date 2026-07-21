@@ -5,19 +5,29 @@ import './LandingPage.css'
 /**
  * The Corrix marketing landing page. Renders full-screen before the
  * dashboard; the "Launch live demo" buttons call `onLaunch` to enter the
- * product. Self-contained styles are scoped under `.corrix-landing`
- * (LandingPage.css) so its generic class names don't touch the dashboard.
+ * existing synthetic demo, unchanged. "Get Started" calls `onGetStarted`
+ * to enter the Bring Your Own Factory onboarding wizard instead, a
+ * fully separate flow off the same landing page. Self-contained styles
+ * are scoped under `.corrix-landing` (LandingPage.css) so its generic
+ * class names don't touch the dashboard.
  */
-export function LandingPage({ onLaunch }: { onLaunch: () => void }) {
+export function LandingPage({
+  onLaunch,
+  onGetStarted,
+}: {
+  onLaunch: () => void
+  onGetStarted: () => void
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rootRef = useRef<HTMLDivElement>(null)
   const [howOpen, setHowOpen] = useState(false)
   const [noteOpen, setNoteOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
 
-  // Mobile guard: the interactive demo and the walkthrough modal both need
-  // more room than a phone screen gives them, so on mobile the CTAs open a
-  // blocking note instead of the real action.
+  // Mobile guard: the interactive demo, the walkthrough modal, and the
+  // Bring Your Own Factory wizard all need more room than a phone screen
+  // gives them, so on mobile the CTAs open a blocking note instead of the
+  // real action.
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 768px)')
     setIsMobile(mq.matches)
@@ -33,6 +43,10 @@ export function LandingPage({ onLaunch }: { onLaunch: () => void }) {
   const guardHowItWorks = () => {
     if (isMobile) { setNoteOpen(true); return }
     setHowOpen(true)
+  }
+  const guardGetStarted = () => {
+    if (isMobile) { setNoteOpen(true); return }
+    onGetStarted()
   }
 
   useEffect(() => {
@@ -133,6 +147,7 @@ export function LandingPage({ onLaunch }: { onLaunch: () => void }) {
             <a href="#proof">Evidence</a>
           </div>
           <div className="nav-cta">
+            <button type="button" className="btn btn-ghost" onClick={guardGetStarted}>Bring Your Own Factory</button>
             <button type="button" className="btn btn-primary" onClick={guardLaunch}>
               Launch live demo
               <svg className="ar" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
@@ -161,6 +176,7 @@ export function LandingPage({ onLaunch }: { onLaunch: () => void }) {
                   <svg className="ar" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
                 </button>
                 <button type="button" className="btn btn-ghost" onClick={guardHowItWorks}>See how it works</button>
+                <button type="button" className="btn btn-ghost" onClick={guardGetStarted}>Bring Your Own Factory</button>
               </div>
               <div className="ticker">
                 <span className="lbl">LIVE FEED</span>
@@ -298,7 +314,7 @@ export function LandingPage({ onLaunch }: { onLaunch: () => void }) {
         <div className="desktop-note-overlay" role="dialog" aria-modal="true" aria-label="Desktop recommended">
           <div className="desktop-note">
             <span className="d" />
-            <p>The live demo and the walkthrough are built for a larger screen. Recommended: use a desktop for the best experience.</p>
+            <p>The live demo, the walkthrough, and Bring Your Own Factory are built for a larger screen. Recommended: use a desktop for the best experience.</p>
             <button type="button" className="btn btn-primary" onClick={() => setNoteOpen(false)}>Understood</button>
           </div>
         </div>

@@ -1,0 +1,6 @@
+{
+  "timestamp": "timestamp",
+  "zone": "zone_id",
+  "gas_concentration": "concentration",
+  "gas_type": "gas"
+}

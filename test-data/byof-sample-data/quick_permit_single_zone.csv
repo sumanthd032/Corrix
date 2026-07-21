@@ -1,0 +1,2 @@
+permit_id,type,zone_id,issued_by,start_time,end_time,status
+P-5001,hot_work,Z1,J. Rao,2026-07-21T05:55:00Z,2026-07-21T06:30:00Z,active

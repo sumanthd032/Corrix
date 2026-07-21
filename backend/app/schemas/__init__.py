@@ -1,6 +1,7 @@
 from .audit_log import AuditLogEntry, RegulatoryFramework
 from .compliance import ComplianceSignalReading
 from .cv_observation import CVObservationEvent
+from .factory import FactoryProfile
 from .permit import PermitRecord, PermitStatus, PermitType
 from .scenario import (
     ComplianceSignalConfig,
@@ -33,6 +34,7 @@ __all__ = [
     "RegulatoryFramework",
     "ComplianceSignalReading",
     "CVObservationEvent",
+    "FactoryProfile",
     "PermitRecord",
     "PermitStatus",
     "PermitType",

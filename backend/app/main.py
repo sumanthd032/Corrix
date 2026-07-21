@@ -7,13 +7,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.api.evaluation import router as evaluation_router
+from app.api.factory import router as factory_router
 from app.api.incident_report import router as incident_report_router
 from app.api.assistant import router as assistant_router
 from app.api.regulatory_chat import router as regulatory_chat_router
 from app.api.replay import router as replay_router
 from app.api.send_alert import router as send_alert_router
+from app.api.virtual_sensor import router as virtual_sensor_router
 from app.api.what_if import router as what_if_router
 from app.api.websocket import scenario_websocket
+from app.api.live_factory_websocket import live_factory_websocket
 
 app = FastAPI(title="Corrix Backend")
 
@@ -41,12 +44,14 @@ app.add_middleware(
 )
 
 app.include_router(evaluation_router)
+app.include_router(factory_router)
 app.include_router(replay_router)
 app.include_router(incident_report_router)
 app.include_router(regulatory_chat_router)
 app.include_router(what_if_router)
 app.include_router(assistant_router)
 app.include_router(send_alert_router)
+app.include_router(virtual_sensor_router)
 
 
 @app.on_event("startup")
@@ -94,6 +99,11 @@ async def websocket_echo(websocket: WebSocket) -> None:
 @app.websocket("/ws/scenario")
 async def scenario_ws(websocket: WebSocket) -> None:
     await scenario_websocket(websocket)
+
+
+@app.websocket("/ws/live-factory")
+async def live_factory_ws(websocket: WebSocket) -> None:
+    await live_factory_websocket(websocket)
 
 
 # The built frontend (`npm run build` in frontend/, producing
