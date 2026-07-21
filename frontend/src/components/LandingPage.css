@@ -136,6 +136,27 @@
 .corrix-landing .split .real b { color: var(--l-safe); }
 .corrix-landing .split .sim b { color: var(--l-caution); }
 
+/* ---- Bring Your Own Factory showcase ---------------------------------- */
+.corrix-landing .byof-grid { display: grid; grid-template-columns: 1fr 34px 1fr 34px 1fr; gap: 12px; align-items: stretch; }
+.corrix-landing .byof-step { border: 1px solid var(--l-line); border-radius: 13px; padding: 22px; background: linear-gradient(180deg, rgba(19, 28, 38, 0.55), rgba(9, 13, 20, 0.75)); transition: border-color 0.2s, transform 0.2s; }
+.corrix-landing .byof-step:hover { border-color: rgba(45, 212, 232, 0.35); transform: translateY(-3px); }
+.corrix-landing .byof-step .k { font-family: var(--l-mono); font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--l-cy); }
+.corrix-landing .byof-step h3 { font-family: var(--l-disp); font-size: 17px; font-weight: 600; margin: 11px 0 8px; }
+.corrix-landing .byof-step p { font-size: 14px; line-height: 1.55; color: var(--l-tx2); margin: 0; }
+.corrix-landing .byof-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 13px; }
+.corrix-landing .byof-chips span { font-family: var(--l-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--l-cy); background: rgba(45, 212, 232, 0.1); border: 1px solid rgba(45, 212, 232, 0.22); padding: 3px 8px; border-radius: 5px; }
+.corrix-landing .byof-arrow { display: grid; place-items: center; }
+.corrix-landing .byof-arrow svg { width: 20px; height: 20px; stroke: var(--l-tx3); fill: none; stroke-width: 2; }
+.corrix-landing .byof-cta { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-top: 26px; }
+.corrix-landing .byof-cta .muted { font-size: 13.5px; color: var(--l-tx3); }
+
+/* ---- Measured results charts ------------------------------------------ */
+.corrix-landing .results { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; }
+.corrix-landing .rpanel { border: 1px solid var(--l-line); border-radius: 13px; padding: 18px 18px 16px; background: linear-gradient(180deg, rgba(19, 28, 38, 0.55), rgba(9, 13, 20, 0.75)); }
+.corrix-landing .rpanel .rt { font-family: var(--l-mono); font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--l-cy); margin-bottom: 10px; }
+.corrix-landing .rpanel svg { display: block; width: 100%; height: auto; font-family: var(--l-mono); }
+.corrix-landing .rpanel .rc { font-size: 12.5px; line-height: 1.5; color: var(--l-tx3); margin-top: 10px; }
+
 .corrix-landing .tech { display: flex; flex-wrap: wrap; gap: 10px; }
 .corrix-landing .tech span { font-family: var(--l-mono); font-size: 12.5px; color: var(--l-tx2); border: 1px solid var(--l-line); border-radius: 8px; padding: 8px 13px; background: rgba(19, 28, 38, 0.5); }
 
@@ -143,10 +164,14 @@
 .corrix-landing .cta h2 { font-family: var(--l-disp); font-size: clamp(30px, 4vw, 42px); letter-spacing: -0.02em; margin: 0 0 16px; text-wrap: balance; }
 .corrix-landing .cta p { font-size: 17px; color: var(--l-tx2); max-width: 52ch; margin: 0 auto 28px; }
 
-.corrix-landing footer { border-top: 1px solid var(--l-line); padding: 36px 0; margin-top: 70px; position: relative; z-index: 2; }
+.corrix-landing footer { border-top: 1px solid var(--l-line); padding: 32px 0; margin-top: 70px; position: relative; z-index: 2; }
 .corrix-landing .foot-in { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .corrix-landing .foot-in .muted { font-size: 13px; color: var(--l-tx3); }
 .corrix-landing .foot-in .sp { flex: 1; }
+.corrix-landing .foot-links { display: flex; gap: 20px; }
+.corrix-landing .foot-links a { font-size: 13.5px; font-weight: 600; color: var(--l-tx2); transition: color 0.15s; }
+.corrix-landing .foot-links a:hover { color: var(--l-cy); }
+.corrix-landing .foot-sub { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--l-line); }
 
 .corrix-landing .reveal { opacity: 0; transform: translateY(22px); transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1); }
 .corrix-landing .reveal.in { opacity: 1; transform: none; }
@@ -200,6 +225,9 @@
   .corrix-landing .honesty { grid-template-columns: 1fr; }
   .corrix-landing .nav-links { display: none; }
   .corrix-landing .hero { min-height: 0; }
+  .corrix-landing .byof-grid { grid-template-columns: 1fr; }
+  .corrix-landing .byof-arrow { display: none; }
+  .corrix-landing .results { grid-template-columns: 1fr; }
 }
 
 /* ---- Desktop-recommended usage note (mobile guard on Launch live demo /

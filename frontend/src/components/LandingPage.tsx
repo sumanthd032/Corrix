@@ -144,6 +144,7 @@ export function LandingPage({
             <a href="#problem">The problem</a>
             <a href="#capabilities" onClick={(e) => { e.preventDefault(); guardHowItWorks() }}>How it works</a>
             <a href="#capabilities">Capabilities</a>
+            <a href="#byof">Your factory</a>
             <a href="#proof">Evidence</a>
           </div>
           <div className="nav-cta">
@@ -259,6 +260,49 @@ export function LandingPage({
         </div>
       </section>
 
+      <section className="blk" id="byof">
+        <div className="container">
+          <div className="sec-head reveal">
+            <span className="eyebrow">Bring your own factory</span>
+            <h2>One engine. A second front door.</h2>
+            <p>The scripted demo is one way in. Any facility can onboard its own zones and drive the same reasoning engine with live data. No hardware required, and every simulated device is labeled as simulated.</p>
+          </div>
+          <div className="byof-grid reveal">
+            <div className="byof-step">
+              <span className="k">Step 01</span>
+              <h3>Draw your factory</h3>
+              <p>A five-step wizard captures zones, hazard classes, workforce, and permits, with the adjacency graph drawn by hand in an interactive editor. That graph is the exact input the evacuation router consumes.</p>
+            </div>
+            <div className="byof-arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+            </div>
+            <div className="byof-step">
+              <span className="k">Step 02</span>
+              <h3>Connect live data</h3>
+              <p>Stream readings over MQTT into a real broker, subscribe to a real OPC-UA server, replay a CSV historian export, or drive the built-in virtual sensors.</p>
+              <div className="byof-chips">
+                <span>MQTT</span><span>OPC-UA</span><span>CSV replay</span><span>Virtual sensors</span>
+              </div>
+            </div>
+            <div className="byof-arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+            </div>
+            <div className="byof-step">
+              <span className="k">Step 03</span>
+              <h3>Watch the same Council rule</h3>
+              <p>When your readings cross a threshold, the same five-agent Council convenes on your factory's evidence, the same code the scripted demo runs, unchanged.</p>
+            </div>
+          </div>
+          <div className="byof-cta reveal">
+            <button type="button" className="btn btn-primary" onClick={guardGetStarted}>
+              Get Started
+              <svg className="ar" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+            </button>
+            <span className="muted">Draw a three-zone factory and get a real verdict in minutes.</span>
+          </div>
+        </div>
+      </section>
+
       <section className="blk" id="proof">
         <div className="container">
           <div className="honesty reveal">
@@ -271,6 +315,51 @@ export function LandingPage({
               <div className="row real"><b>Real</b> LLM reasoning · GraphRAG · YOLO vision · MCP · Monte Carlo</div>
               <div className="row sim"><b>Simulated</b> gas, permit, shift, worker-location streams</div>
               <div className="row real"><b>Validated</b> against the real SWaT industrial dataset</div>
+            </div>
+          </div>
+
+          <div className="results reveal">
+            <div className="rpanel">
+              <div className="rt">Held-out miss rate</div>
+              <svg viewBox="0 0 300 120" aria-label="False negative rate falls from 30 percent to 0 percent">
+                <line x1="20" y1="100" x2="290" y2="100" stroke="rgba(125,162,194,0.26)" strokeWidth="1" />
+                <rect x="60" y="28" width="60" height="72" fill="#ff8a3d" opacity="0.85" />
+                <text x="90" y="20" fill="#eaf1f8" fontSize="15" fontWeight="700" textAnchor="middle">30%</text>
+                <text x="90" y="114" fill="#7e93a8" fontSize="9" textAnchor="middle">BEFORE</text>
+                <rect x="190" y="97" width="60" height="3" fill="#33c98b" />
+                <text x="220" y="88" fill="#33c98b" fontSize="15" fontWeight="700" textAnchor="middle">0%</text>
+                <text x="220" y="114" fill="#7e93a8" fontSize="9" textAnchor="middle">AFTER MEMORY LOOP</text>
+              </svg>
+              <div className="rc">Missed incidents drop to zero on scenarios the memory loop never trained on.</div>
+            </div>
+            <div className="rpanel">
+              <div className="rt">Prediction lead time</div>
+              <svg viewBox="0 0 300 120" aria-label="Lead time versus the single-signal baseline">
+                <line x1="70" y1="10" x2="70" y2="100" stroke="rgba(125,162,194,0.26)" strokeWidth="1" />
+                <text x="62" y="31" fill="#93a6bb" fontSize="10" textAnchor="end">S2</text>
+                <rect x="70" y="21" width="170" height="13" fill="#2dd4e8" opacity="0.9" />
+                <text x="248" y="32" fill="#eaf1f8" fontSize="11">+5 min</text>
+                <text x="62" y="61" fill="#93a6bb" fontSize="10" textAnchor="end">S3</text>
+                <rect x="70" y="51" width="170" height="13" fill="#2dd4e8" opacity="0.9" />
+                <text x="248" y="62" fill="#eaf1f8" fontSize="11">+5 min</text>
+                <text x="62" y="91" fill="#93a6bb" fontSize="10" textAnchor="end">S4</text>
+                <rect x="70" y="81" width="34" height="13" fill="#2dd4e8" opacity="0.9" />
+                <text x="112" y="92" fill="#eaf1f8" fontSize="11">+1 min</text>
+              </svg>
+              <div className="rc">Minutes earlier than a legacy single-signal detector, before the incident threshold.</div>
+            </div>
+            <div className="rpanel">
+              <div className="rt">Detection accuracy</div>
+              <svg viewBox="0 0 300 120" aria-label="Precision 100 percent and false positive rate 0 percent">
+                <line x1="20" y1="100" x2="290" y2="100" stroke="rgba(125,162,194,0.26)" strokeWidth="1" />
+                <rect x="55" y="24" width="60" height="76" fill="#33c98b" opacity="0.85" />
+                <text x="85" y="17" fill="#eaf1f8" fontSize="14" fontWeight="700" textAnchor="middle">100%</text>
+                <text x="85" y="114" fill="#7e93a8" fontSize="9" textAnchor="middle">PRECISION</text>
+                <rect x="185" y="97" width="60" height="3" fill="#33c98b" />
+                <text x="215" y="88" fill="#33c98b" fontSize="14" fontWeight="700" textAnchor="middle">0%</text>
+                <text x="215" y="114" fill="#7e93a8" fontSize="9" textAnchor="middle">FALSE POSITIVES</text>
+              </svg>
+              <div className="rc">On 20 matched negative-control runs the detector never cries wolf.</div>
             </div>
           </div>
         </div>
@@ -300,11 +389,22 @@ export function LandingPage({
       </section>
 
       <footer>
-        <div className="container foot-in">
-          <div className="brand"><span className="m"><i /></span><b style={{ fontSize: 15 }}>CORRIX</b></div>
-          <span className="muted">The correlation layer industrial safety never had.</span>
-          <span className="sp" />
-          <span className="muted">Compound Risk Operations · 2026</span>
+        <div className="container">
+          <div className="foot-in">
+            <div className="brand"><span className="m"><i /></span><b style={{ fontSize: 15 }}>CORRIX</b></div>
+            <span className="muted">The correlation layer industrial safety never had.</span>
+            <span className="sp" />
+            <div className="foot-links">
+              <a href="https://github.com/sumanthd032/Corrix" target="_blank" rel="noopener noreferrer">GitHub</a>
+              <a href="https://corrix.duckdns.org" target="_blank" rel="noopener noreferrer">Live instance</a>
+              <a href="https://github.com/sumanthd032/Corrix/blob/main/docs/corrix_project_report.pdf" target="_blank" rel="noopener noreferrer">Project report</a>
+            </div>
+          </div>
+          <div className="foot-in foot-sub">
+            <span className="muted">Team Hack4Impact!</span>
+            <span className="sp" />
+            <span className="muted">Compound Risk Operations · 2026</span>
+          </div>
         </div>
       </footer>
 
