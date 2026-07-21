@@ -148,7 +148,7 @@ export function LandingPage({
             <a href="#proof">Evidence</a>
           </div>
           <div className="nav-cta">
-            <button type="button" className="btn btn-ghost" onClick={guardGetStarted}>Bring Your Own Factory</button>
+            <button type="button" className="btn btn-ghost" onClick={guardGetStarted}>Onboard your factory</button>
             <button type="button" className="btn btn-primary" onClick={guardLaunch}>
               Launch live demo
               <svg className="ar" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
@@ -163,7 +163,7 @@ export function LandingPage({
         <div className="container">
           <div className="hero-grid">
             <div>
-              <span className="status-pill"><span className="d" />LIVE · MONITORING 8 ZONES</span>
+              <span className="status-pill"><span className="d" />LIVE</span>
               <h1>Three routine signals.<br />One <span className="grad">compound risk.</span></h1>
               <p className="lede">
                 A rising gas reading is routine. A hot-work permit is routine. Together, right before a
@@ -177,7 +177,7 @@ export function LandingPage({
                   <svg className="ar" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
                 </button>
                 <button type="button" className="btn btn-ghost" onClick={guardHowItWorks}>See how it works</button>
-                <button type="button" className="btn btn-ghost" onClick={guardGetStarted}>Bring Your Own Factory</button>
+                <button type="button" className="btn btn-ghost" onClick={guardGetStarted}>Onboard your factory</button>
               </div>
               <div className="ticker">
                 <span className="lbl">LIVE FEED</span>
@@ -295,7 +295,7 @@ export function LandingPage({
           </div>
           <div className="byof-cta reveal">
             <button type="button" className="btn btn-primary" onClick={guardGetStarted}>
-              Get Started
+              Bring Your Own Factory
               <svg className="ar" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
             </button>
             <span className="muted">Draw a three-zone factory and get a real verdict in minutes.</span>
