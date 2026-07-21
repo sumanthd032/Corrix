@@ -13,3 +13,6 @@ backend/runs/
 backend/*.pt
 data/swat/
 data/factory_uploads/
+
+# Local keys, never commit
+*.pem
