@@ -8,7 +8,7 @@
 
 <br>
 
-[![Tests](https://img.shields.io/badge/tests-415%20passing-2ea44f?style=flat-square)](#testing)
+[![Tests](https://img.shields.io/badge/tests-465-2ea44f?style=flat-square)](#testing)
 [![Python](https://img.shields.io/badge/Python-3.13-3776AB?style=flat-square&logo=python&logoColor=white)](#technology)
 [![Node](https://img.shields.io/badge/Node-22-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white)](#technology)
 [![License](https://img.shields.io/badge/license-proprietary-8a97a8?style=flat-square)](#license)
@@ -46,7 +46,7 @@
 
 A rising gas reading is routine. A hot-work permit is routine. A hot-work permit in a zone where gas is trending up, right before a shift changeover, with a worker present, is a **compound risk** that no single safety system catches, because no single system holds all four facts at once. This is the exact failure mode behind the June 2025 Visakhapatnam Steel Plant incident that anchors this project.
 
-Corrix closes that gap. It fuses five normally-siloed streams, gas and process sensors, permit-to-work records, shift schedules, computer vision, and worker location, into one reasoning layer. When the combination turns dangerous, a five-agent AI Safety Council convenes, rules with an explainable, regulation-cited verdict, forecasts time-to-critical, draws a risk-aware evacuation route, and can fire a real emergency notification. Alongside the built-in scenarios, a **Bring Your Own Factory** path lets any facility onboard its own zones and stream live data over MQTT into the same engine.
+Corrix closes that gap. It fuses five normally-siloed streams, gas and process sensors, permit-to-work records, shift schedules, computer vision, and worker location, into one reasoning layer. When the combination turns dangerous, a five-agent AI Safety Council convenes, rules with an explainable, regulation-cited verdict, forecasts time-to-critical, draws a risk-aware evacuation route, and can fire a real emergency notification. Alongside the built-in scenarios, a **Bring Your Own Factory** path lets any facility onboard its own zones and stream live data over MQTT or OPC-UA into the same engine.
 
 ---
 
@@ -65,7 +65,7 @@ Corrix closes that gap. It fuses five normally-siloed streams, gas and process s
 | **Geospatial command center** | A live deck.gl heatmap with isometric and real 3D plant views, live worker markers, and the Council convening rendered as a 3D scene. |
 | **Counterfactual Replay** | A synchronized split-screen showing what a legacy single-signal system would have seen versus what Corrix catches, with real lead time. |
 | **Emergency Response Orchestrator** | Fires a real notification with a timestamped, SHA-256-hashed evidence snapshot on a CRITICAL verdict, plus a one-click PDF Incident Report. |
-| **Bring Your Own Factory** | An onboarding wizard captures zones, the adjacency graph, workforce, and permits; live data then flows in over MQTT, CSV historian replay, or virtual sensors, into the same reasoning engine. |
+| **Bring Your Own Factory** | An onboarding wizard captures zones, the adjacency graph, workforce, and permits; live data then flows in over MQTT, a real OPC-UA subscription, CSV historian replay, or virtual sensors, into the same reasoning engine, with every input sanitized and rate-limited. |
 | **Corrix as an MCP provider** | The live compound-risk state is exposed back out over the Model Context Protocol, so any external agent can query it directly. |
 
 ---
@@ -86,7 +86,7 @@ flowchart TB
     subgraph BYO["1b · Bring your own factory · live"]
         direction LR
         WIZ["Onboarding wizard<br/>zones + adjacency graph"]
-        MQT["MQTT broker · CSV replay ·<br/>virtual sensors"]
+        MQT["MQTT · OPC-UA · CSV replay ·<br/>virtual sensors"]
     end
 
     MCP["2 · MCP Tool Layer<br/>one server per data source"]
@@ -146,7 +146,7 @@ A print-ready one-page version lives at [`docs/corrix_architecture.pdf`](docs/co
 
 ## Technology
 
-**Backend** &nbsp;·&nbsp; Python 3.13 · FastAPI · LangGraph · the official MCP SDK · Groq (primary inference) with Gemini (fallback) · Neo4j AuraDB with native vector search (GraphRAG) · sentence-transformers (local embeddings) · Ultralytics YOLO11 (computer vision) · paho-mqtt (live ingestion) · Playwright/Chromium (PDF generation) · NumPy and pandas.
+**Backend** &nbsp;·&nbsp; Python 3.13 · FastAPI · LangGraph · the official MCP SDK · Groq (primary inference) with Gemini (fallback) · Neo4j AuraDB with native vector search (GraphRAG) · sentence-transformers (local embeddings) · Ultralytics YOLO11 (computer vision) · paho-mqtt and asyncua (live MQTT / OPC-UA ingestion) · Playwright/Chromium (PDF generation) · NumPy and pandas.
 
 **Frontend** &nbsp;·&nbsp; React 19 · TypeScript · Vite · Tailwind CSS v4 · deck.gl (2D geospatial) · React Three Fiber (3D) · Framer Motion (animation) · Zustand (state).
 
@@ -259,7 +259,7 @@ cd backend
 pytest
 ```
 
-**415 tests** cover schemas, simulation, every detection path, the Council graph and its silos, regulatory ingestion and retrieval, the MCP servers (including a real external-client round trip), the evaluation harness, calibration, the memory loop, evacuation routing, the ERO, and the Incident Report generator. Tests that make real Groq/Gemini or Neo4j calls skip cleanly on a genuine rate limit rather than failing.
+**465 tests** cover schemas, simulation, every detection path, the Council graph and its silos, regulatory ingestion and retrieval, the MCP servers (including a real external-client round trip), the evaluation harness, calibration, the memory loop, evacuation routing, the ERO, the Incident Report generator, and the full BYOF path: factory storage, MQTT/OPC-UA/CSV ingestion, the virtual sensor publisher, input sanitization, and rate limiting. Tests that make real Groq/Gemini or Neo4j calls skip cleanly on a genuine rate limit rather than failing.
 
 ---
 
@@ -281,7 +281,7 @@ Then open `http://localhost:8000`. Run `python scripts/setup_neo4j.py` once agai
 
 Corrix is deliberate about this, and it is part of the strategy.
 
-**Genuinely real** &nbsp;·&nbsp; the LLM reasoning (Groq/Gemini), the Neo4j GraphRAG substrate and its retrieval, the regulatory source text, the computer-vision inference (a real YOLO forward pass), the MCP integration in both directions, the MQTT ingestion path, the Monte Carlo forecaster, the evaluation methodology, and the SWaT external validation.
+**Genuinely real** &nbsp;·&nbsp; the LLM reasoning (Groq/Gemini), the Neo4j GraphRAG substrate and its retrieval, the regulatory source text, the computer-vision inference (a real YOLO forward pass), the MCP integration in both directions, the MQTT and OPC-UA ingestion paths, the Monte Carlo forecaster, the evaluation methodology, and the SWaT external validation.
 
 **Calibrated simulation** &nbsp;·&nbsp; the gas, permit, shift, and worker-location streams, because no public real Indian plant SCADA dataset exists. The gas simulator uses an Ornstein-Uhlenbeck process, and its noise-to-signal ratio (0.043 to 0.055) was validated to fall inside the real SWaT industrial dataset's observed range (0.012 to 0.117).
 
@@ -301,20 +301,23 @@ Corrix/
 │   │   ├── detection/     Anomaly scoring, novelty, forecasting, evacuation, propagation
 │   │   ├── emergency/     Emergency Response Orchestrator
 │   │   ├── evaluation/    Evaluation harness, calibration, SWaT validation
-│   │   ├── ingestion/     Bring Your Own Factory: MQTT, CSV replay, virtual sensors
+│   │   ├── ingestion/     BYOF: MQTT, OPC-UA, CSV replay, badge/permit feeds
 │   │   ├── mcp_servers/   The five inward + one outward MCP servers
 │   │   ├── memory/        Self-improving memory exemplar store
 │   │   ├── regulatory/    Neo4j GraphRAG ingestion and retrieval
 │   │   ├── reporting/     PDF Incident Report generator
 │   │   ├── schemas/       Pydantic models (single source of truth for data shapes)
+│   │   ├── security/      Input sanitization for live external data
 │   │   ├── simulation/    Physics-informed data generators and scenario engine
-│   │   └── state/         Live risk state and incident alert state
+│   │   ├── state/         Live risk state and incident alert state
+│   │   └── storage/       Factory profile persistence (Neo4j)
 │   ├── scripts/           Setup, evaluation, training, and diagnostic scripts
-│   └── tests/             415 tests
+│   └── tests/             465 tests
 ├── frontend/
 │   └── src/               Components, Zustand store, WebSocket hooks, plant layout
 ├── data/                  Scenarios, plant layout, regulatory sources, evaluation results
 ├── docs/                  Problem statement, project doc, data methodology, architecture
+├── test-data/             Sample BYOF CSV uploads (historian, badge, permit)
 └── Dockerfile             Single-service production image
 ```
 

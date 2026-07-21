@@ -87,7 +87,7 @@ A React dashboard in a dark, instrument-grade command-center style: a deck.gl ge
 Alongside the scripted demo, a second front door lets anyone onboard their own facility and drive the same engine with live data:
 
 1. **Onboard.** A wizard captures the factory identity, zones with hazard classes, the adjacency graph (drawn in an interactive editor; this is the exact input the evacuation router and propagation model consume), workforce, shifts, and permit types.
-2. **Connect.** Stream live readings over MQTT into a real broker, replay a CSV historian export, or run the built-in virtual sensor publisher. No hardware is required, and every simulated device is labeled as simulated.
+2. **Connect.** Stream live readings over MQTT into a real broker, subscribe to a real OPC-UA server, replay a CSV historian export, or run the built-in virtual sensor publisher. No hardware is required, and every simulated device is labeled as simulated. Live external inputs pass through a character-allow-list sanitizer before reaching any agent, and the virtual sensor routes are rate-limited.
 3. **Same engine.** The Council, detection triggers, forecaster, and router are the same objects the scripted demo calls. The data changes; the reasoning does not.
 
 ### Corrix as an MCP provider
@@ -108,7 +108,7 @@ No public dataset of real Indian plant SCADA, gas-sensor, or permit data exists.
 | Computer-vision inference (YOLO11 forward pass) | Real |
 | MCP integration, both directions | Real |
 | Monte Carlo forecaster and evaluation methodology | Real |
-| MQTT ingestion path (broker, topics, parsing) | Real protocol, software publishers |
+| MQTT and OPC-UA ingestion paths (broker, topics, subscriptions, parsing) | Real protocols, software publishers |
 | Gas and process sensor streams | Simulated, physics-informed OU model |
 | Permit-to-work and shift records | Simulated, mirroring real schemas |
 | Worker location / badge-ping stream | Simulated, zone-level granularity |
@@ -143,7 +143,7 @@ Methodology safeguards:
 
 Six layers, each a distinct part of the codebase. The one-page diagram lives at `corrix_architecture.pdf` (source: `corrix_architecture.html`, image export: `assets/architecture_diagram.png`).
 
-1. **Ingestion, two front doors.** The scripted scenario engine (`backend/app/simulation/`) and the live BYOF path (`backend/app/ingestion/`, wizard, MQTT, CSV replay, virtual sensors).
+1. **Ingestion, two front doors.** The scripted scenario engine (`backend/app/simulation/`) and the live BYOF path (`backend/app/ingestion/`, wizard, MQTT, OPC-UA, CSV replay, virtual sensors).
 2. **MCP tool layer** (`backend/app/mcp_servers/`). One server per data source; each Council agent is scoped to only its own.
 3. **Compound-risk detection** (`backend/app/detection/`). The three triggers, plus the forecaster, evacuation router, and propagation model.
 4. **The Safety Council** (`backend/app/council/`). The LangGraph state machine, agents, Chair, and the failover LLM client.
@@ -161,7 +161,7 @@ Six layers, each a distinct part of the codebase. The one-page diagram lives at 
 | LLM inference | Groq primary, Gemini failover | Sub-second first tokens for a live convening; failover is automatic and tested |
 | Knowledge substrate | Neo4j AuraDB with native vector search | One database serves both the knowledge graph and the RAG corpus |
 | Computer vision | Ultralytics YOLO11, fine-tuned on Construction-PPE | Real inference on real footage, open dataset, license-compatible |
-| Live ingestion | MQTT (paho-mqtt), WebSockets | The protocol real plants run; no hardware required to prove the integration |
+| Live ingestion | MQTT (paho-mqtt), OPC-UA (asyncua), WebSockets | The protocols real plants run; no hardware required to prove the integration |
 | Backend | Python 3.13, FastAPI | Native WebSocket support, fast to build and test |
 | Frontend | React 19, TypeScript, Vite, Tailwind v4, deck.gl, React Three Fiber, Framer Motion, Zustand | The command-center UI, 2D and 3D |
 | Reports | Playwright/Chromium HTML-to-PDF | Real PDFs with the evidence snapshot |
@@ -170,7 +170,7 @@ Six layers, each a distinct part of the codebase. The one-page diagram lives at 
 
 ## 7. Status
 
-Built, tested, and deployed. The backend suite is 415 tests covering schemas, simulation, every detection path, the Council graph and its silos, regulatory ingestion and retrieval, the MCP servers including a real external-client round trip, the evaluation harness, calibration, the memory loop, evacuation routing, the ERO, and the Incident Report generator. A live instance runs at `https://corrix.duckdns.org` on free-tier hardware (the first scenario after a cold start takes 20 to 30 seconds while models warm).
+Built, tested, and deployed. The backend suite is 465 tests covering schemas, simulation, every detection path, the Council graph and its silos, regulatory ingestion and retrieval, the MCP servers including a real external-client round trip, the evaluation harness, calibration, the memory loop, evacuation routing, the ERO, the Incident Report generator, and the full BYOF ingestion path. A live instance runs at `https://corrix.duckdns.org` on free-tier hardware (the first scenario after a cold start takes 20 to 30 seconds while models warm).
 
 ---
 
