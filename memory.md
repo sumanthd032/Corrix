@@ -859,3 +859,19 @@ External access: the real Neo4j AuraDB instance throughout; real Groq/Gemini cal
 Open questions or blockers: **no browser-automation tool was available in any session of this build**, so every frontend change was verified with `tsc -b`, `oxlint`, and a full production `vite build`, never by actually looking at it render or clicking through it. The wizard's zone-graph drag/connect interactions, the Live Command Center's panels, and the Virtual Sensor Panel's sliders have only been verified by tracing the code and, for the backend they call, by real API-level tests — not by a human or automated browser session. `docs/CORRIX_REAL_DATA_DEMO_SCRIPT.md`'s Definition of Done checklist leaves this one item unchecked for exactly that reason. Also unresolved: `backend/venv/` is untracked and not gitignored (the `.gitignore` excludes `backend/.venv/`, a different path, apparently a pre-existing naming mismatch from before this session); flagged to the user early in this work but left alone since fixing it wasn't asked for. The branch has not been merged to `main`; that decision is the user's.
 
 Next action: a person with a browser should run the full walkthrough in `CORRIX_REAL_DATA_DEMO_SCRIPT.md` once, end to end, before relying on this in front of judges. After that, the merge-to-main decision and whatever demo/deploy steps follow are the user's call.
+
+---
+
+## 2026-07-21 — Regulatory Intelligence chat added to the BYOF live console, plus desktop-note copy fix, on branch `feature/bring-your-own-factory`
+
+What was done: two small frontend changes, each its own commit, both on `feature/bring-your-own-factory` only (`main` untouched, per explicit instruction).
+
+1. `LiveCommandCenter.tsx` now renders `RegulatoryChatDrawer` under `PlantHeatmap`, the same layout slot `App.tsx` gives it in the synthetic demo console. The drawer needed no changes: it is self-contained, reads chat state from `useCorrixStore`, and calls the global `POST /api/regulatory-chat` endpoint, which is not factory-scoped. For an mqtt-sourced factory the `VirtualSensorPanel` now stacks above the drawer instead of occupying the slot alone; the component doc comment was updated to say so. One consequence traced but accepted: the drawer's one-time contextual nudge waits for the demo tour's `corrix_tour_shown` session flag, which never gets set in the BYOF flow, so the nudge simply never fires there. Harmless, and the feature itself is fully reachable via its header button.
+
+2. The landing page's desktop-only note already guarded the Bring Your Own Factory button (`guardGetStarted`, from `main`'s cbabbe10, already an ancestor of this branch), but its copy only named "the live demo and the walkthrough". The copy and the mobile-guard code comment now name Bring Your Own Factory as well.
+
+Verification: `tsc --noEmit` clean and a full production `vite build` succeeded. Same caveat as the last entry: no browser-automation tool available, so the drawer rendering inside the live console was verified by code tracing and build, not by clicking through it.
+
+Commits: `feat(frontend): add the Regulatory Intelligence chat to the BYOF live console` and `fix(frontend): include Bring Your Own Factory in the desktop-only note copy`.
+
+Next action: push the branch to `origin/feature/bring-your-own-factory` (done immediately after this entry). A quick manual check in a browser, opening a launched BYOF factory and asking one question in the drawer, is still worth doing.
