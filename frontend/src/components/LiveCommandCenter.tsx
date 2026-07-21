@@ -7,6 +7,7 @@ import { CouncilPanel } from './CouncilPanel'
 import { AlertFeed } from './AlertFeed'
 import { ScrollColumn } from './ScrollColumn'
 import { VirtualSensorPanel } from './VirtualSensorPanel'
+import { RegulatoryChatDrawer } from './RegulatoryChatDrawer'
 import { DataSourcePill } from './DataSourcePill'
 import { useLiveFactorySocket } from '../lib/useLiveFactorySocket'
 import { layoutFromZones } from '../data/plantLayout'
@@ -22,10 +23,11 @@ import type { HazardClass } from '../data/plantLayout'
  * features) are replaced with a short "your factory is now live"
  * confirmation.
  *
- * For an mqtt-sourced factory, the Virtual Sensor Panel (Step 21)
- * replaces RegulatoryChatDrawer in the same layout slot App.tsx uses:
- * this is the actual demo moment, reachable while already watching
- * the dashboard, not tucked away in the wizard.
+ * RegulatoryChatDrawer sits under the heatmap in the same layout slot
+ * App.tsx gives it, so Regulatory Intelligence is reachable from every
+ * console. For an mqtt-sourced factory, the Virtual Sensor Panel
+ * (Step 21) stacks above it: this is the actual demo moment, reachable
+ * while already watching the dashboard, not tucked away in the wizard.
  */
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
@@ -121,6 +123,7 @@ export function LiveCommandCenter({ factoryId }: { factoryId: string }) {
               zones={profile.layout.zones.map((z) => ({ zone_id: z.zone_id, name: z.name }))}
             />
           )}
+          <RegulatoryChatDrawer />
         </div>
 
         <div className="flex w-full shrink-0 flex-col lg:w-[400px]">
