@@ -695,6 +695,8 @@ export function OnboardingWizard({
                 <CsvDataUploadStep
                   factoryId={submitState.status === 'created' || submitState.status === 'success' ? submitState.factoryId : ''}
                   zones={data.zones}
+                  permitTypesInUse={data.permitTypesInUse}
+                  badgePrefix={data.badgePrefix}
                   onUploaded={handleUploaded}
                 />
               )}
