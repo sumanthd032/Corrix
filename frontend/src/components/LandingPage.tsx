@@ -202,12 +202,12 @@ export function LandingPage({
                 </div>
               </div>
               <svg className="funnel" viewBox="0 0 400 104" preserveAspectRatio="none">
-                <path d="M66,4 C66,60 200,44 200,96" fill="none" stroke="#2dd4e8" strokeWidth="1.6" strokeDasharray="4 6" opacity=".55" style={{ animation: 'l-flow 1.3s linear infinite' }} />
-                <path d="M200,4 L200,96" fill="none" stroke="#2dd4e8" strokeWidth="1.6" strokeDasharray="4 6" opacity=".55" style={{ animation: 'l-flow 1.3s linear infinite' }} />
-                <path d="M334,4 C334,60 200,44 200,96" fill="none" stroke="#2dd4e8" strokeWidth="1.6" strokeDasharray="4 6" opacity=".55" style={{ animation: 'l-flow 1.3s linear infinite' }} />
-                <circle r="3" fill="#5ce6f5"><animateMotion dur="1.5s" repeatCount="indefinite" path="M66,4 C66,60 200,44 200,96" /></circle>
-                <circle r="3" fill="#5ce6f5"><animateMotion dur="1.5s" begin=".5s" repeatCount="indefinite" path="M200,4 L200,96" /></circle>
-                <circle r="3" fill="#5ce6f5"><animateMotion dur="1.5s" begin="1s" repeatCount="indefinite" path="M334,4 C334,60 200,44 200,96" /></circle>
+                <path d="M66,4 C66,60 200,44 200,96" fill="none" stroke="var(--l-cy)" strokeWidth="1.6" strokeDasharray="4 6" opacity=".55" style={{ animation: 'l-flow 1.3s linear infinite' }} />
+                <path d="M200,4 L200,96" fill="none" stroke="var(--l-cy)" strokeWidth="1.6" strokeDasharray="4 6" opacity=".55" style={{ animation: 'l-flow 1.3s linear infinite' }} />
+                <path d="M334,4 C334,60 200,44 200,96" fill="none" stroke="var(--l-cy)" strokeWidth="1.6" strokeDasharray="4 6" opacity=".55" style={{ animation: 'l-flow 1.3s linear infinite' }} />
+                <circle r="3" fill="var(--l-cy2)"><animateMotion dur="1.5s" repeatCount="indefinite" path="M66,4 C66,60 200,44 200,96" /></circle>
+                <circle r="3" fill="var(--l-cy2)"><animateMotion dur="1.5s" begin=".5s" repeatCount="indefinite" path="M200,4 L200,96" /></circle>
+                <circle r="3" fill="var(--l-cy2)"><animateMotion dur="1.5s" begin="1s" repeatCount="indefinite" path="M334,4 C334,60 200,44 200,96" /></circle>
               </svg>
               <div className="verdict-bar">
                 <span className="diamond" />
@@ -255,7 +255,7 @@ export function LandingPage({
             <div className="card"><div className="ic"><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h10l4 4v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" /><path d="M9 8h6M9 12h6" /></svg></div><h3>Regulatory Intelligence</h3><p>A Neo4j GraphRAG layer over real OISD, Factories Act 1948, and DGMS text. Every verdict cites the clause it sits on.</p></div>
             <div className="card"><div className="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg></div><h3>Time-to-Critical forecasting</h3><p>A per-zone probability band via Monte Carlo rollout, reusing the simulator's own step function, not a bare countdown.</p></div>
             <div className="card"><div className="ic"><svg viewBox="0 0 24 24"><path d="M3 12h4l2 6 4-14 2 8h6" /></svg></div><h3>Spatial risk propagation</h3><p>Predicts where a compound risk could spread across the adjacency graph if it isn't contained.</p></div>
-            <div className="card"><div className="ic"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9" /><path d="M12 12l5-3" /></svg></div><h3>Self-improving memory loop</h3><p>Learns from its own past misses, with the improvement measured only on a held-out set it never trained on.</p></div>
+            <div className="card span3"><div className="ic"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9" /><path d="M12 12l5-3" /></svg></div><h3>Self-improving memory loop</h3><p>Learns from its own past misses, with the improvement measured only on a held-out set it never trained on.</p></div>
           </div>
         </div>
       </section>
@@ -322,42 +322,42 @@ export function LandingPage({
             <div className="rpanel">
               <div className="rt">Held-out miss rate</div>
               <svg viewBox="0 0 300 120" aria-label="False negative rate falls from 30 percent to 0 percent">
-                <line x1="20" y1="100" x2="290" y2="100" stroke="rgba(125,162,194,0.26)" strokeWidth="1" />
-                <rect x="60" y="28" width="60" height="72" fill="#ff8a3d" opacity="0.85" />
-                <text x="90" y="20" fill="#eaf1f8" fontSize="15" fontWeight="700" textAnchor="middle">30%</text>
-                <text x="90" y="114" fill="#7e93a8" fontSize="9" textAnchor="middle">BEFORE</text>
-                <rect x="190" y="97" width="60" height="3" fill="#33c98b" />
-                <text x="220" y="88" fill="#33c98b" fontSize="15" fontWeight="700" textAnchor="middle">0%</text>
-                <text x="220" y="114" fill="#7e93a8" fontSize="9" textAnchor="middle">AFTER MEMORY LOOP</text>
+                <line x1="20" y1="100" x2="290" y2="100" stroke="var(--l-line2)" strokeWidth="1" />
+                <rect x="60" y="28" width="60" height="72" fill="var(--l-high)" opacity="0.85" />
+                <text x="90" y="20" fill="var(--l-tx)" fontSize="15" fontWeight="700" textAnchor="middle">30%</text>
+                <text x="90" y="114" fill="var(--l-tx3)" fontSize="9" textAnchor="middle">BEFORE</text>
+                <rect x="190" y="97" width="60" height="3" fill="var(--l-safe)" />
+                <text x="220" y="88" fill="var(--l-safe)" fontSize="15" fontWeight="700" textAnchor="middle">0%</text>
+                <text x="220" y="114" fill="var(--l-tx3)" fontSize="9" textAnchor="middle">AFTER MEMORY LOOP</text>
               </svg>
               <div className="rc">Missed incidents drop to zero on scenarios the memory loop never trained on.</div>
             </div>
             <div className="rpanel">
               <div className="rt">Prediction lead time</div>
               <svg viewBox="0 0 300 120" aria-label="Lead time versus the single-signal baseline">
-                <line x1="70" y1="10" x2="70" y2="100" stroke="rgba(125,162,194,0.26)" strokeWidth="1" />
-                <text x="62" y="31" fill="#93a6bb" fontSize="10" textAnchor="end">S2</text>
-                <rect x="70" y="21" width="170" height="13" fill="#2dd4e8" opacity="0.9" />
-                <text x="248" y="32" fill="#eaf1f8" fontSize="11">+5 min</text>
-                <text x="62" y="61" fill="#93a6bb" fontSize="10" textAnchor="end">S3</text>
-                <rect x="70" y="51" width="170" height="13" fill="#2dd4e8" opacity="0.9" />
-                <text x="248" y="62" fill="#eaf1f8" fontSize="11">+5 min</text>
-                <text x="62" y="91" fill="#93a6bb" fontSize="10" textAnchor="end">S4</text>
-                <rect x="70" y="81" width="34" height="13" fill="#2dd4e8" opacity="0.9" />
-                <text x="112" y="92" fill="#eaf1f8" fontSize="11">+1 min</text>
+                <line x1="70" y1="10" x2="70" y2="100" stroke="var(--l-line2)" strokeWidth="1" />
+                <text x="62" y="31" fill="var(--l-tx2)" fontSize="10" textAnchor="end">S2</text>
+                <rect x="70" y="21" width="170" height="13" fill="var(--l-cy)" opacity="0.9" />
+                <text x="248" y="32" fill="var(--l-tx)" fontSize="11">+5 min</text>
+                <text x="62" y="61" fill="var(--l-tx2)" fontSize="10" textAnchor="end">S3</text>
+                <rect x="70" y="51" width="170" height="13" fill="var(--l-cy)" opacity="0.9" />
+                <text x="248" y="62" fill="var(--l-tx)" fontSize="11">+5 min</text>
+                <text x="62" y="91" fill="var(--l-tx2)" fontSize="10" textAnchor="end">S4</text>
+                <rect x="70" y="81" width="34" height="13" fill="var(--l-cy)" opacity="0.9" />
+                <text x="112" y="92" fill="var(--l-tx)" fontSize="11">+1 min</text>
               </svg>
               <div className="rc">Minutes earlier than a legacy single-signal detector, before the incident threshold.</div>
             </div>
             <div className="rpanel">
               <div className="rt">Detection accuracy</div>
               <svg viewBox="0 0 300 120" aria-label="Precision 100 percent and false positive rate 0 percent">
-                <line x1="20" y1="100" x2="290" y2="100" stroke="rgba(125,162,194,0.26)" strokeWidth="1" />
-                <rect x="55" y="24" width="60" height="76" fill="#33c98b" opacity="0.85" />
-                <text x="85" y="17" fill="#eaf1f8" fontSize="14" fontWeight="700" textAnchor="middle">100%</text>
-                <text x="85" y="114" fill="#7e93a8" fontSize="9" textAnchor="middle">PRECISION</text>
-                <rect x="185" y="97" width="60" height="3" fill="#33c98b" />
-                <text x="215" y="88" fill="#33c98b" fontSize="14" fontWeight="700" textAnchor="middle">0%</text>
-                <text x="215" y="114" fill="#7e93a8" fontSize="9" textAnchor="middle">FALSE POSITIVES</text>
+                <line x1="20" y1="100" x2="290" y2="100" stroke="var(--l-line2)" strokeWidth="1" />
+                <rect x="55" y="24" width="60" height="76" fill="var(--l-safe)" opacity="0.85" />
+                <text x="85" y="17" fill="var(--l-tx)" fontSize="14" fontWeight="700" textAnchor="middle">100%</text>
+                <text x="85" y="114" fill="var(--l-tx3)" fontSize="9" textAnchor="middle">PRECISION</text>
+                <rect x="185" y="97" width="60" height="3" fill="var(--l-safe)" />
+                <text x="215" y="88" fill="var(--l-safe)" fontSize="14" fontWeight="700" textAnchor="middle">0%</text>
+                <text x="215" y="114" fill="var(--l-tx3)" fontSize="9" textAnchor="middle">FALSE POSITIVES</text>
               </svg>
               <div className="rc">On 20 matched negative-control runs the detector never cries wolf.</div>
             </div>
@@ -367,7 +367,7 @@ export function LandingPage({
 
       <section className="blk">
         <div className="container">
-          <div className="sec-head reveal" style={{ marginBottom: 26 }}><span className="eyebrow">Built on</span><h2 style={{ fontSize: 26 }}>Real infrastructure, end to end.</h2></div>
+          <div className="sec-head sec-head-mini reveal"><span className="eyebrow">Built on</span><h2>Real infrastructure, end to end.</h2></div>
           <div className="tech reveal">
             <span>LangGraph</span><span>Groq (primary)</span><span>Gemini (failover)</span><span>Neo4j AuraDB · vector search</span><span>sentence-transformers</span><span>Ultralytics YOLO11n</span><span>Model Context Protocol</span><span>FastAPI · WebSocket</span><span>React · deck.gl · Three.js</span>
           </div>
@@ -380,7 +380,7 @@ export function LandingPage({
             <span className="eyebrow">See it live</span>
             <h2>Watch a compound risk get caught.</h2>
             <p>Run a real scenario end to end: the Council convenes, reaches an explained verdict, forecasts time-to-critical, and routes an evacuation, in under thirty seconds.</p>
-            <button type="button" className="btn btn-primary" onClick={guardLaunch} style={{ fontSize: 16, padding: '14px 26px' }}>
+            <button type="button" className="btn btn-primary btn-lg" onClick={guardLaunch}>
               Launch live demo
               <svg className="ar" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
             </button>
@@ -391,7 +391,7 @@ export function LandingPage({
       <footer>
         <div className="container">
           <div className="foot-in">
-            <div className="brand"><span className="m"><i /></span><b style={{ fontSize: 15 }}>CORRIX</b></div>
+            <div className="brand foot-brand"><span className="m"><i /></span><b>CORRIX</b></div>
             <span className="muted">The correlation layer industrial safety never had.</span>
             <span className="sp" />
             <div className="foot-links">
