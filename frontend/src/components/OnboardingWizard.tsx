@@ -7,13 +7,17 @@ import {
   type WizardZoneAdjacencyEdge,
   type ZonePosition,
 } from './ZoneGraphEditor'
+import { CsvDataUploadStep } from './CsvDataUploadStep'
 
 /**
  * The Bring Your Own Factory onboarding wizard, per
  * CORRIX_REAL_DATA_BUILD_PLAN.md Steps 11-13: identity, zones (the
  * zone/adjacency graph editor), workforce, permits, and review (POSTs
  * the assembled FactoryProfile to POST /api/factory). Five stops
- * matching CORRIX_REAL_DATA.md §2's product order.
+ * matching CORRIX_REAL_DATA.md §2's product order, plus a sixth
+ * "Upload data" stop when the user picks the CSV data source, since the
+ * factory has to exist (Step 3's endpoint) before a file can be
+ * attached to it (Step 9's endpoint).
  *
  * `workerCount`/`badgePrefix` are collected here per CORRIX_REAL_DATA.md
  * §2 Step 3 but have no home in FactoryProfile's persisted schema yet;
@@ -40,7 +44,11 @@ const PERMIT_TYPES = [
   { value: 'electrical_isolation', label: 'Electrical isolation' },
 ] as const
 
-const STEP_LABELS = ['Identity', 'Zones', 'Workforce', 'Permits', 'Review'] as const
+const BASE_STEP_LABELS = ['Identity', 'Zones', 'Workforce', 'Permits', 'Review'] as const
+
+function stepLabelsFor(dataSource: 'csv' | 'mqtt'): readonly string[] {
+  return dataSource === 'csv' ? [...BASE_STEP_LABELS, 'Upload data'] : BASE_STEP_LABELS
+}
 
 export interface WizardShiftEntry {
   shiftId: string
@@ -406,6 +414,7 @@ type SubmitState =
   | { status: 'idle' }
   | { status: 'submitting' }
   | { status: 'error'; message: string }
+  | { status: 'created'; factoryId: string }
   | { status: 'success'; factoryId: string }
 
 function summaryRow(label: string, value: string) {
@@ -419,11 +428,11 @@ function summaryRow(label: string, value: string) {
 
 function StepReview({
   data,
-  setData,
+  onChangeDataSource,
   submitState,
 }: {
   data: WizardData
-  setData: (d: WizardData) => void
+  onChangeDataSource: (source: 'csv' | 'mqtt') => void
   submitState: SubmitState
 }) {
   const industryLabel = INDUSTRIES.find((i) => i.value === data.industry)?.label ?? data.industry
@@ -475,7 +484,7 @@ function StepReview({
         <div className="mt-1.5 grid grid-cols-2 gap-2">
           <button
             type="button"
-            onClick={() => setData({ ...data, dataSource: 'csv' })}
+            onClick={() => onChangeDataSource('csv')}
             className="rounded-[var(--radius-control)] border px-3 py-2 text-left text-sm transition-colors"
             style={
               data.dataSource === 'csv'
@@ -487,7 +496,7 @@ function StepReview({
           </button>
           <button
             type="button"
-            onClick={() => setData({ ...data, dataSource: 'mqtt' })}
+            onClick={() => onChangeDataSource('mqtt')}
             className="rounded-[var(--radius-control)] border px-3 py-2 text-left text-sm transition-colors"
             style={
               data.dataSource === 'mqtt'
@@ -501,7 +510,7 @@ function StepReview({
         <p className="mt-1.5 text-[11px] text-[var(--color-text-tertiary)]">
           {data.dataSource === 'mqtt'
             ? 'The Live Command Center opens with a virtual sensor panel: real MQTT messages over a real broker, from a simulated device.'
-            : 'Historian CSV replay: a file uploaded via the API drives the live feed. No upload screen exists yet.'}
+            : "Your factory will be created next, then you'll upload your historian CSV and map its columns before entering the Live Command Center."}
         </p>
       </div>
 
@@ -512,6 +521,16 @@ function StepReview({
         >
           <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
           <span>{submitState.message}</span>
+        </div>
+      )}
+
+      {submitState.status === 'created' && (
+        <div
+          className="flex items-center gap-2 rounded-[var(--radius-control)] border px-3 py-2 text-xs"
+          style={{ borderColor: 'color-mix(in srgb, var(--color-risk-safe) 45%, transparent)', color: 'var(--color-risk-safe)' }}
+        >
+          <ShieldCheck size={14} aria-hidden="true" />
+          <span>Factory {submitState.factoryId} created. Continuing to data upload…</span>
         </div>
       )}
 
@@ -546,32 +565,62 @@ export function OnboardingWizard({
   }
 
   const nextEnabled = canAdvance(step, data)
+  const stepLabels = stepLabelsFor(data.dataSource)
+  const uploadStepNum = stepLabels.length
 
-  const launch = async () => {
+  const changeDataSource = (source: 'csv' | 'mqtt') => {
+    if (data.dataSource === source) return
+    setData({ ...data, dataSource: source })
+    setSubmitState({ status: 'idle' })
+  }
+
+  const createFactory = async (): Promise<string> => {
+    const response = await fetch(`${API_BASE_URL}/api/factory`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(buildFactoryPayload(data)),
+    })
+    const body = await response.json()
+    if (!response.ok) {
+      throw new Error(typeof body.detail === 'string' ? body.detail : 'The factory could not be created.')
+    }
+    return body.factoryId as string
+  }
+
+  const primaryReviewAction = async () => {
     if (submitState.status === 'submitting') return
+
+    // Factory already created for the currently selected data source
+    // (e.g. the user went Back from the upload step) — don't recreate it.
+    if (data.dataSource === 'csv' && submitState.status === 'created') {
+      goTo(uploadStepNum)
+      return
+    }
+
     setSubmitState({ status: 'submitting' })
     try {
-      const response = await fetch(`${API_BASE_URL}/api/factory`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildFactoryPayload(data)),
-      })
-      const body = await response.json()
-      if (!response.ok) {
-        setSubmitState({
-          status: 'error',
-          message: typeof body.detail === 'string' ? body.detail : 'The factory could not be created.',
-        })
-        return
+      const factoryId = await createFactory()
+      if (data.dataSource === 'csv') {
+        setSubmitState({ status: 'created', factoryId })
+        goTo(uploadStepNum)
+      } else {
+        setSubmitState({ status: 'success', factoryId })
+        onLaunched(factoryId)
       }
-      setSubmitState({ status: 'success', factoryId: body.factoryId })
-      onLaunched(body.factoryId)
-    } catch {
+    } catch (err) {
       setSubmitState({
         status: 'error',
-        message: 'Could not reach the backend to create the factory. Confirm it is running and reachable.',
+        message:
+          err instanceof Error
+            ? err.message
+            : 'Could not reach the backend to create the factory. Confirm it is running and reachable.',
       })
     }
+  }
+
+  const handleUploaded = (factoryId: string) => {
+    setSubmitState({ status: 'success', factoryId })
+    onLaunched(factoryId)
   }
 
   return (
@@ -595,7 +644,7 @@ export function OnboardingWizard({
         </div>
 
         <div className="mt-4 flex items-center gap-1.5">
-          {STEP_LABELS.map((label, i) => {
+          {stepLabels.map((label, i) => {
             const stepNum = i + 1
             const active = stepNum === step
             const done = stepNum < step
@@ -639,7 +688,16 @@ export function OnboardingWizard({
               )}
               {step === 3 && <StepWorkforce data={data} setData={setData} />}
               {step === 4 && <StepPermits data={data} setData={setData} />}
-              {step === 5 && <StepReview data={data} setData={setData} submitState={submitState} />}
+              {step === 5 && (
+                <StepReview data={data} onChangeDataSource={changeDataSource} submitState={submitState} />
+              )}
+              {step === 6 && data.dataSource === 'csv' && submitState.status !== 'idle' && submitState.status !== 'submitting' && (
+                <CsvDataUploadStep
+                  factoryId={submitState.status === 'created' || submitState.status === 'success' ? submitState.factoryId : ''}
+                  zones={data.zones}
+                  onUploaded={handleUploaded}
+                />
+              )}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -657,7 +715,7 @@ export function OnboardingWizard({
           {step === 5 ? (
             <button
               type="button"
-              onClick={launch}
+              onClick={primaryReviewAction}
               disabled={submitState.status === 'submitting' || submitState.status === 'success'}
               className="flex items-center gap-1.5 rounded-[var(--radius-control)] border px-4 py-2 text-sm font-medium text-[var(--color-accent)] disabled:opacity-30"
               style={{ borderColor: 'color-mix(in srgb, var(--color-accent) 45%, transparent)', backgroundColor: 'var(--color-accent-dim)' }}
@@ -667,9 +725,13 @@ export function OnboardingWizard({
               ) : (
                 <Rocket size={15} aria-hidden="true" />
               )}
-              {submitState.status === 'submitting' ? 'Launching…' : 'Launch'}
+              {submitState.status === 'submitting'
+                ? 'Creating…'
+                : data.dataSource === 'csv'
+                  ? 'Continue to data upload'
+                  : 'Launch'}
             </button>
-          ) : (
+          ) : step === 6 ? null : (
             <button
               type="button"
               onClick={() => goTo(step + 1)}
