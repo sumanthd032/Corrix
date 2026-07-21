@@ -9,12 +9,13 @@ readings with the same z-score classifier the synthetic path uses
 regulatory logic is duplicated here.
 
 The reading queue carries a mix of GasSensorReading, BadgePingEvent,
-and PermitRecord for the MQTT path (CSV only ever produces
-GasSensorReading): badge/permit readings update tracked worker
-positions and active permits rather than triggering a convening
-themselves, so a convening triggered by a gas anomaly can still cite
-real permit/worker evidence gathered from the same live stream, not an
-empty placeholder.
+and PermitRecord for both the MQTT path and the CSV path (the CSV path
+runs up to three independent replay tasks concurrently -- gas required,
+permit log and badge log both optional -- feeding the same queue):
+badge/permit readings update tracked worker positions and active
+permits rather than triggering a convening themselves, so a convening
+triggered by a gas anomaly can still cite real permit/worker evidence
+gathered from the same live stream, not an empty placeholder.
 
 Baseline calibration deliberately does not reuse `score_series` as-is:
 that function computes mean/std once from the *whole* series passed to
@@ -60,9 +61,15 @@ from app.api.live_evidence import (
 from app.api.websocket import _run_council
 from app.config import get_settings
 from app.detection.anomaly_scorer import AnomalyPoint, calibrate_baseline, classify_z_score
+from app.ingestion.badge_ingest import replay_badges
 from app.ingestion.csv_ingest import replay_csv
-from app.ingestion.csv_upload_store import load_uploaded_csv
+from app.ingestion.csv_upload_store import (
+    load_uploaded_badges,
+    load_uploaded_csv,
+    load_uploaded_permits,
+)
 from app.ingestion.mqtt_ingest import MqttReading, stream_mqtt
+from app.ingestion.permit_ingest import replay_permits
 from app.ingestion.opcua_ingest import stream_opcua
 from app.schemas import (
     BadgeEventType,
@@ -113,11 +120,28 @@ def _minimal_scenario_config(zone_id: str, gas_type: str) -> ScenarioConfig:
     )
 
 
+CsvUpload = tuple[bytes, dict, float]
+
+
 async def _run_ingestion_to_completion(
-    file_bytes: bytes, column_map: dict, speed_multiplier: float, queue: asyncio.Queue
+    gas_upload: CsvUpload,
+    permit_upload: CsvUpload | None,
+    badge_upload: CsvUpload | None,
+    queue: asyncio.Queue,
 ) -> None:
+    """Runs the gas replay (required) alongside the permit-log and
+    badge-log replays (both optional -- a factory that only uploaded a
+    gas CSV still works exactly as before) concurrently, so all three
+    streams interleave onto `queue` the same way independent MQTT
+    publishers already do, before signaling completion once every
+    uploaded stream has finished."""
+    tasks = [replay_csv(*gas_upload, queue)]
+    if permit_upload is not None:
+        tasks.append(replay_permits(*permit_upload, queue))
+    if badge_upload is not None:
+        tasks.append(replay_badges(*badge_upload, queue))
     try:
-        await replay_csv(file_bytes, column_map, speed_multiplier, queue)
+        await asyncio.gather(*tasks)
     finally:
         await queue.put(_INGEST_DONE)
 
@@ -149,16 +173,17 @@ async def live_factory_websocket(websocket: WebSocket) -> None:
     reading_queue: "asyncio.Queue[MqttReading]" = asyncio.Queue()
 
     if profile.data_source == "csv":
-        uploaded = load_uploaded_csv(factory_id)
-        if uploaded is None:
+        gas_upload = load_uploaded_csv(factory_id)
+        if gas_upload is None:
             await websocket.send_json(
                 {"type": "error", "message": "No CSV has been uploaded for this factory yet."}
             )
             await websocket.close()
             return
-        file_bytes, column_map, speed_multiplier = uploaded
+        permit_upload = load_uploaded_permits(factory_id)
+        badge_upload = load_uploaded_badges(factory_id)
         ingest_task = asyncio.create_task(
-            _run_ingestion_to_completion(file_bytes, column_map, speed_multiplier, reading_queue)
+            _run_ingestion_to_completion(gas_upload, permit_upload, badge_upload, reading_queue)
         )
     elif profile.data_source == "mqtt":
         settings = get_settings()

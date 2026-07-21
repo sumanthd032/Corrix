@@ -11,8 +11,14 @@ from typing import Literal
 from fastapi import APIRouter, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 
+from app.ingestion.badge_ingest import replay_badges
 from app.ingestion.csv_ingest import replay_csv
-from app.ingestion.csv_upload_store import save_uploaded_csv
+from app.ingestion.csv_upload_store import (
+    save_uploaded_badges,
+    save_uploaded_csv,
+    save_uploaded_permits,
+)
+from app.ingestion.permit_ingest import replay_permits
 from app.schemas.factory import FactoryProfile
 from app.security.text_sanitizer import sanitize_for_prompt
 from app.storage.factory_store import load_factory, save_factory
@@ -113,4 +119,74 @@ async def upload_csv(
         raise HTTPException(status_code=422, detail=str(exc))
 
     save_uploaded_csv(factory_id, file_bytes, parsed_column_map, speed_multiplier)
+    return {"factoryId": factory_id, "rowsIngested": dry_run_queue.qsize()}
+
+
+@router.post("/api/factory/{factory_id}/permit-upload")
+async def upload_permits(
+    factory_id: str,
+    file: UploadFile,
+    column_map: str = Form(...),
+    speed_multiplier: float = Form(30.0),
+) -> dict:
+    """Optional second data stream (CORRIX_REAL_DATA.md's gas+permit+
+    shift fusion pitch needs real permit records, not just the wizard's
+    permit_types_in_use list, to fire on a CSV-sourced factory): a
+    permit log, replayed alongside the gas CSV so the Council can cite
+    real active permits instead of `format_permit_text` always
+    reporting none on file."""
+    profile = load_factory(factory_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail=f"No factory found for id {factory_id}")
+
+    try:
+        parsed_column_map = json.loads(column_map)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=422, detail=f"column_map is not valid JSON: {exc}")
+
+    file_bytes = await file.read()
+
+    dry_run_queue: asyncio.Queue = asyncio.Queue()
+    try:
+        await replay_permits(
+            file_bytes, parsed_column_map, speed_multiplier=1_000_000.0, queue=dry_run_queue
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
+    save_uploaded_permits(factory_id, file_bytes, parsed_column_map, speed_multiplier)
+    return {"factoryId": factory_id, "rowsIngested": dry_run_queue.qsize()}
+
+
+@router.post("/api/factory/{factory_id}/badge-upload")
+async def upload_badges(
+    factory_id: str,
+    file: UploadFile,
+    column_map: str = Form(...),
+    speed_multiplier: float = Form(30.0),
+) -> dict:
+    """Optional third data stream: a badge/turnstile log, replayed
+    alongside the gas CSV so "workers on site" and
+    `format_site_safety_text` reflect a real roster instead of staying
+    permanently empty on a CSV-sourced factory."""
+    profile = load_factory(factory_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail=f"No factory found for id {factory_id}")
+
+    try:
+        parsed_column_map = json.loads(column_map)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=422, detail=f"column_map is not valid JSON: {exc}")
+
+    file_bytes = await file.read()
+
+    dry_run_queue: asyncio.Queue = asyncio.Queue()
+    try:
+        await replay_badges(
+            file_bytes, parsed_column_map, speed_multiplier=1_000_000.0, queue=dry_run_queue
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
+    save_uploaded_badges(factory_id, file_bytes, parsed_column_map, speed_multiplier)
     return {"factoryId": factory_id, "rowsIngested": dry_run_queue.qsize()}
