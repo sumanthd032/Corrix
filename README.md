@@ -331,6 +331,7 @@ Corrix/
 | [`docs/CORRIX_PROJECT.md`](docs/CORRIX_PROJECT.md) | The full project: features, data strategy, evaluation, architecture |
 | [`docs/CORRIX_DATA_METHODOLOGY.md`](docs/CORRIX_DATA_METHODOLOGY.md) | Exact data and simulation formulas |
 | [`docs/corrix_architecture.pdf`](docs/corrix_architecture.pdf) | One-page architecture diagram |
+| [`docs/corrix_project_report.pdf`](docs/corrix_project_report.pdf) | The full project report |
 
 ---
 

@@ -141,7 +141,7 @@ Methodology safeguards:
 
 ## 5. Architecture
 
-Six layers, each a distinct part of the codebase. The one-page diagram lives at `corrix_architecture.pdf` (source: `corrix_architecture.html`, image export: `assets/architecture_diagram.png`).
+Six layers, each a distinct part of the codebase. The one-page diagram lives at `corrix_architecture.pdf`.
 
 1. **Ingestion, two front doors.** The scripted scenario engine (`backend/app/simulation/`) and the live BYOF path (`backend/app/ingestion/`, wizard, MQTT, OPC-UA, CSV replay, virtual sensors).
 2. **MCP tool layer** (`backend/app/mcp_servers/`). One server per data source; each Council agent is scoped to only its own.
@@ -183,3 +183,4 @@ Built, tested, and deployed. The backend suite is 465 tests covering schemas, si
 | `docs/CORRIX_PROJECT.md` | This document |
 | `docs/CORRIX_DATA_METHODOLOGY.md` | Exact data and simulation formulas |
 | `docs/corrix_architecture.pdf` | The one-page architecture diagram |
+| `docs/corrix_project_report.pdf` | The full project report |
