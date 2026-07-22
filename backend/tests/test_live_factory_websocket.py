@@ -106,6 +106,123 @@ def test_live_factory_websocket_streams_ticks_and_reaches_a_verdict(factory_with
     assert verdict_seen, f"never reached a verdict; message types seen: {seen_types}"
 
 
+def test_live_factory_websocket_reconsider_produces_a_new_verdict_from_the_same_evidence(
+    factory_with_csv,
+):
+    """Post-verdict reconsideration: the Chair alone re-rules, reusing the
+    four agents' original evidence unchanged, incorporating the new note.
+    The note's keyword is checked, not exact wording, since a real
+    synthesis call may paraphrase it (a fallback verdict preserves it
+    verbatim; either way the keyword survives, matching the existing
+    override test's own assertion style in test_council_graph.py)."""
+    client = TestClient(app)
+    first_verdict = None
+    reconsidering_seen = False
+    second_verdict = None
+
+    with client.websocket_connect("/ws/live-factory") as websocket:
+        websocket.send_json({"type": "connect", "factory_id": factory_with_csv})
+        for _ in range(200):
+            msg = websocket.receive_json()
+            if msg["type"] == "verdict":
+                first_verdict = msg["verdict"]
+                break
+            if msg["type"] in ("replay_complete", "error"):
+                break
+        assert first_verdict is not None, "never reached a first verdict"
+
+        websocket.send_json(
+            {
+                "type": "reconsider",
+                "note": "The gas reading was manually recalibrated on-site and confirmed accurate.",
+            }
+        )
+        for _ in range(50):
+            msg = websocket.receive_json()
+            if msg["type"] == "reconsidering":
+                reconsidering_seen = True
+            if msg["type"] == "verdict":
+                second_verdict = msg["verdict"]
+                break
+
+    assert reconsidering_seen
+    assert second_verdict is not None
+    assert second_verdict["council"] == first_verdict["council"]
+    combined_text = (second_verdict["explanation"] + " " + second_verdict["recommendedAction"]).lower()
+    assert "recalibrat" in combined_text
+
+
+def test_live_factory_websocket_reconsider_after_replay_complete(factory_with_csv):
+    """The regression case this feature exists to fix: a CSV replay is a
+    one-shot stream, and before this change the connection effectively
+    stopped listening once it finished. A verdict already on screen must
+    still be reconsiderable after replay_complete, not just mid-stream."""
+    client = TestClient(app)
+    first_verdict = None
+    replay_complete_seen = False
+    reconsidering_seen = False
+    second_verdict = None
+
+    with client.websocket_connect("/ws/live-factory") as websocket:
+        websocket.send_json({"type": "connect", "factory_id": factory_with_csv})
+        for _ in range(200):
+            msg = websocket.receive_json()
+            if msg["type"] == "verdict":
+                first_verdict = msg["verdict"]
+            if msg["type"] == "replay_complete":
+                replay_complete_seen = True
+                break
+            if msg["type"] == "error":
+                break
+        assert first_verdict is not None, "never reached a first verdict"
+        assert replay_complete_seen, "the CSV replay never finished during this test run"
+
+        websocket.send_json(
+            {
+                "type": "reconsider",
+                "note": "The permit office confirmed the work order was closed before the spike.",
+            }
+        )
+        for _ in range(50):
+            msg = websocket.receive_json()
+            if msg["type"] == "reconsidering":
+                reconsidering_seen = True
+            if msg["type"] == "verdict":
+                second_verdict = msg["verdict"]
+                break
+
+    assert reconsidering_seen
+    assert second_verdict is not None
+    assert second_verdict["council"] == first_verdict["council"]
+
+
+def test_live_factory_websocket_stray_reconsider_before_any_verdict_is_dropped(
+    factory_with_csv,
+):
+    """A reconsideration sent before any convening has produced a verdict
+    has nothing to attach to. It must be dropped, not silently queued to
+    attach itself to the real verdict once that eventually lands, and it
+    must not crash the connection or produce a spurious second verdict."""
+    client = TestClient(app)
+    verdict_count = 0
+    error_seen = False
+
+    with client.websocket_connect("/ws/live-factory") as websocket:
+        websocket.send_json({"type": "connect", "factory_id": factory_with_csv})
+        websocket.send_json({"type": "reconsider", "note": "premature note, no verdict yet"})
+        for _ in range(200):
+            msg = websocket.receive_json()
+            if msg["type"] == "verdict":
+                verdict_count += 1
+            if msg["type"] == "error":
+                error_seen = True
+            if msg["type"] == "replay_complete":
+                break
+
+    assert not error_seen
+    assert verdict_count == 1
+
+
 def test_live_factory_websocket_unknown_factory_returns_error():
     client = TestClient(app)
     with client.websocket_connect("/ws/live-factory") as websocket:

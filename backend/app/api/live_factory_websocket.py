@@ -37,14 +37,28 @@ Client -> server:
   {"type": "connect", "factory_id": "..."}
   {"type": "override", "note": "..."}      submit an override note
                                             while a convening is paused
+  {"type": "reconsider", "note": "..."}    once a verdict exists, ask the
+                                            Chair to rule again over the
+                                            same evidence with a new note;
+                                            valid at any point after a
+                                            verdict, including after
+                                            replay_complete, and any
+                                            number of times
 
 Server -> client:
   {"type": "tick", "zoneRisk": {...}, "workers": {...}}
   {"type": "council_convening"} / "deliberating" / "verdict" / "ero_fired"
   {"type": "council_error", "message": "..."}
+  {"type": "reconsidering"}                sent right before the Chair
+                                            re-rules on a "reconsider"
   {"type": "replay_complete"}
   {"type": "error", "message": "..."}      connection cannot proceed;
                                             the socket is then closed
+
+Unlike before, this connection is kept open after `replay_complete` (a
+one-shot CSV replay finishing) rather than ending shortly afterward: a
+verdict may still be on screen, and the officer needs the socket open to
+reconsider it. It still ends on a real client disconnect.
 """
 
 import asyncio
@@ -58,7 +72,7 @@ from app.api.live_evidence import (
     format_shift_text,
     format_site_safety_text,
 )
-from app.api.websocket import _run_council
+from app.api.websocket import ConveningContext, _reconsider, _run_council
 from app.config import get_settings
 from app.detection.anomaly_scorer import AnomalyPoint, calibrate_baseline, classify_z_score
 from app.ingestion.badge_ingest import replay_badges
@@ -227,6 +241,20 @@ async def live_factory_websocket(websocket: WebSocket) -> None:
     triggered_zones: set[str] = set()
     worker_positions: dict[str, str] = {}
     permits_by_id: dict[str, PermitRecord] = {}
+    context: ConveningContext | None = None
+
+    async def handle_reconsider(note: str) -> None:
+        nonlocal context
+        try:
+            context = await _reconsider(websocket, context, note)
+        except Exception as exc:
+            logger.error("Live factory Council reconsideration failed unexpectedly: %s", exc)
+            await websocket.send_json(
+                {
+                    "type": "council_error",
+                    "message": "The Safety Council could not complete its reconsideration.",
+                }
+            )
 
     try:
         while True:
@@ -235,13 +263,24 @@ async def live_factory_websocket(websocket: WebSocket) -> None:
                 await websocket.send_json({"type": "replay_complete"})
                 break
 
+            disconnected = False
             try:
                 msg = incoming.get_nowait()
-                if msg.get("type") == "__disconnect__":
-                    break
-                await incoming.put(msg)  # not for us here; _run_council's override wait sees it
+                msg_type = msg.get("type")
+                if msg_type == "__disconnect__":
+                    disconnected = True
+                elif msg_type == "reconsider":
+                    if context is not None:
+                        await handle_reconsider(msg.get("note", ""))
+                    # else: no verdict yet; a stray note has nothing to
+                    # attach to, so it's dropped, not requeued to attach
+                    # itself to a later, unrelated verdict.
+                else:
+                    await incoming.put(msg)  # not for us here; _run_council's override wait sees it
             except asyncio.QueueEmpty:
                 pass
+            if disconnected:
+                break
 
             if isinstance(reading, BadgePingEvent):
                 if reading.event_type == BadgeEventType.ZONE_EXIT:
@@ -306,7 +345,7 @@ async def live_factory_websocket(websocket: WebSocket) -> None:
             }
 
             try:
-                await _run_council(
+                context = await _run_council(
                     websocket,
                     incoming,
                     zone_id=zone_id,
@@ -326,6 +365,18 @@ async def live_factory_websocket(websocket: WebSocket) -> None:
                         "message": "The Safety Council could not complete its deliberation.",
                     }
                 )
+
+        # Ingestion (a one-shot CSV replay) has finished, but a verdict may
+        # still be on screen: keep servicing "reconsider" until the client
+        # actually disconnects, since there's no "start"-equivalent message
+        # to restart a finished replay with.
+        while True:
+            msg = await incoming.get()
+            msg_type = msg.get("type")
+            if msg_type == "__disconnect__":
+                break
+            if msg_type == "reconsider" and context is not None:
+                await handle_reconsider(msg.get("note", ""))
     finally:
         receiver_task.cancel()
         ingest_task.cancel()

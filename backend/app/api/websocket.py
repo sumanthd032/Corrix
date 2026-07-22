@@ -12,6 +12,13 @@ Client -> server:
                                             Open Challenge combination (§13.5)
   {"type": "override", "note": "..."}      submit an override note
                                             while stage == "deliberating"
+  {"type": "reconsider", "note": "..."}    once a verdict exists, ask the
+                                            Chair to rule again over the same
+                                            four agents' evidence with a new
+                                            note; valid at any point after a
+                                            verdict, including after
+                                            playback_complete, and any number
+                                            of times
 
 Server -> client:
   {"type": "tick", "minute": ..., "zoneRisk": {...}, "workers": {...}}
@@ -22,13 +29,15 @@ Server -> client:
   {"type": "ero_fired", "zoneId": ..., "deliveredOk": bool, "evidenceHash": "..."}
   {"type": "council_error", "message": "..."}   convening failed unexpectedly;
                                                  playback continues past it
+  {"type": "reconsidering"}                sent right before the Chair
+                                            re-rules on a "reconsider" request
   {"type": "playback_complete"}
 """
 
 import asyncio
 import logging
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta, timezone
 
 from fastapi import WebSocket, WebSocketDisconnect
@@ -46,6 +55,7 @@ from app.api.live_scenario import (
     precompute_open_challenge_playback,
     precompute_playback,
 )
+from app.council.chair import synthesize
 from app.council.graph import apply_safety_officer_override, build_council_graph
 from app.detection.anomaly_scorer import calibrate_baseline
 from app.detection.evacuation_routing import find_evacuation_route
@@ -133,6 +143,149 @@ class TimeToCriticalInputs:
     seed: int
 
 
+@dataclass
+class ConveningContext:
+    """Everything a later post-verdict `reconsider` needs to ask the Chair
+    to rule again without re-querying the four evidence agents: their
+    original data hasn't changed, only a human's instruction is new.
+    Built by `_run_council` once a verdict has been delivered, and
+    replaced wholesale (via `dataclasses.replace`, not mutated) by
+    `_reconsider` after each reconsideration, so a second reconsideration
+    builds on the most recent verdict, not the original one."""
+
+    zone_id: str
+    trigger_reason: str
+    scenario_id: str | None
+    raw_evidence: dict[str, str]
+    memory_context: str | None
+    layout: PlantLayout
+    zone_risk: dict[str, RiskLevel] | None
+    worker_positions: dict[str, str] | None
+    time_to_critical: TimeToCriticalInputs | None
+    last_verdict: CouncilVerdict
+
+
+async def _enrich_and_deliver_verdict(
+    websocket: WebSocket,
+    verdict: CouncilVerdict,
+    *,
+    trigger_reason: str,
+    raw_evidence: dict[str, str],
+    layout: PlantLayout,
+    zone_risk: dict[str, RiskLevel] | None,
+    worker_positions: dict[str, str] | None,
+    time_to_critical: TimeToCriticalInputs | None,
+    previous_risk_level: RiskLevel | None,
+) -> CouncilVerdict:
+    """Attaches the Monte Carlo forecast, evacuation route, risk
+    propagation, and regulatory grounding to a freshly synthesized
+    verdict, persists it, and delivers it over `websocket`. Shared by a
+    fresh convening (`_run_council`) and a Chair-only reconsideration
+    (`_reconsider`), so this logic is never duplicated between them.
+
+    `previous_risk_level` guards the Emergency Response Orchestrator
+    against firing twice for the same incident: it only fires when this
+    verdict is newly CRITICAL, not when it was already CRITICAL before
+    (a fresh convening always passes `None` here, so it fires exactly as
+    before; a reconsideration passes the prior verdict's risk level)."""
+    if time_to_critical is not None:
+        verdict.time_to_critical = await asyncio.to_thread(
+            forecast_time_to_critical,
+            current_value=time_to_critical.current_value,
+            elapsed_minutes=time_to_critical.elapsed_minutes,
+            gas_config=time_to_critical.gas_config,
+            baseline_mean=time_to_critical.baseline_mean,
+            baseline_std=time_to_critical.baseline_std,
+            seed=time_to_critical.seed,
+        )
+
+    if verdict.risk_level in ("HIGH", "CRITICAL"):
+        if zone_risk is not None:
+            route = find_evacuation_route(layout, zone_risk, verdict.zone_id)
+            if route is not None:
+                verdict.evacuation_route = route.path
+        # Where the compound risk could spread next if it isn't contained.
+        propagation = predict_risk_propagation(layout, verdict.zone_id)
+        if propagation:
+            verdict.risk_propagation = [
+                RiskPropagationZone(zone_id=p.zone_id, hops=p.hops, score=p.score)
+                for p in propagation
+            ]
+
+    # Ground the verdict in the regulation most relevant to what the four
+    # agents actually reported. Never fatal to a convening: a lookup
+    # failure just leaves the verdict without a cited clause.
+    try:
+        situation = f"{raw_evidence['process_safety_engineer']} {raw_evidence['permit_control_officer']}"
+        citations = await asyncio.to_thread(
+            find_regulatory_grounding, get_shared_driver(), situation
+        )
+        if citations:
+            verdict.regulatory_citations = [
+                RegulatoryCitation(
+                    framework=c["framework"],
+                    source_document=c["source_document"],
+                    section_number=c["section_number"],
+                    section_title=c["section_title"],
+                    is_supplementary=c["is_supplementary"],
+                )
+                for c in citations
+            ]
+    except Exception as exc:
+        logger.warning("regulatory grounding lookup failed: %s", exc)
+
+    await asyncio.to_thread(
+        update_zone_risk_state,
+        get_shared_driver(),
+        zone_id=verdict.zone_id,
+        risk_level=verdict.risk_level,
+        confidence=verdict.confidence,
+        compound_flag=verdict.compound_flag,
+        trigger_reason=trigger_reason,
+        explanation=verdict.explanation,
+        recommended_action=verdict.recommended_action,
+        scenario_id=verdict.scenario_id,
+    )
+
+    await websocket.send_json({"type": "verdict", "verdict": _verdict_to_camel(verdict)})
+
+    if verdict.risk_level == "CRITICAL" and previous_risk_level != "CRITICAL":
+        worker_badge_ids = [
+            badge_id for badge_id, badge_zone_id in (worker_positions or {}).items()
+            if badge_zone_id == verdict.zone_id
+        ]
+        try:
+            alert = await asyncio.to_thread(
+                fire_emergency_response, verdict, worker_badge_ids, get_shared_driver()
+            )
+            await websocket.send_json(
+                {
+                    "type": "ero_fired",
+                    "zoneId": alert.zone_id,
+                    "deliveredOk": alert.delivery_error is None,
+                    "evidenceHash": alert.evidence_hash,
+                    "firedAt": alert.fired_at,
+                }
+            )
+        except Exception as exc:
+            # The verdict has already been delivered to the client above; a
+            # transient failure here (a Neo4j hiccup writing the incident
+            # alert, say, genuinely seen during this project's own testing)
+            # must not take down the connection after that.
+            logger.error("ERO firing failed unexpectedly: %s", exc)
+            await websocket.send_json(
+                {
+                    "type": "ero_fired",
+                    "zoneId": verdict.zone_id,
+                    "deliveredOk": False,
+                    "evidenceHash": "unavailable",
+                    "firedAt": datetime.now(timezone.utc).isoformat(),
+                }
+            )
+
+    return verdict
+
+
 async def _run_council(
     websocket: WebSocket,
     incoming: "asyncio.Queue[dict]",
@@ -146,7 +299,7 @@ async def _run_council(
     zone_risk: dict[str, RiskLevel] | None = None,
     worker_positions: dict[str, str] | None = None,
     time_to_critical: TimeToCriticalInputs | None = None,
-) -> None:
+) -> ConveningContext:
     """Runs the Safety Council to a verdict and streams every stage over
     `websocket`. Per CORRIX_REAL_DATA_BUILD_PLAN.md Step 7, this is the
     single function both the synthetic scenario path (`_convene_council`,
@@ -161,8 +314,14 @@ async def _run_council(
     Omitting one just skips that additive feature for this convening,
     rather than forcing a caller to fabricate scenario-only inputs.
     `layout` defaults to the static demo layout, matching every existing
-    call site's behavior unchanged."""
+    call site's behavior unchanged.
+
+    Returns a `ConveningContext` so the caller can later ask the Chair to
+    reconsider this same convening (`_reconsider`, below) without
+    re-querying the four evidence agents."""
     await websocket.send_json({"type": "council_convening"})
+
+    resolved_layout = layout or load_plant_layout()
 
     graph = build_council_graph()
     graph_config = {"configurable": {"thread_id": f"live-{id(websocket)}-{time.time()}"}}
@@ -207,108 +366,79 @@ async def _run_council(
     final_state = await asyncio.to_thread(graph.invoke, None, graph_config)
     verdict: CouncilVerdict = final_state["verdict"]
 
-    if time_to_critical is not None:
-        verdict.time_to_critical = await asyncio.to_thread(
-            forecast_time_to_critical,
-            current_value=time_to_critical.current_value,
-            elapsed_minutes=time_to_critical.elapsed_minutes,
-            gas_config=time_to_critical.gas_config,
-            baseline_mean=time_to_critical.baseline_mean,
-            baseline_std=time_to_critical.baseline_std,
-            seed=time_to_critical.seed,
-        )
-
-    if verdict.risk_level in ("HIGH", "CRITICAL"):
-        resolved_layout = layout or load_plant_layout()
-        if zone_risk is not None:
-            route = find_evacuation_route(resolved_layout, zone_risk, verdict.zone_id)
-            if route is not None:
-                verdict.evacuation_route = route.path
-        # Where the compound risk could spread next if it isn't contained.
-        propagation = predict_risk_propagation(resolved_layout, verdict.zone_id)
-        if propagation:
-            verdict.risk_propagation = [
-                RiskPropagationZone(zone_id=p.zone_id, hops=p.hops, score=p.score)
-                for p in propagation
-            ]
-
-    # Ground the verdict in the regulation most relevant to what the four
-    # agents actually reported. Never fatal to a convening: a lookup
-    # failure just leaves the verdict without a cited clause.
-    try:
-        situation = f"{raw_evidence['process_safety_engineer']} {raw_evidence['permit_control_officer']}"
-        citations = await asyncio.to_thread(
-            find_regulatory_grounding, get_shared_driver(), situation
-        )
-        if citations:
-            verdict.regulatory_citations = [
-                RegulatoryCitation(
-                    framework=c["framework"],
-                    source_document=c["source_document"],
-                    section_number=c["section_number"],
-                    section_title=c["section_title"],
-                    is_supplementary=c["is_supplementary"],
-                )
-                for c in citations
-            ]
-    except Exception as exc:
-        logger.warning("regulatory grounding lookup failed: %s", exc)
-
-    await asyncio.to_thread(
-        update_zone_risk_state,
-        get_shared_driver(),
-        zone_id=verdict.zone_id,
-        risk_level=verdict.risk_level,
-        confidence=verdict.confidence,
-        compound_flag=verdict.compound_flag,
+    verdict = await _enrich_and_deliver_verdict(
+        websocket,
+        verdict,
         trigger_reason=trigger_reason,
-        explanation=verdict.explanation,
-        recommended_action=verdict.recommended_action,
-        scenario_id=verdict.scenario_id,
+        raw_evidence=raw_evidence,
+        layout=resolved_layout,
+        zone_risk=zone_risk,
+        worker_positions=worker_positions,
+        time_to_critical=time_to_critical,
+        previous_risk_level=None,
     )
 
-    await websocket.send_json({"type": "verdict", "verdict": _verdict_to_camel(verdict)})
+    return ConveningContext(
+        zone_id=zone_id,
+        trigger_reason=trigger_reason,
+        scenario_id=scenario_id,
+        raw_evidence=raw_evidence,
+        memory_context=memory_context,
+        layout=resolved_layout,
+        zone_risk=zone_risk,
+        worker_positions=worker_positions,
+        time_to_critical=time_to_critical,
+        last_verdict=verdict,
+    )
 
-    if verdict.risk_level == "CRITICAL":
-        worker_badge_ids = [
-            badge_id for badge_id, badge_zone_id in (worker_positions or {}).items()
-            if badge_zone_id == verdict.zone_id
-        ]
-        try:
-            alert = await asyncio.to_thread(
-                fire_emergency_response, verdict, worker_badge_ids, get_shared_driver()
-            )
-            await websocket.send_json(
-                {
-                    "type": "ero_fired",
-                    "zoneId": alert.zone_id,
-                    "deliveredOk": alert.delivery_error is None,
-                    "evidenceHash": alert.evidence_hash,
-                    "firedAt": alert.fired_at,
-                }
-            )
-        except Exception as exc:
-            # The verdict has already been delivered to the client above; a
-            # transient failure here (a Neo4j hiccup writing the incident
-            # alert, say, genuinely seen during this project's own testing)
-            # must not take down the connection after that.
-            logger.error("ERO firing failed unexpectedly: %s", exc)
-            await websocket.send_json(
-                {
-                    "type": "ero_fired",
-                    "zoneId": verdict.zone_id,
-                    "deliveredOk": False,
-                    "evidenceHash": "unavailable",
-                    "firedAt": datetime.now(timezone.utc).isoformat(),
-                }
-            )
+
+async def _reconsider(
+    websocket: WebSocket, context: ConveningContext, note: str
+) -> ConveningContext:
+    """Chair-only reconsideration: the four agents' original evidence
+    (`context.last_verdict.council`) is reused unchanged, since the
+    sensor/permit/shift/observation data it describes hasn't moved.
+    `chair.synthesize` is a plain function, not a graph node, so this
+    calls it directly rather than re-invoking the LangGraph checkpointer.
+
+    `synthesize` never raises (it self-degrades to a fallback verdict on
+    any failure), so only `_enrich_and_deliver_verdict` below needs a
+    caller-side try/except, matching the convention already used around
+    a fresh convening."""
+    await websocket.send_json({"type": "reconsidering"})
+
+    previous_risk_level = context.last_verdict.risk_level
+
+    verdict = await asyncio.to_thread(
+        synthesize,
+        zone_id=context.zone_id,
+        trigger_reason=context.trigger_reason,
+        evidence=context.last_verdict.council,
+        scenario_id=context.scenario_id,
+        override_note=note,
+        memory_context=context.memory_context,
+    )
+
+    verdict = await _enrich_and_deliver_verdict(
+        websocket,
+        verdict,
+        trigger_reason=context.trigger_reason,
+        raw_evidence=context.raw_evidence,
+        layout=context.layout,
+        zone_risk=context.zone_risk,
+        worker_positions=context.worker_positions,
+        time_to_critical=context.time_to_critical,
+        previous_risk_level=previous_risk_level,
+    )
+
+    return replace(context, last_verdict=verdict)
 
 
 async def _convene_council(
     websocket: WebSocket,
     incoming: "asyncio.Queue[dict]",
     playback: ScenarioPlayback,
-) -> None:
+) -> ConveningContext:
     """Unpacks a scenario `ScenarioPlayback` into the values `_run_council`
     needs, then delegates to it. This is the only place scenario-specific
     shapes (`ScenarioConfig`, `ScenarioOutput`, `PlaybackFrame`) get
@@ -348,7 +478,7 @@ async def _convene_council(
             seed=config.seed,
         )
 
-    await _run_council(
+    return await _run_council(
         websocket,
         incoming,
         zone_id=config.zone,
@@ -366,15 +496,42 @@ async def _stream_playback(
     websocket: WebSocket,
     incoming: "asyncio.Queue[dict]",
     playback: ScenarioPlayback,
-) -> dict | None:
-    """Returns a requeued client message if playback was interrupted by
-    one (e.g. a new "start"), else None when playback completed."""
+) -> dict:
+    """Streams ticks, convenes the Council at the trigger frame, then
+    (unlike before) keeps running past `playback_complete` in an idle
+    wait, since a verdict may still be on screen for the officer to
+    reconsider. Only returns once a "start"/"open_challenge"/
+    "__disconnect__" message truly ends this playback's lifetime; a
+    "reconsider" never does."""
+    context: ConveningContext | None = None
+
+    async def handle_reconsider(note: str) -> None:
+        nonlocal context
+        try:
+            context = await _reconsider(websocket, context, note)
+        except Exception as exc:
+            logger.error("Council reconsideration failed unexpectedly: %s", exc)
+            await websocket.send_json(
+                {
+                    "type": "council_error",
+                    "message": "The Safety Council could not complete its reconsideration.",
+                }
+            )
+
     for i, frame in enumerate(playback.frames):
         try:
             msg = incoming.get_nowait()
-            if msg.get("type") in ("start", "open_challenge", "__disconnect__"):
+            msg_type = msg.get("type")
+            if msg_type in ("start", "open_challenge", "__disconnect__"):
                 return msg
-            await incoming.put(msg)
+            elif msg_type == "reconsider":
+                if context is not None:
+                    await handle_reconsider(msg.get("note", ""))
+                # else: no verdict yet for this playback; a stray note has
+                # nothing to attach to, so it's dropped, not requeued to
+                # attach itself to a later, unrelated verdict.
+            else:
+                await incoming.put(msg)
         except asyncio.QueueEmpty:
             pass
 
@@ -390,7 +547,7 @@ async def _stream_playback(
 
         if i == playback.trigger_frame_index:
             try:
-                await _convene_council(websocket, incoming, playback)
+                context = await _convene_council(websocket, incoming, playback)
             except Exception as exc:
                 # Both evidence-agent and Chair failures already degrade to a
                 # fallback (app/council/agents.py, app/council/chair.py)
@@ -407,12 +564,21 @@ async def _stream_playback(
                 )
 
     await websocket.send_json({"type": "playback_complete"})
-    return None
+
+    while True:
+        msg = await incoming.get()
+        msg_type = msg.get("type")
+        if msg_type in ("start", "open_challenge", "__disconnect__"):
+            return msg
+        if msg_type == "reconsider" and context is not None:
+            await handle_reconsider(msg.get("note", ""))
+        # else: no verdict yet for this playback, or an unrecognized
+        # message type -- a harmless no-op.
 
 
 async def _run_playback(
     websocket: WebSocket, incoming: "asyncio.Queue[dict]", scenario_id: str
-) -> dict | None:
+) -> dict:
     novelty_model = await asyncio.to_thread(get_cached_novelty_model)
     memory_driver = get_shared_driver()
     playback = await asyncio.to_thread(
@@ -421,7 +587,7 @@ async def _run_playback(
     return await _stream_playback(websocket, incoming, playback)
 
 
-async def _run_open_challenge(websocket: WebSocket, incoming: "asyncio.Queue[dict]") -> dict | None:
+async def _run_open_challenge(websocket: WebSocket, incoming: "asyncio.Queue[dict]") -> dict:
     """Draws one of the curated Open Challenge combinations at random and
     streams it exactly like an authored scenario. The only difference
     is the trigger is the novelty path, since these are tuned to evade
