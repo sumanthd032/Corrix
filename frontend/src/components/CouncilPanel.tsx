@@ -37,21 +37,41 @@ export function CouncilPanel() {
   const liveEvidence = useCorrixStore((s) => s.liveEvidence)
   const connectionMode = useCorrixStore((s) => s.connectionMode)
   const overrideFocusNonce = useCorrixStore((s) => s.overrideFocusNonce)
+  const reconsidering = useCorrixStore((s) => s.reconsidering)
   const countdown = useOverrideCountdown()
   const [noteText, setNoteText] = useState('')
   const [whatIfOpen, setWhatIfOpen] = useState(false)
   const [alertOpen, setAlertOpen] = useState(false)
+  const [reconsiderOpen, setReconsiderOpen] = useState(false)
   const noteRef = useRef<HTMLTextAreaElement>(null)
 
-  // When the top-bar Override control is used in live mode, bring the note
-  // field into view and focus it (the field itself lives here, in the
-  // panel, and only during the deliberation window).
+  // When the top-bar Override control is used while a verdict is already
+  // on screen, it means "reconsider this verdict" rather than the
+  // pre-verdict pause below: open the note box for it. Split from the
+  // focus effect below because the box (and noteRef) isn't mounted yet
+  // in this same tick.
+  useEffect(() => {
+    if (overrideFocusNonce > 0 && councilStage === 'verdict_reached') {
+      setReconsiderOpen(true)
+    }
+  }, [overrideFocusNonce, councilStage])
+
+  // When the top-bar Override control is used, bring the note field into
+  // view and focus it (the field itself lives here, in the panel). Refires
+  // once `reconsiderOpen` flips true so it still runs after the box above
+  // actually mounts.
   useEffect(() => {
     if (overrideFocusNonce > 0 && noteRef.current) {
       noteRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
       noteRef.current.focus()
     }
-  }, [overrideFocusNonce])
+  }, [overrideFocusNonce, reconsiderOpen])
+
+  // A fresh verdict (the original, or the result of a reconsideration)
+  // closes any note box left open from reconsidering the previous one.
+  useEffect(() => {
+    setReconsiderOpen(false)
+  }, [verdict])
 
   const stage = STAGE[councilStage] ?? STAGE.idle
   const isActive = councilStage === 'convening' || councilStage === 'deliberating'
@@ -173,6 +193,24 @@ export function CouncilPanel() {
               </div>
             </div>
 
+            {reconsidering && (
+              <div
+                className="flex items-center gap-1.5 self-start rounded-[var(--radius-sharp)] border px-2 py-1 eyebrow"
+                style={{
+                  borderColor: 'color-mix(in srgb, var(--color-accent) 40%, transparent)',
+                  color: 'var(--color-accent)',
+                }}
+              >
+                <motion.span
+                  className="h-1.5 w-1.5 rounded-full"
+                  style={{ backgroundColor: 'var(--color-accent)' }}
+                  animate={{ opacity: [1, 0.3, 1] }}
+                  transition={{ duration: 1.1, repeat: Infinity }}
+                />
+                Chair reconsidering…
+              </div>
+            )}
+
             {/* Trigger tell */}
             <div className="flex items-center gap-1.5 eyebrow">
               <span className="text-[var(--color-text-tertiary)]">Trigger</span>
@@ -256,15 +294,16 @@ export function CouncilPanel() {
         )}
       </AnimatePresence>
 
-      {/* Override */}
-      {overridePaused && (
+      {/* Override, before the Chair rules, or a reconsideration note
+          after a verdict already exists -- the same box either way. */}
+      {(overridePaused || reconsiderOpen) && (
         <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
           className="flex flex-col gap-2 overflow-hidden rounded-[var(--radius-control)] border p-3"
           style={{ borderColor: 'color-mix(in srgb, var(--color-accent) 40%, transparent)', background: 'var(--color-accent-dim)' }}
         >
-          {connectionMode === 'live' && countdown.active && (
+          {overridePaused && connectionMode === 'live' && countdown.active && (
             <div className="flex flex-col gap-1.5">
               <div className="flex items-baseline justify-between">
                 <span className="eyebrow text-[var(--color-accent)]">
@@ -283,30 +322,51 @@ export function CouncilPanel() {
             </div>
           )}
           <p className="text-xs text-[var(--color-text-secondary)]">
-            {connectionMode === 'live'
-              ? 'This is a deliberate pause so a safety officer can veto before the Chair rules. Add a note to override now, or it resolves on its own when the window closes.'
-              : 'Council paused. Add a note for the Chair before resuming.'}
+            {overridePaused
+              ? connectionMode === 'live'
+                ? 'This is a deliberate pause so a safety officer can veto before the Chair rules. Add a note to override now, or it resolves on its own when the window closes.'
+                : 'Council paused. Add a note for the Chair before resuming.'
+              : "The four agents' evidence is unchanged. Add a note for the Chair to weigh, and it will rule again with a fresh verdict."}
           </p>
           <textarea
             ref={noteRef}
             value={noteText}
             onChange={(e) => setNoteText(e.target.value)}
             rows={2}
-            placeholder="e.g. Permit P-2291 was already suspended manually 5 minutes ago…"
+            placeholder={
+              overridePaused
+                ? 'e.g. Permit P-2291 was already suspended manually 5 minutes ago…'
+                : 'e.g. The gas reading was manually reverified and is now within range…'
+            }
             className="rounded-[var(--radius-control)] border border-[var(--color-hairline)] bg-[var(--color-base)]/50 p-2 text-sm text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-tertiary)]"
           />
-          <button
-            type="button"
-            onClick={() => {
-              submitOverrideNote(noteText)
-              setNoteText('')
-            }}
-            disabled={!noteText.trim()}
-            className="self-end rounded-[var(--radius-control)] border px-3 py-1.5 text-xs font-medium text-[var(--color-accent)] disabled:opacity-40"
-            style={{ borderColor: 'color-mix(in srgb, var(--color-accent) 45%, transparent)', backgroundColor: 'var(--color-accent-dim)' }}
-          >
-            Resume Council
-          </button>
+          <div className="flex items-center justify-end gap-2">
+            {!overridePaused && (
+              <button
+                type="button"
+                onClick={() => {
+                  setReconsiderOpen(false)
+                  setNoteText('')
+                }}
+                className="rounded-[var(--radius-control)] border border-[var(--color-hairline)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-secondary)]"
+              >
+                Cancel
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                submitOverrideNote(noteText)
+                setNoteText('')
+                setReconsiderOpen(false)
+              }}
+              disabled={!noteText.trim()}
+              className="rounded-[var(--radius-control)] border px-3 py-1.5 text-xs font-medium text-[var(--color-accent)] disabled:opacity-40"
+              style={{ borderColor: 'color-mix(in srgb, var(--color-accent) 45%, transparent)', backgroundColor: 'var(--color-accent-dim)' }}
+            >
+              {overridePaused ? 'Resume Council' : 'Reconsider'}
+            </button>
+          </div>
         </motion.div>
       )}
 

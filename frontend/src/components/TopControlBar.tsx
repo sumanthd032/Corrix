@@ -66,6 +66,7 @@ export function TopControlBar({
   const overridePaused = useCorrixStore((s) => s.overridePaused)
   const pauseForOverride = useCorrixStore((s) => s.pauseForOverride)
   const requestOverrideFocus = useCorrixStore((s) => s.requestOverrideFocus)
+  const reconsidering = useCorrixStore((s) => s.reconsidering)
   const councilStage = useCorrixStore((s) => s.councilStage)
   const connectionMode = useCorrixStore((s) => s.connectionMode)
   const triggerOpenChallenge = useCorrixStore((s) => s.triggerOpenChallenge)
@@ -323,7 +324,11 @@ export function TopControlBar({
             connectionMode === 'live'
               ? councilStage === 'deliberating'
                 ? 'Jump to the override note field while the Council is deliberating.'
-                : 'Available only while the Council is deliberating (the live 8-second override window). Enter the note in the Council panel.'
+                : councilStage === 'verdict_reached'
+                  ? reconsidering
+                    ? 'The Chair is already reconsidering this verdict.'
+                    : 'Add a Safety Officer note to the current verdict and re-run the Chair.'
+                  : 'Available while the Council is deliberating, or after a verdict, to reconsider it.'
               : 'Add a Safety Officer note to the current verdict and re-run the Chair.'
           }
         >
@@ -333,7 +338,10 @@ export function TopControlBar({
             onClick={connectionMode === 'live' ? requestOverrideFocus : pauseForOverride}
             disabled={
               connectionMode === 'live'
-                ? councilStage !== 'deliberating'
+                ? !(
+                    councilStage === 'deliberating' ||
+                    (councilStage === 'verdict_reached' && !reconsidering)
+                  )
                 : overridePaused || councilStage !== 'verdict_reached'
             }
             className="flex items-center gap-1.5 rounded-[var(--radius-control)] border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-40"

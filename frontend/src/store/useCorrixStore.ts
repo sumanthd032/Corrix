@@ -44,6 +44,11 @@ interface CorrixState {
    * where the note is entered in the panel during the deliberation
    * window, not in a top-bar popover). */
   overrideFocusNonce: number
+  /** True from the moment a post-verdict reconsideration note is sent
+   * until the Chair's re-ruling arrives as a fresh "verdict" message.
+   * The verdict card stays on screen throughout; this only drives a
+   * small "reconsidering" indicator, unlike the pre-verdict pause. */
+  reconsidering: boolean
 
   connectionMode: ConnectionMode
   /** True once the live backend has connected at least once this session.
@@ -52,6 +57,11 @@ interface CorrixState {
   hasEverConnected: boolean
   liveEvidence: CouncilEvidence | null
   liveOverrideSender: ((note: string) => void) | null
+  /** Sends a post-verdict reconsideration note over the live socket
+   * (a "reconsider" message, distinct from the pre-verdict "override"
+   * message `liveOverrideSender` sends). Null in mock mode or before the
+   * socket has connected once. */
+  liveReconsiderSender: ((note: string) => void) | null
   openChallengeSender: (() => void) | null
   openChallengeLabel: string | null
   eroFired: EroFiredEvent | null
@@ -66,12 +76,14 @@ interface CorrixState {
 
   setConnectionMode: (mode: ConnectionMode) => void
   setLiveOverrideSender: (fn: ((note: string) => void) | null) => void
+  setLiveReconsiderSender: (fn: ((note: string) => void) | null) => void
   setOpenChallengeSender: (fn: (() => void) | null) => void
   setOpenChallengeLabel: (label: string | null) => void
   beginLivePlayback: () => void
   applyLiveTick: (zoneRisk: Record<string, RiskLevel>, workerZones: Record<string, string>) => void
   startLiveConvening: () => void
   applyLiveDeliberating: (evidence: CouncilEvidence) => void
+  startReconsidering: () => void
   applyLiveVerdict: (verdict: CouncilVerdict) => void
   applyEroFired: (event: EroFiredEvent) => void
   applyCouncilError: (message: string) => void
@@ -92,11 +104,13 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
   overrideNote: '',
   deliberationDeadline: null,
   overrideFocusNonce: 0,
+  reconsidering: false,
 
   connectionMode: 'mock',
   hasEverConnected: false,
   liveEvidence: null,
   liveOverrideSender: null,
+  liveReconsiderSender: null,
   openChallengeSender: null,
   openChallengeLabel: null,
   eroFired: null,
@@ -130,9 +144,17 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
   },
   requestOverrideFocus: () => set((s) => ({ overrideFocusNonce: s.overrideFocusNonce + 1 })),
   submitOverrideNote: (note) => {
-    const sender = get().liveOverrideSender
-    if (get().connectionMode === 'live' && sender) {
-      sender(note)
+    const { connectionMode, councilStage, liveOverrideSender, liveReconsiderSender } = get()
+    if (connectionMode === 'live' && councilStage === 'verdict_reached' && liveReconsiderSender) {
+      // A verdict already exists and the graph is no longer paused: this
+      // is a real post-verdict reconsideration, not the pre-verdict
+      // override below, so it goes out as a different message.
+      liveReconsiderSender(note)
+      set({ overrideNote: note, reconsidering: true })
+      return
+    }
+    if (connectionMode === 'live' && liveOverrideSender) {
+      liveOverrideSender(note)
       set({ overridePaused: false, overrideNote: note, deliberationDeadline: null })
       return
     }
@@ -194,6 +216,7 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
   setConnectionMode: (mode) =>
     set(mode === 'live' ? { connectionMode: mode, hasEverConnected: true } : { connectionMode: mode }),
   setLiveOverrideSender: (fn) => set({ liveOverrideSender: fn }),
+  setLiveReconsiderSender: (fn) => set({ liveReconsiderSender: fn }),
   setOpenChallengeSender: (fn) => set({ openChallengeSender: fn }),
   setOpenChallengeLabel: (label) => set({ openChallengeLabel: label }),
   beginLivePlayback: () =>
@@ -202,6 +225,7 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
       liveEvidence: null,
       overridePaused: false,
       deliberationDeadline: null,
+      reconsidering: false,
       councilStage: 'idle',
       openChallengeLabel: null,
       eroFired: null,
@@ -217,7 +241,8 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
     }))
     set({ zoneRisk, workers })
   },
-  startLiveConvening: () => set({ councilStage: 'convening', liveEvidence: null, verdict: null }),
+  startLiveConvening: () =>
+    set({ councilStage: 'convening', liveEvidence: null, verdict: null, reconsidering: false }),
   applyLiveDeliberating: (evidence) =>
     set({
       councilStage: 'deliberating',
@@ -225,6 +250,7 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
       overridePaused: true,
       deliberationDeadline: Date.now() + OVERRIDE_WINDOW_MS,
     }),
+  startReconsidering: () => set({ reconsidering: true }),
   applyLiveVerdict: (verdict) =>
     set((state) => ({
       councilStage: 'verdict_reached',
@@ -232,6 +258,7 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
       liveEvidence: null,
       overridePaused: false,
       deliberationDeadline: null,
+      reconsidering: false,
       alerts: [
         {
           id: `alert-verdict-${Date.now()}`,
@@ -261,9 +288,13 @@ export const useCorrixStore = create<CorrixState>((set, get) => ({
     })),
   applyCouncilError: (message) =>
     set((state) => ({
-      councilStage: 'idle',
+      // A fresh convening failing with no verdict yet goes to idle, same
+      // as before; a reconsideration failing must not blank out a
+      // verdict that's still perfectly valid and on screen.
+      councilStage: state.verdict ? 'verdict_reached' : 'idle',
       overridePaused: false,
       deliberationDeadline: null,
+      reconsidering: false,
       alerts: [
         {
           id: `alert-error-${Date.now()}`,

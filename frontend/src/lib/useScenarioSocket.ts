@@ -13,6 +13,7 @@ interface ServerMessage {
     | 'verdict'
     | 'ero_fired'
     | 'council_error'
+    | 'reconsidering'
     | 'playback_complete'
   minute?: number
   zoneRisk?: Record<string, RiskLevel>
@@ -64,6 +65,9 @@ export function useScenarioSocket() {
         store.setLiveOverrideSender((note: string) => {
           ws.send(JSON.stringify({ type: 'override', note }))
         })
+        store.setLiveReconsiderSender((note: string) => {
+          ws.send(JSON.stringify({ type: 'reconsider', note }))
+        })
         store.setOpenChallengeSender(() => {
           store.beginLivePlayback()
           ws.send(JSON.stringify({ type: 'open_challenge' }))
@@ -104,6 +108,9 @@ export function useScenarioSocket() {
           case 'council_error':
             store.applyCouncilError(msg.message ?? 'The Safety Council could not complete its deliberation.')
             break
+          case 'reconsidering':
+            store.startReconsidering()
+            break
           case 'playback_complete':
             break
         }
@@ -114,6 +121,7 @@ export function useScenarioSocket() {
         const store = useCorrixStore.getState()
         store.setConnectionMode('mock')
         store.setLiveOverrideSender(null)
+        store.setLiveReconsiderSender(null)
         store.setOpenChallengeSender(null)
         // Keep trying: the backend may not be up yet, or may have restarted.
         // Retry with a capped backoff so the indicator flips to LIVE on its

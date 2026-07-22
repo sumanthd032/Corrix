@@ -12,6 +12,7 @@ interface ServerMessage {
     | 'verdict'
     | 'ero_fired'
     | 'council_error'
+    | 'reconsidering'
     | 'replay_complete'
     | 'error'
   zoneRisk?: Record<string, RiskLevel>
@@ -62,6 +63,9 @@ export function useLiveFactorySocket(factoryId: string | null) {
         store.setLiveOverrideSender((note: string) => {
           ws.send(JSON.stringify({ type: 'override', note }))
         })
+        store.setLiveReconsiderSender((note: string) => {
+          ws.send(JSON.stringify({ type: 'reconsider', note }))
+        })
         store.beginLivePlayback()
         ws.send(JSON.stringify({ type: 'connect', factory_id: factoryId }))
       }
@@ -98,6 +102,9 @@ export function useLiveFactorySocket(factoryId: string | null) {
           case 'error':
             store.applyCouncilError(msg.message ?? 'The live factory connection reported an error.')
             break
+          case 'reconsidering':
+            store.startReconsidering()
+            break
           case 'replay_complete':
             replayComplete = true
             break
@@ -109,6 +116,7 @@ export function useLiveFactorySocket(factoryId: string | null) {
         const store = useCorrixStore.getState()
         store.setConnectionMode('mock')
         store.setLiveOverrideSender(null)
+        store.setLiveReconsiderSender(null)
         if (replayComplete) return
         reconnectTimer = setTimeout(connect, backoffMs)
         backoffMs = Math.min(backoffMs * 1.6, 10000)
