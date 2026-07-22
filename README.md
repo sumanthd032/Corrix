@@ -8,6 +8,7 @@
 
 <br>
 
+[![Live demo](https://img.shields.io/badge/live_demo-corrix.duckdns.org-2dd4e8?style=flat-square&logo=googlechrome&logoColor=white)](https://corrix.duckdns.org)
 [![Tests](https://img.shields.io/badge/tests-465-2ea44f?style=flat-square)](#testing)
 [![Python](https://img.shields.io/badge/Python-3.13-3776AB?style=flat-square&logo=python&logoColor=white)](#technology)
 [![Node](https://img.shields.io/badge/Node-22-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white)](#technology)
@@ -36,7 +37,7 @@
 
 <br>
 
-[Overview](#overview) · [Capabilities](#capabilities) · [Architecture](#architecture) · [Quick start](#quick-start) · [Real vs. simulated](#what-is-real-vs-simulated) · [Documentation](#documentation)
+**[Live demo](https://corrix.duckdns.org)** · [Overview](#overview) · [Capabilities](#capabilities) · [Architecture](#architecture) · [Quick start](#quick-start) · [Real vs. simulated](#what-is-real-vs-simulated) · [Documentation](#documentation)
 
 </div>
 
